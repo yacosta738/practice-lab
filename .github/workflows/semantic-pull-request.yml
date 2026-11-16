@@ -1,11 +1,11 @@
 name: Semantic PR
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, edited, synchronize, reopened]
 
 permissions:
-  contents: read
+  pull-requests: read
 
 defaults:
   run:
@@ -18,9 +18,10 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Check Conventional Commits title
-        uses: amannn/action-semantic-pull-request@2252a14e810aa9b85c2d560bd7070c802206ecf6 # v6
+        uses: amannn/action-semantic-pull-request@032e9f3d9ed4af0afabe937e64dfd74364b12d16 # v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          token: ${{ github.token }}
           types: |
             feat
             fix
