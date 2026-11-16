@@ -1,7 +1,7 @@
 name: Semantic PR
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, edited, synchronize, reopened]
 
 permissions:
@@ -20,7 +20,7 @@ jobs:
       - name: Check Conventional Commits title
         uses: amannn/action-semantic-pull-request@032e9f3d9ed4af0afabe937e64dfd74364b12d16 # v5
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           types: |
             feat
