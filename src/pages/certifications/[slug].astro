@@ -1,0 +1,529 @@
+---
+// Dynamic certification page — loads config and questions server-side
+
+import QuizLayout from "../../layouts/QuizLayout.astro";
+import { config } from "../../certifications/ccdv-f/config";
+import { questions } from "../../certifications/ccdv-f/questions";
+
+export function getStaticPaths() {
+	return [
+		{ params: { slug: "ccdv-f" } }
+	];
+}
+
+const slug = Astro.params.slug;
+
+// Load certification data based on slug
+let certConfig = config;
+let certQuestions = questions;
+
+// In the future, use a map or dynamic import for multiple certifications
+if (slug !== "ccdv-f") {
+	// Fallback — should not happen with getStaticPaths
+	certConfig = config;
+	certQuestions = questions;
+}
+---
+
+<QuizLayout
+	title={certConfig.title}
+	subtitle={certConfig.subtitle}
+	description={certConfig.description}
+	theme={certConfig.theme}
+>
+	<!-- Quiz data passed inline -->
+</QuizLayout>
+
+<script define:vars={{ cfg: config, qs: questions }} is:inline>
+(function() {
+	// cfg and qs are provided by define:vars above
+	if (!cfg || !qs) return;
+
+	// Build lookup maps
+	const byId = {};
+	for (const q of qs) { byId[q.id] = q; }
+	const domains = {};
+	for (const [key, d] of Object.entries(cfg.domains)) {
+		domains[key] = { name: d.name, weight: d.weight };
+	}
+
+	const KEY = cfg.slug + "-practice-lab-v2";
+	const LETTERS = "ABCD";
+	const app = document.getElementById("app");
+
+	// --- Storage ---
+	function getSaved() {
+		try {
+			const x = JSON.parse(localStorage.getItem(KEY));
+			return x && typeof x === "object" ? x : { stats: {}, session: null };
+		} catch { return { stats: {}, session: null }; }
+	}
+	let saved = getSaved();
+	if (!saved.stats || typeof saved.stats !== "object") saved.stats = {};
+
+	// A restored session may come from an older schema, from a hand-edited
+	// record, or from a question bank that no longer holds some of its ids.
+	// Validate it before use so a stale record degrades into a fresh session
+	// instead of a permanently blank page.
+	function restoreSession(raw) {
+		if (!raw || typeof raw !== "object") return null;
+		if (!["practice", "exam", "weak"].includes(raw.mode)) return null;
+		if (!Array.isArray(raw.ids)) return null;
+		const ids = raw.ids.filter((id) => byId[id]);
+		if (!ids.length) return null;
+		const answers = raw.answers && typeof raw.answers === "object" ? raw.answers : {};
+		const checked = raw.checked && typeof raw.checked === "object" ? raw.checked : {};
+		const flags = Array.isArray(raw.flags) ? raw.flags.filter((id) => byId[id]) : [];
+		const index = Number.isInteger(raw.currentIndex) && raw.currentIndex >= 0 && raw.currentIndex < ids.length
+			? raw.currentIndex : 0;
+		return {
+			mode: raw.mode,
+			ids,
+			currentIndex: index,
+			answers,
+			checked,
+			flags,
+			created: Number.isFinite(raw.created) ? raw.created : Date.now(),
+			deadline: Number.isFinite(raw.deadline) ? raw.deadline : null,
+			submitted: raw.submitted === true,
+			timedOut: raw.timedOut === true,
+			finished: Number.isFinite(raw.finished) ? raw.finished : undefined
+		};
+	}
+
+	let session = restoreSession(saved.session);
+	saved.session = session;
+
+	function persist() {
+		saved.session = session;
+		try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch {}
+	}
+
+	persist();
+
+	// --- Engine functions ---
+	function shuffle(arr) {
+		const a = [...arr];
+		for (let i = a.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[a[i], a[j]] = [a[j], a[i]];
+		}
+		return a;
+	}
+
+	function pct(n, t) { return t ? Math.round(n / t * 100) : 0; }
+
+	function esc(s) {
+		return String(s).replace(/[&<>"']/g, c => ({
+			"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+		}[c]));
+	}
+
+	function answered(id) {
+		return Array.isArray(session?.answers?.[id]) && session.answers[id].length > 0;
+	}
+
+	function accurate(id) {
+		const q = byId[id], v = session.answers[id] || [];
+		return v.length === q.correctAnswers.length && v.every(k => q.correctAnswers.includes(k));
+	}
+
+	function remember(id, ok) {
+		const x = saved.stats[id] || { attempts: 0, correct: 0, lastWrong: false };
+		x.attempts++;
+		if (ok) x.correct++;
+		x.lastWrong = !ok;
+		saved.stats[id] = x;
+	}
+
+	function getWeakCount() {
+		return Object.values(saved.stats).filter(s => s.lastWrong).length;
+	}
+
+	// --- Start session ---
+	function start(mode, domain, amount) {
+		let ids = [];
+		if (mode === "exam") {
+			for (const [d, n] of Object.entries(cfg.examBlueprint)) {
+				const pool = qs.filter(q => q.domain === d);
+				ids.push(...shuffle(pool).slice(0, n).map(q => q.id));
+			}
+			ids = shuffle(ids);
+		} else if (mode === "weak") {
+			const weak = qs.filter(q => saved.stats[q.id]?.lastWrong);
+			if (!weak.length) return;
+			ids = shuffle(weak).map(q => q.id);
+		} else {
+			let pool = [...qs];
+			if (domain && domain !== "all") {
+				pool = pool.filter(q => q.domain === domain);
+			}
+			const n = amount || pool.length;
+			ids = shuffle(pool).slice(0, n).map(q => q.id);
+		}
+		if (!ids.length) return;
+		session = {
+			mode, ids, currentIndex: 0, answers: {}, checked: {}, flags: [],
+			created: Date.now(),
+			deadline: mode === "exam" ? Date.now() + 120 * 60 * 1000 : null,
+			submitted: false
+		};
+		persist();
+		render();
+		window.scrollTo({ top: 0, behavior: "smooth" });
+	}
+
+	// --- Home view ---
+	function home() {
+		const values = Object.values(saved.stats);
+		const attempted = values.filter(s => s.attempts > 0).length;
+		const mastered = values.filter(s => s.attempts > 0 && !s.lastWrong).length;
+		const weak = getWeakCount();
+
+		const cards = Object.entries(cfg.domains).map(([d, domainConfig]) => {
+			const list = qs.filter(q => q.domain === d);
+			const done = list.filter(q => saved.stats[q.id]?.attempts);
+			return `<div class="panel domainRow"><span><strong>${d}</strong> ${esc(domainConfig.name)}<br><span class="muted">Exam weight ${domainConfig.weight}%</span></span><strong>${done.length}/${list.length}</strong></div>`;
+		}).join("");
+
+		app.innerHTML = `
+			<div class="hero">
+				<span class="eyebrow">${esc(cfg.subtitle)} · ${esc(cfg.title)}</span>
+				<h1>Know the platform.<br>Ship with confidence.</h1>
+				<p class="lead">${qs.length} source-linked practice questions across the ${Object.keys(cfg.domains).length} domains in Anthropic's public <strong>${esc(cfg.title)}</strong> exam guide. Learn by doing, then test your readiness.</p>
+				<div class="ctaRow">
+					${session && !session.submitted
+						? `<button class="primary" data-action="resume">Resume ${session.mode === "exam" ? "mock exam" : "practice"} · ${session.currentIndex + 1}/${session.ids.length}</button>`
+						: `<a class="primary" href="#session">Choose a session</a>`}
+					<a class="ghost ghostOnDark" href="#coverage">See your progress</a>
+				</div>
+				<div class="pills">
+					<span class="pill">${qs.length}-question bank</span>
+					<span class="pill">${cfg.totalQuestions}-question mock</span>
+					<span class="pill">120-minute exam timer</span>
+					<span class="pill">Offline & private</span>
+				</div>
+			</div>
+			<section class="section" id="session">
+				<div class="sectionHead"><h2>Choose your session</h2><span class="muted small">Save & resume automatically</span></div>
+				<div class="modes">
+					<button class="mode" data-action="start-practice">
+						<strong>Practice mode</strong>
+						<p>Instant feedback, explanations and links to primary documentation. Study by exam domain or focus on the new questions from a Skilljar module.</p>
+					</button>
+					<button class="mode" data-action="start-exam">
+						<strong>Mock exam</strong>
+						<p>${cfg.totalQuestions} questions proportioned to the official blueprint. 120 minutes. Answers revealed after submission.</p>
+					</button>
+					<button class="mode" data-action="start-weak" ${weak ? "" : "disabled"}>
+						<strong>Review mistakes</strong>
+						<p>${weak ? weak + " questions need another pass." : "Complete a session to unlock targeted revision."} Retest only your latest missed questions.</p>
+					</button>
+				</div>
+				<div class="config">
+					<label class="small" for="domain">Practice focus</label>
+					<select class="select" id="domain">
+						<option value="all">All domains</option>
+						<optgroup label="Exam domains">
+							${Object.entries(cfg.domains).map(([id, d]) => `<option value="${id}">${id} · ${esc(d.name)}</option>`).join("")}
+						</optgroup>
+					</select>
+					<label class="small" for="amount">Questions</label>
+					<select class="select" id="amount">
+						<option value="10">10</option>
+						<option value="20" selected>20</option>
+						<option value="50">50</option>
+ 					<option value="${qs.length}">All available</option>
+					</select>
+				</div>
+			</section>
+			<section class="section" id="coverage">
+				<div class="sectionHead"><h2>Learning telemetry</h2><button class="ghost small" data-action="reset-stats">Reset progress</button></div>
+				<div class="statGrid">
+					<div class="panel stat"><strong>${attempted}/${qs.length}</strong><span>Questions attempted</span></div>
+					<div class="panel stat"><strong>${mastered}</strong><span>Last attempt correct</span></div>
+					<div class="panel stat"><strong>${weak}</strong><span>Needs review</span></div>
+					<div class="panel stat"><strong>${Object.keys(cfg.domains).length}</strong><span>Exam domains</span></div>
+				</div>
+				<h3 style="margin-top:25px">Coverage by domain</h3>
+				<div class="domainGrid">${cards}</div>
+			</section>
+			<p class="alert section">Independent study material. Practice scores are not equivalent to official exam scores.</p>
+		`;
+	}
+
+	// --- Question view ---
+	function question() {
+		if (!session || session.submitted) return home();
+		if (session.mode === "exam" && session.deadline && session.deadline <= Date.now()) return finish(true);
+		if (session.currentIndex >= session.ids.length) return session.mode === "exam" ? examReview() : finish(false);
+
+		const id = session.ids[session.currentIndex];
+		const x = byId[id];
+		const v = session.answers[id] || [];
+		const checked = !!session.checked[id];
+		const isExam = session.mode === "exam";
+		const isLast = session.currentIndex === session.ids.length - 1;
+		const good = checked && accurate(id);
+		const progress = session.ids.filter(answered).length;
+
+		const opts = x.options.map((t, n) => {
+			let status = "";
+			if (checked) status = x.correctAnswers.includes(n) && v.includes(n) ? " good"
+				: x.correctAnswers.includes(n) ? " missing"
+				: v.includes(n) ? " bad" : "";
+			else if (v.includes(n)) status = " selected";
+			return `<button class="option${status}" data-action="pick" data-value="${n}" aria-pressed="${v.includes(n)}" ${checked ? "disabled" : ""}>
+				<span class="letter">${LETTERS[n]}</span><span>${esc(t)}</span>
+			</button>`;
+		}).join("");
+
+		const src = x.source;
+		let fb = "";
+		if (checked) fb = `<div class="feedback ${good ? "correct" : "wrong"}" role="status">
+			<strong>${good ? "Correct — well reasoned." : "Not quite — review the reasoning."}</strong>
+			<p>${esc(x.explanation)}</p>
+			<a href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">Study source: ${esc(src.label)} ↗</a>
+		</div>`;
+
+		const main = `<div class="qhead"><span>Question ${session.currentIndex + 1} of ${session.ids.length} · ${esc(session.mode.toUpperCase())}</span><span>${progress} answered</span></div>
+			<div class="progress" aria-label="Progress"><i style="width:${pct(session.currentIndex + 1, session.ids.length)}%"></i></div>
+			<div class="panel question" style="margin-top:16px">
+				<span class="badge">${x.domain} · ${esc(domains[x.domain].name)}</span>
+				<span class="muted small" style="margin-left:8px">${esc(x.topic)}</span>
+				<h2>${esc(x.question)}</h2>
+				<p class="hint">${x.correctAnswers.length === 1 ? "Select ONE answer." : `Select exactly ${x.correctAnswers.length} answers.`}${isExam ? " Your choices stay editable until you submit." : " Check your answer to see the explanation."}</p>
+				${opts}${fb}
+				<div class="actions">
+					${session.currentIndex > 0 ? `<button class="ghost" data-action="prev">← Previous</button>` : ""}
+					${isExam ? `<button class="ghost" data-action="flag">${session.flags.includes(id) ? "⚑ Flagged" : "⚐ Flag for review"}</button>
+						<button class="primary" data-action="next">${isLast ? "Go to review" : "Next →"}</button>`
+						: checked ? `<button class="primary" data-action="next">${isLast ? "Finish session" : "Next question →"}</button>`
+						: `<button class="primary" data-action="check" ${v.length === x.correctAnswers.length ? "" : "disabled"}>Check answer</button>`}
+				</div>
+			</div>`;
+
+		const grid = session.ids.map((qid, k) =>
+			`<button class="qchip${k === session.currentIndex ? " current" : ""}${answered(qid) ? " answered" : ""}${session.flags.includes(qid) ? " flagged" : ""}" data-action="jump" data-value="${k}" title="Question ${k + 1}">${k + 1}</button>`
+		).join("");
+
+		const side = `<aside class="panel side">
+			<h3>${isExam ? "Timed assessment" : "Study session"}</h3>
+			${isExam ? `<div id="clock" class="clock">${clockText()}</div><p class="small muted">Time remaining</p>`
+				: `<p class="small muted">Immediate rationale and primary-source references after each answer.</p>`}
+			<div class="small muted">${progress}/${session.ids.length} answered · ${session.flags.length} flagged</div>
+			<div class="qgrid">${grid}</div>
+			${isExam ? `<button class="ghost" data-action="finish">Submit mock exam</button>`
+				: `<button class="ghost" data-action="home">Pause & go home</button>`}
+		</aside>`;
+
+		app.innerHTML = `<div class="split"><div>${main}</div>${side}</div>`;
+	}
+
+	function clockText() {
+		if (!session?.deadline) return "";
+		const t = Math.max(0, Math.ceil((session.deadline - Date.now()) / 1000));
+		return `${String(Math.floor(t / 3600)).padStart(2, "0")}:${String(Math.floor(t % 3600 / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+	}
+
+	function tick() {
+		if (!session || session.submitted || session.mode !== "exam") return;
+		const e = document.getElementById("clock");
+		if (e) { e.textContent = clockText(); e.classList.toggle("warn", session.deadline - Date.now() < 600000); }
+		if (session.deadline && session.deadline <= Date.now()) finish(true);
+	}
+
+	function finish(timed = false) {
+		if (!session || session.submitted) return;
+		session.submitted = true;
+		session.timedOut = timed;
+		session.finished = Date.now();
+		for (const id of session.ids) if (answered(id) && !session.checked[id]) remember(id, accurate(id));
+		persist();
+		results();
+		window.scrollTo({ top: 0, behavior: "smooth" });
+	}
+
+	// --- Results view ---
+	function results() {
+		if (!session) return home();
+		const ids = session.ids;
+		const correct = ids.filter(id => answered(id) && accurate(id));
+		const score = pct(correct.length, ids.length);
+
+		const rows = Object.entries(cfg.domains).map(([d, domainConfig]) => {
+			const list = ids.filter(id => byId[id].domain === d);
+			if (!list.length) return "";
+			const ok = list.filter(id => correct.includes(id)).length;
+			return `<div class="panel domainRow"><span>${d} · ${esc(domainConfig.name)}</span><strong>${ok}/${list.length} (${pct(ok, list.length)}%)</strong></div>`;
+		}).join("");
+
+		const rev = ids.map((id, k) => {
+			const q = byId[id];
+			const v = session.answers[id] || [];
+			const ok = accurate(id) && answered(id);
+			return `<details class="panel review"><summary><span class="badge">${q.domain}</span> ${k + 1}. ${ok ? "✓" : "✕"} ${esc(q.question)}</summary>
+				<div class="small muted" style="margin:9px 0">Your selection: ${v.length ? v.map(n => LETTERS[n]).join(", ") : "Unanswered"} · Correct: ${q.correctAnswers.map(n => LETTERS[n]).join(", ")}</div>
+				${q.options.map((t, n) => `<div class="option${q.correctAnswers.includes(n) ? " good" : v.includes(n) ? " bad" : ""}"><span class="letter">${LETTERS[n]}</span><span>${esc(t)}</span></div>`).join("")}
+				<p>${esc(q.explanation)}</p>
+				<a href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">${esc(q.source.label)} ↗</a>
+			</details>`;
+		}).join("");
+
+		app.innerHTML = `
+			<div class="results">
+				<div class="panel padded">
+					<h2>${session.mode === "exam" ? "Mock exam results" : "Practice session results"}${session.timedOut ? " · time expired" : ""}</h2>
+					<div class="score" style="margin:12px 0">
+						<div class="ring" style="--score:${score}%">
+							<span>${score}%</span>
+						</div>
+						<div>
+							<h1 style="font-size:36px;margin:0 0 6px">${correct.length} / ${ids.length} correct</h1>
+							<p class="muted" style="margin:0">Unofficial practice score · not equivalent to the scaled passing score.</p>
+						</div>
+					</div>
+					<div class="actions">
+						<button class="primary" data-action="home">Back to dashboard</button>
+						<button class="ghost" data-action="start-weak">Retake missed questions</button>
+						<button class="ghost" data-action="start-exam">New mock exam</button>
+					</div>
+				</div>
+				<section class="section">
+					<h2>Performance by domain</h2>
+					<div class="domainGrid">${rows}</div>
+				</section>
+				<section class="section">
+					<h2>Review every answer</h2>
+					<p class="muted">Open an item to see the correct option, rationale and primary documentation.</p>
+					${rev}
+				</section>
+			</div>`;
+	}
+
+	// --- Exam review ---
+	function examReview() {
+		const un = session.ids.filter(id => !answered(id)).length;
+		app.innerHTML = `<div class="panel padded results">
+			<h1>Review your answer sheet.</h1>
+			<p class="lead">${session.ids.length - un} answered · ${un} unanswered · ${session.flags.length} flagged. Time remaining: ${clockText()}.</p>
+			<div class="actions">
+				<button class="ghost" data-action="back-to-exam">Review questions</button>
+				<button class="primary" data-action="finish">Submit and score</button>
+			</div>
+		</div>`;
+	}
+
+	// --- Render ---
+	function render() {
+		if (session && !session.submitted) question();
+		else if (session && session.submitted) results();
+		else home();
+		tick();
+	}
+
+	// --- Event handlers ---
+	document.addEventListener("click", event => {
+		const el = event.target.closest("[data-action]");
+		if (!el) return;
+		event.preventDefault();
+		const action = el.dataset.action;
+
+		if (action === "theme") {
+			const dark = document.documentElement.dataset.theme === "dark";
+			document.documentElement.dataset.theme = dark ? "light" : "dark";
+			return;
+		}
+		if (action === "home") {
+			if (session?.submitted) session = null;
+			persist();
+			return home();
+		}
+		if (action === "resume") return render();
+		if (action === "reset-stats") {
+			if (confirm("Reset all saved practice history?")) { saved.stats = {}; persist(); home(); }
+			return;
+		}
+		if (action === "start-practice") {
+			const d = document.getElementById("domain")?.value || "all";
+			const n = +document.getElementById("amount")?.value || 20;
+			return start("practice", d, n);
+		}
+		if (action === "start-exam") return start("exam");
+		if (action === "start-weak") return start("weak");
+		if (!session || session.submitted) return;
+
+		const id = session.ids[session.currentIndex];
+		const q = byId[id];
+		if (action === "pick") {
+			if (session.checked[id]) return;
+			const n = +el.dataset.value;
+			const vals = session.answers[id] || [];
+			session.answers[id] = q.correctAnswers.length === 1 ? [n]
+				: vals.includes(n) ? vals.filter(x => x !== n)
+				: vals.length >= q.correctAnswers.length ? vals
+				: [...vals, n];
+			persist();
+			return question();
+		}
+		if (action === "check") {
+			if ((session.answers[id] || []).length !== q.correctAnswers.length) return;
+			session.checked[id] = true;
+			remember(id, accurate(id));
+			persist();
+			return question();
+		}
+		if (action === "prev") { session.currentIndex = Math.max(0, session.currentIndex - 1); persist(); return question(); }
+		if (action === "next") {
+			session.currentIndex++;
+			persist();
+			if (session.currentIndex >= session.ids.length) {
+				if (session.mode === "exam") return examReview();
+				return finish();
+			}
+			return question();
+		}
+		if (action === "jump") {
+			// The guard applies to the destination question, not the one on screen.
+			const targetId = session.ids[+el.dataset.value];
+			if (session.mode !== "exam" && !session.checked[targetId]) return;
+			session.currentIndex = +el.dataset.value;
+			persist();
+			return question();
+		}
+		if (action === "flag") {
+			session.flags = session.flags.includes(id) ? session.flags.filter(x => x !== id) : [...session.flags, id];
+			persist();
+			return question();
+		}
+		if (action === "finish") {
+			if (confirm("Submit your mock exam and reveal the answers?")) finish(false);
+		}
+	});
+
+	// Back to exam handler
+	document.addEventListener("click", e => {
+		if (e.target.closest('[data-action="back-to-exam"]')) {
+			e.preventDefault();
+			session.currentIndex = 0;
+			persist();
+			question();
+		}
+	});
+
+	// Keyboard shortcuts
+	document.addEventListener("keydown", e => {
+		if (!session || session.submitted || e.altKey || e.metaKey || e.ctrlKey || /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName || "")) return;
+		if ("1234".includes(e.key) && e.key.length === 1) {
+			const b = app.querySelector(`[data-action="pick"][data-value="${+e.key - 1}"]`);
+			if (b && !b.disabled) b.click();
+		} else if (e.key === "Enter" && document.activeElement === document.body) {
+			const b = app.querySelector('[data-action="check"]:not(:disabled),[data-action="next"]');
+			if (b) b.click();
+		}
+	});
+
+	setInterval(tick, 1000);
+	render();
+})();
+</script>

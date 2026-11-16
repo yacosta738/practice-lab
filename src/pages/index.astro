@@ -1,11 +1,79 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import '../styles/quiz.css';
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Practice Lab" description="Prepare for certifications with interactive practice quizzes">
+	<main>
+		<header>
+			<a class="brand" href="/">
+				<div class="mark">P</div>
+				<span>
+					<strong>Practice Lab</strong>
+					<small>Certification Prep</small>
+				</span>
+			</a>
+			<button class="ghost" data-action="theme" aria-label="Toggle appearance">Theme</button>
+		</header>
+
+		<section class="hero">
+			<span class="eyebrow">Certification practice lab</span>
+			<h1>Practice with confidence.</h1>
+			<p class="lead">Interactive quizzes built for real exam readiness. Study by domain, take timed mock exams, and track your progress — all offline in your browser.</p>
+			<div class="ctaRow">
+				<a class="primary" href="/certifications/ccdv-f">Start practicing</a>
+				<a class="ghost ghostOnDark" href="#certifications">See the certification</a>
+			</div>
+			<div class="pills">
+				<span class="pill">Offline-first</span>
+				<span class="pill">Progress tracking</span>
+				<span class="pill">Timed mock exams</span>
+				<span class="pill">Domain-focused study</span>
+			</div>
+		</section>
+
+		<section class="section" id="certifications">
+			<div class="sectionHead">
+				<h2>Available certifications</h2>
+				<span class="muted small">1 available</span>
+			</div>
+			<a class="certCard" href="/certifications/ccdv-f">
+				<div>
+					<span class="num">CCDV-F</span>
+					<strong>Claude Developer Foundations</strong>
+					<p>122 questions across 8 domains. Timed mock exam with 53 questions. Built for the Anthropic CCDV-F certification.</p>
+					<span class="certCta">Open the practice lab →</span>
+				</div>
+				<dl class="certFacts">
+					<div>
+						<dt>Question bank</dt>
+						<dd>122</dd>
+					</div>
+					<div>
+						<dt>Exam domains</dt>
+						<dd>8</dd>
+					</div>
+					<div>
+						<dt>Mock exam</dt>
+						<dd>53 questions</dd>
+					</div>
+				</dl>
+			</a>
+		</section>
+
+		<footer>
+			Independent study material · Progress stays in your browser
+		</footer>
+	</main>
 </Layout>
+
+<script is:inline>
+	document.addEventListener("click", event => {
+		const el = event.target.closest("[data-action]");
+		if (!el) return;
+		if (el.dataset.action === "theme") {
+			const dark = document.documentElement.dataset.theme === "dark";
+			document.documentElement.dataset.theme = dark ? "light" : "dark";
+		}
+	});
+</script>
