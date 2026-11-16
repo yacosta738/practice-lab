@@ -1,46 +1,86 @@
-# Astro Starter Kit: Basics
+# Practice Lab
 
-```sh
-pnpm create astro@latest -- --template basics
+Plataforma de práctica interactiva para preparación de certificaciones. Estudia por dominio, realiza exámenes simulados con tiempo y sigue tu progreso — todo offline en tu navegador.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Certificaciones disponibles
+
+| Certificación | Descripción | Preguntas | Dominios |
+|---|---|---|---|
+| **CCDV-F** | Claude Developer Foundations (Anthropic) | 122 | 8 |
+
+## Características
+
+- **Modo práctica** — estudia pregunta por pregunta con explicaciones y fuentes.
+- **Modo examen** — simulacro cronometrado con 53 preguntas distribuidas por dominio.
+- **Modo debilidades** — enfócate en las preguntas que fallaste.
+- **Seguimiento de progreso** — estadísticas persistentes en `localStorage`.
+- **100% offline** — sin servidor, sin dependencias externas.
+
+## Stack
+
+- [Astro](https://astro.build) — framework estático.
+- TypeScript — tipado completo.
+- CSS nativo — sin preprocesadores ni frameworks de UI.
+- `localStorage` — persistencia de progreso y sesiones.
+
+## Estructura del proyecto
+
 ```
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
 /
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
+├── public/                  # Assets estáticos
+├── src/
+│   ├── certifications/      # Configuración y preguntas por certificación
+│   │   ├── ccdv-f/
+│   │   │   ├── config.ts    # Blueprint del examen, dominios, tema
+│   │   │   └── questions.ts # Banco de preguntas
+│   │   └── index.ts         # Registro de certificaciones
+│   ├── components/          # Componentes Astro
+│   ├── layouts/             # Layouts reutilizables
+│   ├── lib/                 # Motor de quizzes y tipos
+│   ├── pages/               # Rutas de la aplicación
+│   └── styles/              # Estilos globales
+├── astro.config.mjs
 └── package.json
 ```
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+## Agregar una nueva certificación
 
-## 🧞 Commands
+1. Crea un directorio en `src/certifications/<slug>/`.
+2. Agrega `config.ts` con el blueprint del examen y los dominios.
+3. Agrega `questions.ts` con el banco de preguntas.
+4. Registra la certificación en `src/certifications/index.ts`.
 
-All commands are run from the root of the project, from a terminal:
+Cada pregunta sigue esta estructura:
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+```ts
+{
+  id: "q001",
+  domain: "D1",
+  topic: "Topic name",
+  question: "¿Pregunta?",
+  options: ["Opción A", "Opción B", "Opción C", "Opción D"],
+  correctAnswers: [0],
+  explanation: "Explicación de la respuesta correcta.",
+  source: { label: "Fuente", url: "https://..." }
+}
+```
 
-## 👀 Want to learn more?
+## Comandos
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+| Comando | Acción |
+|---|---|
+| `pnpm install` | Instala dependencias |
+| `pnpm dev` | Inicia servidor de desarrollo en `localhost:4321` |
+| `pnpm build` | Genera build de producción en `./dist/` |
+| `pnpm preview` | Previsualiza el build localmente |
+
+## Requisitos
+
+- Node.js >= 22.23.4
+- pnpm
+
+## Licencia
+
+MIT

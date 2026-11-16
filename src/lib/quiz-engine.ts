@@ -1,12 +1,6 @@
 // Core quiz engine logic — mode-agnostic, certification-agnostic
 
-import type {
-	Question,
-	CertificationConfig,
-	QuizSession,
-	QuestionStats,
-	StorageData,
-} from "./quiz-types";
+import type { CertificationConfig, Question, QuestionStats, QuizSession } from "./quiz-types";
 
 // --- Utilities ---
 
@@ -33,7 +27,7 @@ export function createSession(
 		domain?: string; // for practice mode
 		amount?: number; // for practice mode
 		weakStats?: Record<string, QuestionStats>; // for weak mode
-	}
+	},
 ): QuizSession | null {
 	let pool: Question[];
 
@@ -42,14 +36,20 @@ export function createSession(
 		const ids: string[] = [];
 		for (const [domain, count] of Object.entries(config.examBlueprint)) {
 			const domainQuestions = questions.filter((q) => q.domain === domain);
-			ids.push(...shuffle(domainQuestions).slice(0, count).map((q) => q.id));
+			ids.push(
+				...shuffle(domainQuestions)
+					.slice(0, count)
+					.map((q) => q.id),
+			);
 		}
-		pool = shuffle(ids).map((id) => questions.find((q) => q.id === id)!);
+		const byId = new Map(questions.map((q) => [q.id, q]));
+		pool = shuffle(ids)
+			.map((id) => byId.get(id))
+			.filter((q): q is Question => q !== undefined);
 	} else if (mode === "weak") {
-		if (!options?.weakStats) return null;
-		pool = questions.filter(
-			(q) => options.weakStats[q.id]?.lastWrong === true
-		);
+		const weakStats = options?.weakStats;
+		if (!weakStats) return null;
+		pool = questions.filter((q) => weakStats[q.id]?.lastWrong === true);
 		if (!pool.length) return null;
 		pool = shuffle(pool);
 	} else {
@@ -79,10 +79,7 @@ export function createSession(
 
 // --- Answer Checking ---
 
-export function isAnswerCorrect(
-	question: Question,
-	selected: number[]
-): boolean {
+export function isAnswerCorrect(question: Question, selected: number[]): boolean {
 	return (
 		selected.length === question.correctAnswers.length &&
 		selected.every((k) => question.correctAnswers.includes(k))
@@ -90,10 +87,7 @@ export function isAnswerCorrect(
 }
 
 export function hasAnswered(session: QuizSession, questionId: string): boolean {
-	return (
-		Array.isArray(session.answers[questionId]) &&
-		session.answers[questionId].length > 0
-	);
+	return Array.isArray(session.answers[questionId]) && session.answers[questionId].length > 0;
 }
 
 // --- Stats Update ---
@@ -101,7 +95,7 @@ export function hasAnswered(session: QuizSession, questionId: string): boolean {
 export function updateStats(
 	stats: Record<string, QuestionStats>,
 	questionId: string,
-	correct: boolean
+	correct: boolean,
 ): Record<string, QuestionStats> {
 	const existing = stats[questionId] || {
 		attempts: 0,
@@ -133,11 +127,11 @@ export interface ResultsData {
 export function calculateResults(
 	session: QuizSession,
 	questions: Question[],
-	domains: Record<string, { name: string }>
+	domains: Record<string, { name: string }>,
 ): ResultsData {
 	const byId = Object.fromEntries(questions.map((q) => [q.id, q]));
 	const correctIds = session.ids.filter(
-		(id) => hasAnswered(session, id) && isAnswerCorrect(byId[id], session.answers[id] || [])
+		(id) => hasAnswered(session, id) && isAnswerCorrect(byId[id], session.answers[id] || []),
 	);
 	const correctCount = correctIds.length;
 	const totalCount = session.ids.length;
@@ -145,13 +139,9 @@ export function calculateResults(
 
 	const domainBreakdown: ResultsData["domainBreakdown"] = [];
 	for (const [domainId, domainInfo] of Object.entries(domains)) {
-		const domainQuestionIds = session.ids.filter(
-			(id) => byId[id]?.domain === domainId
-		);
+		const domainQuestionIds = session.ids.filter((id) => byId[id]?.domain === domainId);
 		if (!domainQuestionIds.length) continue;
-		const domainCorrect = domainQuestionIds.filter((id) =>
-			correctIds.includes(id)
-		).length;
+		const domainCorrect = domainQuestionIds.filter((id) => correctIds.includes(id)).length;
 		domainBreakdown.push({
 			domain: domainId,
 			domainName: domainInfo.name,
@@ -161,9 +151,7 @@ export function calculateResults(
 		});
 	}
 
-	const missedIds = session.ids.filter(
-		(id) => !correctIds.includes(id)
-	);
+	const missedIds = session.ids.filter((id) => !correctIds.includes(id));
 
 	return {
 		correctCount,
@@ -190,7 +178,7 @@ export interface HomeStats {
 export function calculateHomeStats(
 	stats: Record<string, QuestionStats>,
 	questions: Question[],
-	domains: Record<string, { name: string }>
+	domains: Record<string, { name: string }>,
 ): HomeStats {
 	const values = Object.values(stats);
 	const attempted = values.filter((s) => s.attempts > 0).length;
@@ -200,9 +188,7 @@ export function calculateHomeStats(
 	const domainCoverage: HomeStats["domainCoverage"] = [];
 	for (const [domainId] of Object.entries(domains)) {
 		const domainQuestions = questions.filter((q) => q.domain === domainId);
-		const done = domainQuestions.filter(
-			(q) => stats[q.id]?.attempts > 0
-		).length;
+		const done = domainQuestions.filter((q) => stats[q.id]?.attempts > 0).length;
 		domainCoverage.push({
 			domain: domainId,
 			done,
@@ -235,8 +221,6 @@ export function getStorageKey(slug: string): string {
 
 // --- Get weak question count ---
 
-export function getWeakCount(
-	stats: Record<string, QuestionStats>
-): number {
+export function getWeakCount(stats: Record<string, QuestionStats>): number {
 	return Object.values(stats).filter((s) => s.lastWrong).length;
 }

@@ -11,18 +11,9 @@ export function getStaticPaths() {
 	];
 }
 
-const slug = Astro.params.slug;
-
-// Load certification data based on slug
-let certConfig = config;
-let certQuestions = questions;
-
-// In the future, use a map or dynamic import for multiple certifications
-if (slug !== "ccdv-f") {
-	// Fallback — should not happen with getStaticPaths
-	certConfig = config;
-	certQuestions = questions;
-}
+// Currently only CCDV-F is supported via getStaticPaths.
+// For multiple certifications, use a map or dynamic import here.
+const certConfig = config;
 ---
 
 <QuizLayout

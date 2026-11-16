@@ -1,19 +1,20 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import '../styles/quiz.css';
+import Layout from "../layouts/Layout.astro";
+import { base } from "../lib/base";
+import "../styles/quiz.css";
 ---
 
 <Layout title="Practice Lab" description="Prepare for certifications with interactive practice quizzes">
 	<main>
 		<header>
-			<a class="brand" href="/">
+			<a class="brand" href={base}>
 				<div class="mark">P</div>
 				<span>
 					<strong>Practice Lab</strong>
 					<small>Certification Prep</small>
 				</span>
 			</a>
-			<button class="ghost" data-action="theme" aria-label="Toggle appearance">Theme</button>
+			<button class="ghost" data-action="theme" aria-label="Theme: toggle light and dark appearance">Theme</button>
 		</header>
 
 		<section class="hero">
@@ -21,7 +22,7 @@ import '../styles/quiz.css';
 			<h1>Practice with confidence.</h1>
 			<p class="lead">Interactive quizzes built for real exam readiness. Study by domain, take timed mock exams, and track your progress — all offline in your browser.</p>
 			<div class="ctaRow">
-				<a class="primary" href="/certifications/ccdv-f">Start practicing</a>
+				<a class="primary" href={`${base}certifications/ccdv-f`}>Start practicing</a>
 				<a class="ghost ghostOnDark" href="#certifications">See the certification</a>
 			</div>
 			<div class="pills">
@@ -37,7 +38,7 @@ import '../styles/quiz.css';
 				<h2>Available certifications</h2>
 				<span class="muted small">1 available</span>
 			</div>
-			<a class="certCard" href="/certifications/ccdv-f">
+			<a class="certCard" href={`${base}certifications/ccdv-f`}>
 				<div>
 					<span class="num">CCDV-F</span>
 					<strong>Claude Developer Foundations</strong>
