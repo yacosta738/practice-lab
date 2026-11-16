@@ -1,0 +1,77 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "dependencyDashboard": true,
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 3,
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "labels": [
+    "dependencies"
+  ],
+  "schedule": [
+    "at any time"
+  ],
+  "packageRules": [
+    {
+      "description": "Pin TypeScript to v6 only — never auto-upgrade to v7",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<7.0.0"
+    },
+    {
+      "description": "Group GitHub Actions digest updates together",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["digest"],
+      "groupName": "github-actions digests",
+      "groupSlug": "github-actions-digests"
+    },
+    {
+      "description": "Group GitHub Actions minor/patch updates together",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "github-actions minor/patch",
+      "groupSlug": "github-actions-minor-patch"
+    },
+    {
+      "description": "Group GitHub Actions major updates separately",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "github-actions major",
+      "groupSlug": "github-actions-major"
+    },
+    {
+      "description": "Group pnpm updates (runtime + action)",
+      "matchPackageNames": ["pnpm", "pnpm/action-setup"],
+      "groupName": "pnpm ecosystem",
+      "groupSlug": "pnpm-ecosystem"
+    },
+    {
+      "description": "Group test tooling together",
+      "matchPackageNames": [
+        "vitest",
+        "@vitest/**",
+        "@playwright/test",
+        "@axe-core/playwright"
+      ],
+      "groupName": "test tooling",
+      "groupSlug": "test-tooling"
+    },
+    {
+      "description": "Group linter and type-check tooling together",
+      "matchPackageNames": [
+        "@biomejs/biome",
+        "@astrojs/check"
+      ],
+      "groupName": "lint & type-check tooling",
+      "groupSlug": "lint-typecheck-tooling"
+    },
+    {
+      "description": "Major updates are non-urgent — warn only",
+      "matchUpdateTypes": ["major"],
+      "matchManagers": ["npm"],
+      "automerge": false
+    }
+  ]
+}
