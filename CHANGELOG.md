@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/yacosta738/practice-lab/compare/v0.1.2...v0.2.0) (2026-11-17)
+
+
+### Features
+
+* **study:** add certification study notes section ([#21](https://github.com/yacosta738/practice-lab/issues/21)) ([a8517fc](https://github.com/yacosta738/practice-lab/commit/a8517fc0f49f69c9bba400f770d3c753b28e48b9))
+
+
+### Bug Fixes
+
+* **ci:** handle push events correctly in CI workflow conditions ([06e21ee](https://github.com/yacosta738/practice-lab/commit/06e21eece9edb7967b6964139e18f7a4fe1a73f0))
+* fix CHANGELOG.md formatting for biome check ([4b8eb90](https://github.com/yacosta738/practice-lab/commit/4b8eb902d2eb08643b9b9f534a9030bacf4e621f))
+
 ## [0.1.2](https://github.com/yacosta738/practice-lab/compare/v0.1.1...v0.1.2) (2026-11-17)
 
 ### Bug Fixes
