@@ -1,58 +1,58 @@
 # Practice Lab
 
-Plataforma de práctica interactiva para preparación de certificaciones. Estudia por dominio, realiza exámenes simulados con tiempo y sigue tu progreso — todo offline en tu navegador.
+Interactive practice platform for certification preparation. Study by domain, take timed mock exams, and track your progress — all offline in your browser.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Certificaciones disponibles
+## Available Certifications
 
-| Certificación | Descripción | Preguntas | Dominios |
+| Certification | Description | Questions | Domains |
 |---|---|---|---|
 | **CCDV-F** | Claude Developer Foundations (Anthropic) | 122 | 8 |
 
-## Características
+## Features
 
-- **Modo práctica** — estudia pregunta por pregunta con explicaciones y fuentes.
-- **Modo examen** — simulacro cronometrado con 53 preguntas distribuidas por dominio.
-- **Modo debilidades** — enfócate en las preguntas que fallaste.
-- **Seguimiento de progreso** — estadísticas persistentes en `localStorage`.
-- **100% offline** — sin servidor, sin dependencias externas.
+- **Practice mode** — study question by question with explanations and sources.
+- **Exam mode** — timed mock exam with 53 questions distributed by domain.
+- **Weaknesses mode** — focus on the questions you got wrong.
+- **Progress tracking** — persistent statistics in `localStorage`.
+- **100% offline** — no server, no external dependencies.
 
 ## Stack
 
-- [Astro](https://astro.build) — framework estático.
-- TypeScript — tipado completo.
-- CSS nativo — sin preprocesadores ni frameworks de UI.
-- `localStorage` — persistencia de progreso y sesiones.
+- [Astro](https://astro.build) — static site framework.
+- TypeScript — full type safety.
+- Native CSS — no preprocessors or UI frameworks.
+- `localStorage` — progress and session persistence.
 
-## Estructura del proyecto
+## Project Structure
 
 ```
 /
-├── public/                  # Assets estáticos
+├── public/                  # Static assets
 ├── src/
-│   ├── certifications/      # Configuración y preguntas por certificación
+│   ├── certifications/      # Config and questions per certification
 │   │   ├── ccdv-f/
-│   │   │   ├── config.ts    # Blueprint del examen, dominios, tema
-│   │   │   └── questions.ts # Banco de preguntas
-│   │   └── index.ts         # Registro de certificaciones
-│   ├── components/          # Componentes Astro
-│   ├── layouts/             # Layouts reutilizables
-│   ├── lib/                 # Motor de quizzes y tipos
-│   ├── pages/               # Rutas de la aplicación
-│   └── styles/              # Estilos globales
+│   │   │   ├── config.ts    # Exam blueprint, domains, theme
+│   │   │   └── questions.ts # Question bank
+│   │   └── index.ts         # Certification registry
+│   ├── components/          # Astro components
+│   ├── layouts/             # Reusable layouts
+│   ├── lib/                 # Quiz engine and types
+│   ├── pages/               # Application routes
+│   └── styles/              # Global styles
 ├── astro.config.mjs
 └── package.json
 ```
 
-## Agregar una nueva certificación
+## Adding a New Certification
 
-1. Crea un directorio en `src/certifications/<slug>/`.
-2. Agrega `config.ts` con el blueprint del examen y los dominios.
-3. Agrega `questions.ts` con el banco de preguntas.
-4. Registra la certificación en `src/certifications/index.ts`.
+1. Create a directory at `src/certifications/<slug>/`.
+2. Add `config.ts` with the exam blueprint and domains.
+3. Add `questions.ts` with the question bank.
+4. Register the certification in `src/certifications/index.ts`.
 
-Cada pregunta sigue esta estructura:
+Each question follows this structure:
 
 ```ts
 {
@@ -60,27 +60,27 @@ Cada pregunta sigue esta estructura:
   domain: "D1",
   topic: "Topic name",
   question: "¿Pregunta?",
-  options: ["Opción A", "Opción B", "Opción C", "Opción D"],
+  options: ["Option A", "Option B", "Option C", "Option D"],
   correctAnswers: [0],
-  explanation: "Explicación de la respuesta correcta.",
-  source: { label: "Fuente", url: "https://..." }
+  explanation: "Explanation of the correct answer.",
+  source: { label: "Source", url: "https://..." }
 }
 ```
 
-## Comandos
+## Commands
 
-| Comando | Acción |
+| Command | Action |
 |---|---|
-| `pnpm install` | Instala dependencias |
-| `pnpm dev` | Inicia servidor de desarrollo en `localhost:4321` |
-| `pnpm build` | Genera build de producción en `./dist/` |
-| `pnpm preview` | Previsualiza el build localmente |
+| `pnpm install` | Install dependencies |
+| `pnpm dev` | Start dev server at `localhost:4321` |
+| `pnpm build` | Generate production build in `./dist/` |
+| `pnpm preview` | Preview the build locally |
 
-## Requisitos
+## Requirements
 
 - Node.js >= 22.23.4
 - pnpm
 
-## Licencia
+## License
 
 MIT
