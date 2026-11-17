@@ -23,6 +23,7 @@
 			"!**/playwright-report",
 			"!**/test-results",
 			"!**/.agents",
+			"!**/src/content/study",
 			"!pnpm-lock.yaml",
 			"!quiz-reference.html"
 		]

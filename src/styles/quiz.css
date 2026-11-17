@@ -1345,3 +1345,9 @@ footer {
 		transition: none !important;
 	}
 }
+
+.navActions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}

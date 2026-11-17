@@ -17,6 +17,7 @@ Interactive practice platform for certification preparation. Study by domain, ta
 - **Weaknesses mode** — focus on the questions you got wrong.
 - **Progress tracking** — persistent statistics in `localStorage`.
 - **100% offline** — no server, no external dependencies.
+- **Study library** — per-certification study notes rendered from Markdown, organised by exam domain with a table of contents and cross-links.
 
 ## Stack
 
@@ -52,6 +53,18 @@ Interactive practice platform for certification preparation. Study by domain, ta
 3. Add `questions.ts` with the question bank.
 4. Register the certification in `src/certifications/index.ts`.
 
+## Study Notes
+
+Study notes live in `src/content/study/<slug>/` as Markdown files. They are generated from an Obsidian vault by running:
+
+```
+pnpm sync:study
+```
+
+The default vault path is the Claude Certified Developer folder in iCloud and can be overridden with the `STUDY_SOURCE` environment variable. The script copies CCDV-F - Base de conocimiento, MSO Foundations, and the vault root notes, converts wikilinks to relative links, strips the leading H1, injects a title when missing, converts Obsidian callouts, and copies the exam guide PDF to `public/study/ccdv-f/`.
+
+The `src/content/study` directory is excluded from Biome formatting because it mirrors an external source. The study routes are `/study/`, `/study/<cert>/`, and `/study/<cert>/<slug>/`.
+
 Each question follows this structure:
 
 ```ts
@@ -69,12 +82,13 @@ Each question follows this structure:
 
 ## Commands
 
-| Command        | Action                                 |
-| -------------- | -------------------------------------- |
-| `pnpm install` | Install dependencies                   |
-| `pnpm dev`     | Start dev server at `localhost:4321`   |
-| `pnpm build`   | Generate production build in `./dist/` |
-| `pnpm preview` | Preview the build locally              |
+| Command           | Action                                   |
+| ----------------- | ---------------------------------------- |
+| `pnpm install`    | Install dependencies                     |
+| `pnpm dev`        | Start dev server at `localhost:4321`     |
+| `pnpm build`      | Generate production build in `./dist/`   |
+| `pnpm preview`    | Preview the build locally                |
+| `pnpm sync:study` | Sync study notes from the Obsidian vault |
 
 ## Requirements
 

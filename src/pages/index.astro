@@ -1,7 +1,22 @@
 ---
+import { getCollection } from "astro:content";
 import Layout from "../layouts/Layout.astro";
 import { base } from "../lib/base";
+import { groupNotes, toNoteMeta } from "../lib/study-groups";
+import { studyCerts } from "../study/registry";
 import "../styles/quiz.css";
+
+const studyEntries = await getCollection("study");
+const studyNotes = studyEntries.length;
+const studySections = studyCerts.reduce(
+	(total, cert) =>
+		total +
+		groupNotes(
+			studyEntries.filter((entry) => entry.id.startsWith(`${cert.slug}/`)).map(toNoteMeta),
+			cert.certification.domains,
+		).length,
+	0,
+);
 ---
 
 <Layout
@@ -37,6 +52,7 @@ import "../styles/quiz.css";
 			<div class="ctaRow">
 				<a class="primary" href={`${base}certifications/ccdv-f`}>Start practicing</a>
 				<a class="ghost ghostOnDark" href="#certifications">See the certification</a>
+				<a class="ghost ghostOnDark" href={`${base}study/`}>Study the notes</a>
 			</div>
 			<div class="pills">
 				<span class="pill">Offline-first</span>
@@ -73,6 +89,38 @@ import "../styles/quiz.css";
 					<div>
 						<dt>Mock exam</dt>
 						<dd>53 questions</dd>
+					</div>
+				</dl>
+			</a>
+		</section>
+
+		<section class="section" id="study">
+			<div class="sectionHead">
+				<h2>Study library</h2>
+				<span class="muted small">{studyNotes} notes</span>
+			</div>
+			<a class="certCard" href={`${base}study/`}>
+				<div>
+					<span class="num">Study</span>
+					<strong>Knowledge base by certification</strong>
+					<p>
+						Personal study notes with domain ordering, labs, sources and cross-links, built from
+						Markdown.
+					</p>
+					<span class="certCta">Open the study library →</span>
+				</div>
+				<dl class="certFacts">
+					<div>
+						<dt>Notes</dt>
+						<dd>{studyNotes}</dd>
+					</div>
+					<div>
+						<dt>Sections</dt>
+						<dd>{studySections}</dd>
+					</div>
+					<div>
+						<dt>Format</dt>
+						<dd>Markdown</dd>
 					</div>
 				</dl>
 			</a>

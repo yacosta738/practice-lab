@@ -1,0 +1,132 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { getCollection, render } from "astro:content";
+import StudyLayout from "../../../layouts/StudyLayout.astro";
+import { base } from "../../../lib/base";
+import {
+	groupNotes,
+	type StudyNoteMeta,
+	type StudySection,
+	toNoteMeta,
+} from "../../../lib/study-groups";
+import { type StudyCert, studyCerts } from "../../../study/registry";
+
+interface NotePageProps {
+	cert: StudyCert;
+	section: StudySection;
+	note: StudyNoteMeta;
+	entry: CollectionEntry<"study">;
+	prev: StudyNoteMeta | null;
+	next: StudyNoteMeta | null;
+}
+
+export async function getStaticPaths() {
+	const allEntries = await getCollection("study");
+	const entryMap = new Map<string, CollectionEntry<"study">>();
+	for (const entry of allEntries) {
+		entryMap.set(entry.id, entry);
+	}
+
+	const paths: Array<{
+		params: { cert: string; slug: string };
+		props: NotePageProps;
+	}> = [];
+
+	for (const cert of studyCerts) {
+		const notes = allEntries
+			.filter((entry) => entry.id.startsWith(`${cert.slug}/`))
+			.map(toNoteMeta);
+		const sections = groupNotes(notes, cert.certification.domains);
+
+		for (const section of sections) {
+			const sortedNotes = section.notes;
+			for (let i = 0; i < sortedNotes.length; i++) {
+				const note = sortedNotes[i];
+				const entry = entryMap.get(note.id);
+				if (!entry) {
+					throw new Error(`Missing entry for note id "${note.id}" in cert "${cert.slug}"`);
+				}
+				const prev = i > 0 ? sortedNotes[i - 1] : null;
+				const next = i < sortedNotes.length - 1 ? sortedNotes[i + 1] : null;
+				paths.push({
+					params: { cert: cert.slug, slug: note.slug },
+					props: { cert, section, note, entry, prev, next },
+				});
+			}
+		}
+	}
+
+	return paths;
+}
+
+const { cert, section, note, entry, prev, next }: NotePageProps = Astro.props;
+
+const { Content, headings } = await render(entry);
+
+const toc = headings.filter((heading) => heading.depth === 2);
+
+const description = note.kind
+	? `${note.kind} note on ${note.title} for ${cert.title}.`
+	: `Study note: ${note.title} for ${cert.title}.`;
+---
+
+<StudyLayout title={note.title} description={description}>
+	<nav class="breadcrumb" aria-label="Breadcrumb">
+		<a href={base}>Home</a>
+		<span>/</span>
+		<a href={`${base}study/`}>Study</a>
+		<span>/</span>
+		<a href={`${base}study/${cert.slug}/`}>{cert.title}</a>
+		<span>/</span>
+		<a href={`${base}study/${cert.slug}/#${section.id}`}>{section.title}</a>
+		<span>/</span>
+		<span aria-current="page">{note.title}</span>
+	</nav>
+
+	<div class="studyNotePage">
+		<article class="studyProse">
+			<h1>{note.title}</h1>
+			<div class="studyMeta">
+				{note.kind && <span class="kindBadge">{note.kind}</span>}
+				{section.domain && section.weight !== undefined && (
+					<span class="weightBadge">
+						{section.domain} · {section.weight}%
+					</span>
+				)}
+				<span>Section: {section.title}</span>
+				{note.updated && <span>Updated {note.updated}</span>}
+			</div>
+			<Content />
+		</article>
+
+		{toc.length >= 2 && (
+			<aside class="studyToc" aria-labelledby="toc-title">
+				<h2 id="toc-title">On this page</h2>
+				<ul>
+					{toc.map((heading) => (
+						<li>
+							<a href={`#${heading.slug}`}>{heading.text}</a>
+						</li>
+					))}
+				</ul>
+			</aside>
+		)}
+	</div>
+
+	{(prev || next) && (
+		<nav class="studyPager" aria-label="More notes in this section">
+			{prev && (
+				<a href={`${base}study/${cert.slug}/${prev.slug}/`} rel="prev">
+					<span>Previous</span>
+					{prev.title}
+				</a>
+			)}
+			{next && (
+				<a href={`${base}study/${cert.slug}/${next.slug}/`} rel="next">
+					<span>Next</span>
+					{next.title}
+				</a>
+			)}
+		</nav>
+	)}
+</StudyLayout>

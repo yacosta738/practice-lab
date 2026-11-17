@@ -1,0 +1,56 @@
+---
+import { getCollection } from "astro:content";
+import StudyLayout from "../../layouts/StudyLayout.astro";
+import { base } from "../../lib/base";
+import { groupNotes, toNoteMeta } from "../../lib/study-groups";
+import { studyCerts } from "../../study/registry";
+
+const allNotes = await getCollection("study");
+
+const certData = studyCerts.map((cert) => {
+	const notes = allNotes.filter((entry) => entry.id.startsWith(`${cert.slug}/`)).map(toNoteMeta);
+	const sections = groupNotes(notes, cert.certification.domains);
+	return {
+		...cert,
+		notesCount: notes.length,
+		sectionsCount: sections.length,
+	};
+});
+---
+
+<StudyLayout
+	title="Study Library"
+	description="Personal study notes organised by certification and exam domain"
+>
+	<section class="section studyIntro">
+		<span class="eyebrow">Study library</span>
+		<h1>Study notes, organised by certification.</h1>
+		<p class="lead">
+			These are personal study material recovered from a knowledge base, grouped by exam domain. If
+			you want to test your knowledge, the practice quizzes live next door.
+		</p>
+	</section>
+
+	<div class="studyGrid">
+		{certData.map((cert) => (
+			<a class="certCard" href={`${base}study/${cert.slug}/`}>
+				<div>
+					<span class="num">{cert.subtitle}</span>
+					<strong>{cert.title}</strong>
+					<p>{cert.description}</p>
+					<span class="certCta">Open the study library →</span>
+				</div>
+				<dl class="certFacts">
+					<div>
+						<dt>Notes</dt>
+						<dd>{cert.notesCount}</dd>
+					</div>
+					<div>
+						<dt>Sections</dt>
+						<dd>{cert.sectionsCount}</dd>
+					</div>
+				</dl>
+			</a>
+		))}
+	</div>
+</StudyLayout>
