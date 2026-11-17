@@ -19,6 +19,7 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   NODE_VERSION: "22"
+  PNPM_CONFIG_MINIMUM_RELEASE_AGE: "0"
 
 permissions:
   contents: read
