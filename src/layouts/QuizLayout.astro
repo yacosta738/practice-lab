@@ -23,12 +23,12 @@ const { title, subtitle, description, theme } = Astro.props;
 
 <Layout title={`${title} · Practice Lab`} description={description}>
 	<script define:vars={{ theme }} is:inline>
-		(function() {
-			const root = document.documentElement;
-			root.style.setProperty('--brand', theme.brand);
-			root.style.setProperty('--brand2', theme.brand2);
-			root.style.setProperty('--brandSoft', theme.brandSoft);
-		})();
+	(function () {
+		const root = document.documentElement;
+		root.style.setProperty("--brand", theme.brand);
+		root.style.setProperty("--brand2", theme.brand2);
+		root.style.setProperty("--brandSoft", theme.brandSoft);
+	})();
 	</script>
 
 	<main>
@@ -40,11 +40,16 @@ const { title, subtitle, description, theme } = Astro.props;
 					<small>{subtitle}</small>
 				</span>
 			</a>
-			<button class="ghost" data-action="theme" aria-label="Theme: toggle light and dark appearance">Theme</button>
+			<button
+				type="button"
+				class="ghost"
+				data-action="theme"
+				aria-label="Theme: toggle light and dark appearance"
+			>
+				Theme
+			</button>
 		</header>
 		<div id="app" aria-live="polite"></div>
-		<footer>
-			Independent study material · Progress stays in your browser
-		</footer>
+		<footer>Independent study material · Progress stays in your browser</footer>
 	</main>
 </Layout>

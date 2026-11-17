@@ -1,0 +1,20 @@
+# lefthook configuration
+# https://evilmartians.github.io/lefthook/
+
+pre-commit:
+  parallel: true
+  commands:
+    biome-format:
+      glob: "*.{astro,css,cjs,html,js,json,jsonc,mjs,scss,ts,tsx,jsx}"
+      run: pnpm exec biome format --write {staged_files}
+      stage_fixed: true
+
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm exec commitlint --edit {1}
+
+post-commit:
+  commands:
+    notify_user:
+      run: echo "✅ Commit successful! Don't forget to push your changes."
