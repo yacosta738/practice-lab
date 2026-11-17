@@ -7,6 +7,8 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Skip CI for Release Please PRs to avoid infinite loops with status checks.
+# Release Please pushes changelog/version updates, triggering CI repeatedly.
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   NODE_VERSION: "22"
@@ -26,6 +28,7 @@ defaults:
 jobs:
   lint:
     name: 🔍 Lint
+    if: ${{ github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release-please--') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -49,6 +52,7 @@ jobs:
 
   typecheck:
     name: 🔧 Type Check
+    if: ${{ github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release-please--') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -72,6 +76,7 @@ jobs:
 
   test:
     name: 🧪 Unit Tests
+    if: ${{ github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release-please--') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -95,6 +100,7 @@ jobs:
 
   build:
     name: 🏗️ Build
+    if: ${{ github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release-please--') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -125,6 +131,7 @@ jobs:
 
   a11y:
     name: ♿ Accessibility
+    if: ${{ github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release-please--') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
