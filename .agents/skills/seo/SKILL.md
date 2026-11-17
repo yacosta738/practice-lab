@@ -1,12 +1,13 @@
 ---
+
 name: seo
 description: >-
-  Optimize for search engine visibility and ranking. Use when the task involves `improve
+Optimize for search engine visibility and ranking. Use when the task involves `improve
   SEO`, `optimize for search`, `fix meta tags`, `add structured data`, `sitemap
   optimization`, or `search engine optimization`.
 license: MIT
 metadata:
-  version: "1.0.0"
+version: "1.0.0"
 ---
 
 # SEO optimization
@@ -19,12 +20,12 @@ technical SEO, on-page optimization, and structured data.
 Search ranking factors (approximate influence):
 
 | Factor                            | Influence | This Skill                                         |
-|-----------------------------------|-----------|----------------------------------------------------|
+| --------------------------------- | --------- | -------------------------------------------------- |
 | Content quality & relevance       | ~40%      | Partial (structure)                                |
-| Backlinks & authority             | ~25%      | ✗                                                 |
-| Technical SEO                     | ~15%      | ✓                                                 |
+| Backlinks & authority             | ~25%      | ✗                                                  |
+| Technical SEO                     | ~15%      | ✓                                                  |
 | Page experience (Core Web Vitals) | ~10%      | See [Core Web Vitals](../core-web-vitals/SKILL.md) |
-| On-page SEO                       | ~10%      | ✓                                                 |
+| On-page SEO                       | ~10%      | ✓                                                  |
 
 ---
 

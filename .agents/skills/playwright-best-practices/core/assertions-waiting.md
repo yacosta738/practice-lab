@@ -120,14 +120,14 @@ Continue test execution after failure, report all failures at end.
 
 ```typescript
 test("check multiple elements", async ({ page }) => {
-  await page.goto("/dashboard");
+	await page.goto("/dashboard");
 
-  // Won't stop on first failure
-  await expect.soft(page.getByRole("heading")).toHaveText("Dashboard");
-  await expect.soft(page.getByRole("button", { name: "Save" })).toBeEnabled();
-  await expect.soft(page.getByText("Welcome")).toBeVisible();
+	// Won't stop on first failure
+	await expect.soft(page.getByRole("heading")).toHaveText("Dashboard");
+	await expect.soft(page.getByRole("button", { name: "Save" })).toBeEnabled();
+	await expect.soft(page.getByText("Welcome")).toBeVisible();
 
-  // Test continues; all failures reported at end
+	// Test continues; all failures reported at end
 });
 ```
 
@@ -135,15 +135,15 @@ test("check multiple elements", async ({ page }) => {
 
 ```typescript
 test("check form", async ({ page }) => {
-  await expect.soft(page.getByRole("form")).toBeVisible();
+	await expect.soft(page.getByRole("form")).toBeVisible();
 
-  // Exit early if form not visible (pointless to check fields)
-  if (test.info().errors.length > 0) {
-    return;
-  }
+	// Exit early if form not visible (pointless to check fields)
+	if (test.info().errors.length > 0) {
+		return;
+	}
 
-  await expect.soft(page.getByLabel("Name")).toBeVisible();
-  await expect.soft(page.getByLabel("Email")).toBeVisible();
+	await expect.soft(page.getByLabel("Name")).toBeVisible();
+	await expect.soft(page.getByLabel("Email")).toBeVisible();
 });
 ```
 
@@ -174,10 +174,7 @@ await page.waitForURL("/dashboard");
 await page.waitForURL(/\/dashboard/);
 
 // Wait for navigation after action
-await Promise.all([
-  page.waitForURL("**/dashboard"),
-  page.click('a[href="/dashboard"]'),
-]);
+await Promise.all([page.waitForURL("**/dashboard"), page.click('a[href="/dashboard"]')]);
 
 // Or without Promise.all
 const urlPromise = page.waitForURL("**/dashboard");
@@ -224,13 +221,13 @@ await page.getByTestId("modal").waitFor({ state: "detached" });
 ```typescript
 // Wait for arbitrary condition
 await page.waitForFunction(() => {
-  return document.querySelector(".loaded") !== null;
+	return document.querySelector(".loaded") !== null;
 });
 
 // With arguments
 await page.waitForFunction(
-  (selector) => document.querySelector(selector)?.textContent === "Ready",
-  ".status",
+	(selector) => document.querySelector(selector)?.textContent === "Ready",
+	".status",
 );
 ```
 
@@ -242,14 +239,14 @@ Retry until block passes or times out:
 
 ```typescript
 await expect(async () => {
-  const response = await page.request.get("/api/status");
-  expect(response.status()).toBe(200);
+	const response = await page.request.get("/api/status");
+	expect(response.status()).toBe(200);
 
-  const data = await response.json();
-  expect(data.ready).toBe(true);
+	const data = await response.json();
+	expect(data.ready).toBe(true);
 }).toPass({
-  intervals: [1000, 2000, 5000], // Retry intervals
-  timeout: 30000,
+	intervals: [1000, 2000, 5000], // Retry intervals
+	timeout: 30000,
 });
 ```
 
@@ -260,17 +257,17 @@ Poll a function until assertion passes:
 ```typescript
 // Poll API until condition met
 await expect
-  .poll(
-    async () => {
-      const response = await page.request.get("/api/job/123");
-      return (await response.json()).status;
-    },
-    {
-      intervals: [1000, 2000, 5000],
-      timeout: 30000,
-    },
-  )
-  .toBe("completed");
+	.poll(
+		async () => {
+			const response = await page.request.get("/api/job/123");
+			return (await response.json()).status;
+		},
+		{
+			intervals: [1000, 2000, 5000],
+			timeout: 30000,
+		},
+	)
+	.toBe("completed");
 
 // Poll DOM value
 await expect.poll(() => page.getByTestId("counter").textContent()).toBe("10");
@@ -283,30 +280,30 @@ await expect.poll(() => page.getByTestId("counter").textContent()).toBe("10");
 import { expect } from "@playwright/test";
 
 expect.extend({
-  async toHaveDataLoaded(page: Page) {
-    const locator = page.getByTestId("data-container");
-    let pass = false;
-    let message = "";
+	async toHaveDataLoaded(page: Page) {
+		const locator = page.getByTestId("data-container");
+		let pass = false;
+		let message = "";
 
-    try {
-      await expect(locator).toBeVisible();
-      await expect(locator).not.toContainText("Loading");
-      pass = true;
-    } catch (e) {
-      message = `Expected data to be loaded but found loading state`;
-    }
+		try {
+			await expect(locator).toBeVisible();
+			await expect(locator).not.toContainText("Loading");
+			pass = true;
+		} catch (e) {
+			message = `Expected data to be loaded but found loading state`;
+		}
 
-    return { pass, message: () => message };
-  },
+		return { pass, message: () => message };
+	},
 });
 
 // Extend TypeScript types
 declare global {
-  namespace PlaywrightTest {
-    interface Matchers<R> {
-      toHaveDataLoaded(): Promise<R>;
-    }
-  }
+	namespace PlaywrightTest {
+		interface Matchers<R> {
+			toHaveDataLoaded(): Promise<R>;
+		}
+	}
 }
 
 // Usage
@@ -320,16 +317,16 @@ await expect(page).toHaveDataLoaded();
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  timeout: 30000, // Test timeout
-  expect: {
-    timeout: 5000, // Assertion timeout
-  },
+	timeout: 30000, // Test timeout
+	expect: {
+		timeout: 5000, // Assertion timeout
+	},
 });
 
 // Per-test timeout
 test("long test", async ({ page }) => {
-  test.setTimeout(60000);
-  // ...
+	test.setTimeout(60000);
+	// ...
 });
 
 // Per-assertion timeout
@@ -339,7 +336,7 @@ await expect(page.getByRole("button")).toBeVisible({ timeout: 10000 });
 ## Best Practices
 
 | Do                             | Don't                          |
-|--------------------------------|--------------------------------|
+| ------------------------------ | ------------------------------ |
 | Use web-first assertions       | Use generic assertions for DOM |
 | Let auto-waiting work          | Add unnecessary explicit waits |
 | Use `toPass()` for polling     | Write manual retry loops       |
@@ -349,7 +346,7 @@ await expect(page.getByRole("button")).toBeVisible({ timeout: 10000 });
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern                                              | Problem                       | Solution                                     |
-|-----------------------------------------------------------|-------------------------------|----------------------------------------------|
+| --------------------------------------------------------- | ----------------------------- | -------------------------------------------- |
 | `await page.waitForTimeout(5000)`                         | Slow, flaky, arbitrary timing | Use auto-waiting or `waitForResponse`        |
 | `await new Promise(resolve => setTimeout(resolve, 1000))` | Same as above                 | Use `waitForResponse` or element state waits |
 | Generic assertions on DOM elements                        | No auto-retry, flaky          | Use web-first assertions with `expect()`     |

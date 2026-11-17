@@ -1,4 +1,5 @@
 ---
+
 name: vitest-cli
 description: Command line interface commands and options
 ---
@@ -144,12 +145,12 @@ vitest --list-tags=json        # JSON output
 
 ```json
 {
-  "scripts": {
-    "test": "vitest",
-    "test:run": "vitest run",
-    "test:ui": "vitest --ui",
-    "coverage": "vitest run --coverage"
-  }
+	"scripts": {
+		"test": "vitest",
+		"test:run": "vitest run",
+		"test:ui": "vitest --ui",
+		"coverage": "vitest run --coverage"
+	}
 }
 ```
 

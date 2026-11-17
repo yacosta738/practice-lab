@@ -1,14 +1,12 @@
 ---
 // Dynamic certification page — loads config and questions server-side
 
-import QuizLayout from "../../layouts/QuizLayout.astro";
 import { config } from "../../certifications/ccdv-f/config";
 import { questions } from "../../certifications/ccdv-f/questions";
+import QuizLayout from "../../layouts/QuizLayout.astro";
 
 export function getStaticPaths() {
-	return [
-		{ params: { slug: "ccdv-f" } }
-	];
+	return [{ params: { slug: "ccdv-f" } }];
 }
 
 // Currently only CCDV-F is supported via getStaticPaths.

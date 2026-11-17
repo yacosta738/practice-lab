@@ -9,10 +9,10 @@
   `AGENTS.md`.
 
 - Skills: `.agents/skills/` is the canonical skills directory.
-    - `.claude/skills` reflects `.agents/skills/` directly because this target uses `symlink`.
-    - `.codex/skills` reflects `.agents/skills/` directly because this target uses `symlink`.
-    - `.gemini/skills` reflects `.agents/skills/` directly because this target uses `symlink`.
-    - `.opencode/skills` reflects `.agents/skills/` directly because this target uses `symlink`.
+  - `.claude/skills` reflects `.agents/skills/` directly because this target uses `symlink`.
+  - `.codex/skills` reflects `.agents/skills/` directly because this target uses `symlink`.
+  - `.gemini/skills` reflects `.agents/skills/` directly because this target uses `symlink`.
+  - `.opencode/skills` reflects `.agents/skills/` directly because this target uses `symlink`.
 
 - Commands: `.agents/commands/` is the canonical commands directory, `agentsync apply` populates
   command entries into `.claude/commands`, `.gemini/commands`, `.opencode/command`,

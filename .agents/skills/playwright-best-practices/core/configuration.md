@@ -31,7 +31,7 @@ DEBUG=pw:api npx playwright test              # verbose logging
 ### Timeout Selection
 
 | Symptom                                   | Setting             | Default                                | Recommended       |
-|-------------------------------------------|---------------------|----------------------------------------|-------------------|
+| ----------------------------------------- | ------------------- | -------------------------------------- | ----------------- |
 | Test takes too long overall               | `timeout`           | 30s                                    | 30-60s (max 120s) |
 | Assertion retries too long/short          | `expect.timeout`    | 5s                                     | 5-10s             |
 | `page.goto()` or `waitForURL()` times out | `navigationTimeout` | 0 (unlimited, bounded by test timeout) | 10-30s            |
@@ -41,7 +41,7 @@ DEBUG=pw:api npx playwright test              # verbose logging
 ### Server Management
 
 | Scenario                     | Approach                                                |
-|------------------------------|---------------------------------------------------------|
+| ---------------------------- | ------------------------------------------------------- |
 | App in same repo             | `webServer` with `reuseExistingServer: !process.env.CI` |
 | Separate repos               | Manual start or Docker Compose                          |
 | Testing deployed environment | No `webServer`; set `baseURL` via env                   |
@@ -50,7 +50,7 @@ DEBUG=pw:api npx playwright test              # verbose logging
 ### Single vs Multi-Project
 
 | Scenario               | Approach                                   |
-|------------------------|--------------------------------------------|
+| ---------------------- | ------------------------------------------ |
 | Early development      | Single project (chromium only)             |
 | Pre-release validation | Multi-project: chromium + firefox + webkit |
 | Mobile-responsive app  | Add mobile projects alongside desktop      |
@@ -60,7 +60,7 @@ DEBUG=pw:api npx playwright test              # verbose logging
 ### globalSetup vs Setup Projects vs Fixtures
 
 | Need                    | Use                                |
-|-------------------------|------------------------------------|
+| ----------------------- | ---------------------------------- |
 | One-time DB seed        | `globalSetup`                      |
 | Shared browser auth     | Setup project with `dependencies`  |
 | Per-test isolated state | Custom fixture via `test.extend()` |
@@ -70,55 +70,55 @@ DEBUG=pw:api npx playwright test              # verbose logging
 
 ```ts
 // playwright.config.ts
-import { defineConfig, devices } from '@playwright/test';
-import dotenv from 'dotenv';
-import path from 'path';
+import { defineConfig, devices } from "@playwright/test";
+import dotenv from "dotenv";
+import path from "path";
 
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 export default defineConfig({
-  testDir: './e2e',
-  testMatch: '**/*.spec.ts',
+	testDir: "./e2e",
+	testMatch: "**/*.spec.ts",
 
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? '50%' : undefined,
+	fullyParallel: true,
+	forbidOnly: !!process.env.CI,
+	retries: process.env.CI ? 2 : 0,
+	workers: process.env.CI ? "50%" : undefined,
 
-  reporter: process.env.CI
-    ? [['html', { open: 'never' }], ['github']]
-    : [['html', { open: 'on-failure' }]],
+	reporter: process.env.CI
+		? [["html", { open: "never" }], ["github"]]
+		: [["html", { open: "on-failure" }]],
 
-  timeout: 30_000,
-  expect: { timeout: 5_000 },
+	timeout: 30_000,
+	expect: { timeout: 5_000 },
 
-  use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:4000',
-    actionTimeout: 10_000,
-    navigationTimeout: 15_000,
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
-    locale: 'en-US',
-    timezoneId: 'America/Los_Angeles',
-  },
+	use: {
+		baseURL: process.env.BASE_URL || "http://localhost:4000",
+		actionTimeout: 10_000,
+		navigationTimeout: 15_000,
+		trace: "on-first-retry",
+		screenshot: "only-on-failure",
+		video: "retain-on-failure",
+		locale: "en-US",
+		timezoneId: "America/Los_Angeles",
+	},
 
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
-    { name: 'mobile-chrome', use: { ...devices['Pixel 7'] } },
-    { name: 'mobile-safari', use: { ...devices['iPhone 14'] } },
-  ],
+	projects: [
+		{ name: "chromium", use: { ...devices["Desktop Chrome"] } },
+		{ name: "firefox", use: { ...devices["Desktop Firefox"] } },
+		{ name: "webkit", use: { ...devices["Desktop Safari"] } },
+		{ name: "mobile-chrome", use: { ...devices["Pixel 7"] } },
+		{ name: "mobile-safari", use: { ...devices["iPhone 14"] } },
+	],
 
-  webServer: {
-    command: 'npm run start',
-    url: 'http://localhost:4000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-    stdout: 'pipe',
-    stderr: 'pipe',
-  },
+	webServer: {
+		command: "npm run start",
+		url: "http://localhost:4000",
+		reuseExistingServer: !process.env.CI,
+		timeout: 120_000,
+		stdout: "pipe",
+		stderr: "pipe",
+	},
 });
 ```
 
@@ -130,23 +130,23 @@ export default defineConfig({
 
 ```ts
 // playwright.config.ts
-import { defineConfig } from '@playwright/test';
-import dotenv from 'dotenv';
-import path from 'path';
+import { defineConfig } from "@playwright/test";
+import dotenv from "dotenv";
+import path from "path";
 
-const ENV = process.env.TEST_ENV || 'local';
+const ENV = process.env.TEST_ENV || "local";
 dotenv.config({ path: path.resolve(__dirname, `.env.${ENV}`) });
 
 const envConfig: Record<string, { baseURL: string; retries: number }> = {
-  local:   { baseURL: 'http://localhost:4000',      retries: 0 },
-  staging: { baseURL: 'https://staging.myapp.com',  retries: 2 },
-  prod:    { baseURL: 'https://myapp.com',          retries: 2 },
+	local: { baseURL: "http://localhost:4000", retries: 0 },
+	staging: { baseURL: "https://staging.myapp.com", retries: 2 },
+	prod: { baseURL: "https://myapp.com", retries: 2 },
 };
 
 export default defineConfig({
-  testDir: './e2e',
-  retries: envConfig[ENV].retries,
-  use: { baseURL: envConfig[ENV].baseURL },
+	testDir: "./e2e",
+	retries: envConfig[ENV].retries,
+	use: { baseURL: envConfig[ENV].baseURL },
 });
 ```
 
@@ -161,48 +161,48 @@ TEST_ENV=prod npx playwright test --grep @smoke
 
 ```ts
 // playwright.config.ts
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
-  testDir: './e2e',
-  projects: [
-    {
-      name: 'setup',
-      testMatch: /auth\.setup\.ts/,
-    },
-    {
-      name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: 'playwright/.auth/session.json',
-      },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-        storageState: 'playwright/.auth/session.json',
-      },
-      dependencies: ['setup'],
-    },
-  ],
+	testDir: "./e2e",
+	projects: [
+		{
+			name: "setup",
+			testMatch: /auth\.setup\.ts/,
+		},
+		{
+			name: "chromium",
+			use: {
+				...devices["Desktop Chrome"],
+				storageState: "playwright/.auth/session.json",
+			},
+			dependencies: ["setup"],
+		},
+		{
+			name: "firefox",
+			use: {
+				...devices["Desktop Firefox"],
+				storageState: "playwright/.auth/session.json",
+			},
+			dependencies: ["setup"],
+		},
+	],
 });
 ```
 
 ```ts
 // e2e/auth.setup.ts
-import { test as setup, expect } from '@playwright/test';
+import { test as setup, expect } from "@playwright/test";
 
-const authFile = 'playwright/.auth/session.json';
+const authFile = "playwright/.auth/session.json";
 
-setup('authenticate', async ({ page }) => {
-  await page.goto('/login');
-  await page.getByLabel('Username').fill('testuser@example.com');
-  await page.getByLabel('Password').fill(process.env.TEST_PASSWORD!);
-  await page.getByRole('button', { name: 'Log in' }).click();
-  await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
-  await page.context().storageState({ path: authFile });
+setup("authenticate", async ({ page }) => {
+	await page.goto("/login");
+	await page.getByLabel("Username").fill("testuser@example.com");
+	await page.getByLabel("Password").fill(process.env.TEST_PASSWORD!);
+	await page.getByRole("button", { name: "Log in" }).click();
+	await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
+	await page.context().storageState({ path: authFile });
 });
 ```
 
@@ -212,23 +212,21 @@ setup('authenticate', async ({ page }) => {
 
 ```ts
 // playwright.config.ts
-import { defineConfig } from '@playwright/test';
+import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  testDir: './e2e',
-  use: { baseURL: 'http://localhost:4000' },
-  webServer: {
-    command: process.env.CI
-      ? 'npm run build && npm run preview'
-      : 'npm run dev',
-    url: 'http://localhost:4000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-    env: {
-      NODE_ENV: 'test',
-      DB_URL: process.env.DB_URL || 'postgresql://localhost:5432/testdb',
-    },
-  },
+	testDir: "./e2e",
+	use: { baseURL: "http://localhost:4000" },
+	webServer: {
+		command: process.env.CI ? "npm run build && npm run preview" : "npm run dev",
+		url: "http://localhost:4000",
+		reuseExistingServer: !process.env.CI,
+		timeout: 120_000,
+		env: {
+			NODE_ENV: "test",
+			DB_URL: process.env.DB_URL || "postgresql://localhost:5432/testdb",
+		},
+	},
 });
 ```
 
@@ -238,33 +236,33 @@ export default defineConfig({
 
 ```ts
 // playwright.config.ts
-import { defineConfig } from '@playwright/test';
+import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  testDir: './e2e',
-  globalSetup: './e2e/setup.ts',
-  globalTeardown: './e2e/teardown.ts',
+	testDir: "./e2e",
+	globalSetup: "./e2e/setup.ts",
+	globalTeardown: "./e2e/teardown.ts",
 });
 ```
 
 ```ts
 // e2e/setup.ts
-import { FullConfig } from '@playwright/test';
+import { FullConfig } from "@playwright/test";
 
 export default async function globalSetup(config: FullConfig) {
-  const { execSync } = await import('child_process');
-  execSync('npx prisma db seed', { stdio: 'inherit' });
-  process.env.TEST_RUN_ID = `run-${Date.now()}`;
+	const { execSync } = await import("child_process");
+	execSync("npx prisma db seed", { stdio: "inherit" });
+	process.env.TEST_RUN_ID = `run-${Date.now()}`;
 }
 ```
 
 ```ts
 // e2e/teardown.ts
-import { FullConfig } from '@playwright/test';
+import { FullConfig } from "@playwright/test";
 
 export default async function globalTeardown(config: FullConfig) {
-  const { execSync } = await import('child_process');
-  execSync('npx prisma db push --force-reset', { stdio: 'inherit' });
+	const { execSync } = await import("child_process");
+	execSync("npx prisma db push --force-reset", { stdio: "inherit" });
 }
 ```
 
@@ -310,14 +308,14 @@ npm install -D dotenv
 
 ```ts
 // playwright.config.ts
-import { defineConfig } from '@playwright/test';
+import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  testDir: './e2e',
+	testDir: "./e2e",
 
-  // Filter by tags in CI
-  grep: process.env.CI ? /@smoke|@critical/ : undefined,
-  grepInvert: process.env.CI ? /@flaky/ : undefined,
+	// Filter by tags in CI
+	grep: process.env.CI ? /@smoke|@critical/ : undefined,
+	grepInvert: process.env.CI ? /@flaky/ : undefined,
 });
 ```
 
@@ -325,27 +323,27 @@ export default defineConfig({
 
 ```ts
 // playwright.config.ts
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
-  testDir: './e2e',
-  projects: [
-    {
-      name: 'smoke',
-      grep: /@smoke/,
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'regression',
-      grepInvert: /@smoke/,
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'critical-only',
-      grep: /@critical/,
-      use: { ...devices['Desktop Chrome'] },
-    },
-  ],
+	testDir: "./e2e",
+	projects: [
+		{
+			name: "smoke",
+			grep: /@smoke/,
+			use: { ...devices["Desktop Chrome"] },
+		},
+		{
+			name: "regression",
+			grepInvert: /@smoke/,
+			use: { ...devices["Desktop Chrome"] },
+		},
+		{
+			name: "critical-only",
+			grep: /@critical/,
+			use: { ...devices["Desktop Chrome"] },
+		},
+	],
 });
 ```
 
@@ -358,29 +356,29 @@ npx playwright test --project=regression
 ### Artifact Collection Strategy
 
 | Setting      | Local   | CI                    | Reason                                    |
-|--------------|---------|-----------------------|-------------------------------------------|
+| ------------ | ------- | --------------------- | ----------------------------------------- |
 | `trace`      | `'off'` | `'on-first-retry'`    | Traces are large; collect on failure only |
 | `screenshot` | `'off'` | `'only-on-failure'`   | Useful for CI debugging                   |
 | `video`      | `'off'` | `'retain-on-failure'` | Recording slows tests                     |
 
 ```ts
 // playwright.config.ts
-import { defineConfig } from '@playwright/test';
+import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  testDir: './e2e',
-  use: {
-    trace: process.env.CI ? 'on-first-retry' : 'off',
-    screenshot: process.env.CI ? 'only-on-failure' : 'off',
-    video: process.env.CI ? 'retain-on-failure' : 'off',
-  },
+	testDir: "./e2e",
+	use: {
+		trace: process.env.CI ? "on-first-retry" : "off",
+		screenshot: process.env.CI ? "only-on-failure" : "off",
+		video: process.env.CI ? "retain-on-failure" : "off",
+	},
 });
 ```
 
 ## Anti-Patterns
 
 | Don't                                                            | Problem                                | Do Instead                          |
-|------------------------------------------------------------------|----------------------------------------|-------------------------------------|
+| ---------------------------------------------------------------- | -------------------------------------- | ----------------------------------- |
 | `timeout: 300_000` globally                                      | Masks flaky tests; slow CI             | Fix root cause; keep 30s default    |
 | Hardcoded URLs: `page.goto('http://localhost:4000/login')`       | Breaks in other environments           | Use `baseURL` + relative paths      |
 | All browsers on every PR                                         | 3x CI time                             | Chromium on PRs; all on main        |
@@ -400,10 +398,10 @@ export default defineConfig({
 
 ```ts
 // Wrong - ignores baseURL
-await page.goto('http://localhost:4000/dashboard');
+await page.goto("http://localhost:4000/dashboard");
 
 // Correct - uses baseURL
-await page.goto('/dashboard');
+await page.goto("/dashboard");
 ```
 
 ### webServer Starts But Tests Get Connection Refused
@@ -425,11 +423,11 @@ webServer: {
 
 ```ts
 export default defineConfig({
-  workers: process.env.CI ? '50%' : undefined,
-  use: {
-    navigationTimeout: process.env.CI ? 30_000 : 15_000,
-    actionTimeout: process.env.CI ? 15_000 : 10_000,
-  },
+	workers: process.env.CI ? "50%" : undefined,
+	use: {
+		navigationTimeout: process.env.CI ? 30_000 : 15_000,
+		actionTimeout: process.env.CI ? 15_000 : 10_000,
+	},
 });
 ```
 

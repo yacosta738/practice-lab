@@ -1,7 +1,6 @@
 // Certification registry — add new certifications here
 
-import type { CertificationConfig } from "../lib/quiz-types";
-import type { Question } from "../lib/quiz-types";
+import type { CertificationConfig, Question } from "../lib/quiz-types";
 
 interface CertificationEntry {
 	config: CertificationConfig;
@@ -40,4 +39,4 @@ async function getCertificationList(): Promise<CertificationConfig[]> {
 	return results.filter((r): r is CertificationEntry => r !== null).map((r) => r.config);
 }
 
-export { loadCertification, getCertificationList };
+export { getCertificationList, loadCertification };

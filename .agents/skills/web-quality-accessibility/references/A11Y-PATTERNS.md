@@ -12,28 +12,28 @@ Escape closes it.
 
 ```javascript
 function openModal(modal) {
-  const focusableElements = modal.querySelectorAll(
-    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-  );
-  const firstElement = focusableElements[0];
-  const lastElement = focusableElements[focusableElements.length - 1];
+	const focusableElements = modal.querySelectorAll(
+		'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+	);
+	const firstElement = focusableElements[0];
+	const lastElement = focusableElements[focusableElements.length - 1];
 
-  modal.addEventListener('keydown', (e) => {
-    if (e.key === 'Tab') {
-      if (e.shiftKey && document.activeElement === firstElement) {
-        e.preventDefault();
-        lastElement.focus();
-      } else if (!e.shiftKey && document.activeElement === lastElement) {
-        e.preventDefault();
-        firstElement.focus();
-      }
-    }
-    if (e.key === 'Escape') {
-      closeModal();
-    }
-  });
+	modal.addEventListener("keydown", (e) => {
+		if (e.key === "Tab") {
+			if (e.shiftKey && document.activeElement === firstElement) {
+				e.preventDefault();
+				lastElement.focus();
+			} else if (!e.shiftKey && document.activeElement === lastElement) {
+				e.preventDefault();
+				firstElement.focus();
+			}
+		}
+		if (e.key === "Escape") {
+			closeModal();
+		}
+	});
 
-  firstElement.focus();
+	firstElement.focus();
 }
 ```
 
@@ -58,17 +58,17 @@ Allows keyboard users to bypass repetitive navigation and jump straight to main 
 
 ```css
 .skip-link {
-  position: absolute;
-  top: -40px;
-  left: 0;
-  background: #000;
-  color: #fff;
-  padding: 8px 16px;
-  z-index: 100;
+	position: absolute;
+	top: -40px;
+	left: 0;
+	background: #000;
+	color: #fff;
+	padding: 8px 16px;
+	z-index: 100;
 }
 
 .skip-link:focus {
-  top: 0;
+	top: 0;
 }
 ```
 
@@ -93,17 +93,16 @@ Announce errors to screen readers and focus the first invalid field on submit.
 ```
 
 ```javascript
-form.addEventListener('submit', (e) => {
-  const firstError = form.querySelector('[aria-invalid="true"]');
-  if (firstError) {
-    e.preventDefault();
-    firstError.focus();
+form.addEventListener("submit", (e) => {
+	const firstError = form.querySelector('[aria-invalid="true"]');
+	if (firstError) {
+		e.preventDefault();
+		firstError.focus();
 
-    const errorSummary = document.getElementById('error-summary');
-    errorSummary.textContent =
-      `${errors.length} errors found. Please fix them and try again.`;
-    errorSummary.focus();
-  }
+		const errorSummary = document.getElementById("error-summary");
+		errorSummary.textContent = `${errors.length} errors found. Please fix them and try again.`;
+		errorSummary.focus();
+	}
 });
 ```
 
@@ -212,12 +211,12 @@ Use `aria-live` to announce dynamic content changes to screen readers without mo
 ```
 
 ```javascript
-function showNotification(message, type = 'polite') {
-  const container = document.getElementById(`${type}-announcer`);
-  container.textContent = '';
-  requestAnimationFrame(() => {
-    container.textContent = message;
-  });
+function showNotification(message, type = "polite") {
+	const container = document.getElementById(`${type}-announcer`);
+	container.textContent = "";
+	requestAnimationFrame(() => {
+		container.textContent = message;
+	});
 }
 ```
 
@@ -230,7 +229,7 @@ Clear the container before writing to ensure the same message triggers a new ann
 Quick reference for the most common screen reader shortcuts.
 
 | Action        | VoiceOver (Mac)     | NVDA (Windows) |
-|---------------|---------------------|----------------|
+| ------------- | ------------------- | -------------- |
 | Start/Stop    | ⌘ + F5              | Ctrl + Alt + N |
 | Next item     | VO + →              | ↓              |
 | Previous item | VO + ←              | ↑              |

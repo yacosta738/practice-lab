@@ -41,21 +41,21 @@ npx playwright test --fully-parallel
 import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  // Tests WITHIN a file also run in parallel
-  fullyParallel: true,
+	// Tests WITHIN a file also run in parallel
+	fullyParallel: true,
 
-  // Worker count options:
-  // - undefined: auto-detect (half CPU cores)
-  // - number: fixed count
-  // - string: percentage of cores
-  workers: process.env.CI ? "50%" : undefined,
+	// Worker count options:
+	// - undefined: auto-detect (half CPU cores)
+	// - number: fixed count
+	// - string: percentage of cores
+	workers: process.env.CI ? "50%" : undefined,
 });
 ```
 
 **`fullyParallel` behavior:**
 
 | Setting                          | Files parallel | Tests in file parallel |
-|----------------------------------|----------------|------------------------|
+| -------------------------------- | -------------- | ---------------------- |
 | `fullyParallel: false` (default) | Yes            | No (serial)            |
 | `fullyParallel: true`            | Yes            | Yes                    |
 
@@ -68,11 +68,11 @@ import { test, expect } from "@playwright/test";
 test.describe.configure({ mode: "serial" });
 
 test("add items to cart", async ({ page }) => {
-  // ...
+	// ...
 });
 
 test("complete payment", async ({ page }) => {
-  // ...
+	// ...
 });
 ```
 
@@ -92,12 +92,10 @@ test("complete payment", async ({ page }) => {
 import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  fullyParallel: true,
-  workers: process.env.CI ? "50%" : undefined,
+	fullyParallel: true,
+	workers: process.env.CI ? "50%" : undefined,
 
-  reporter: process.env.CI
-    ? [["blob"], ["github"]]
-    : [["html", { open: "on-failure" }]],
+	reporter: process.env.CI ? [["blob"], ["github"]] : [["html", { open: "on-failure" }]],
 });
 ```
 
@@ -152,35 +150,35 @@ not per test.
 import { test as base } from "@playwright/test";
 
 type WorkerFixtures = {
-  dbClient: DatabaseClient;
-  apiToken: string;
+	dbClient: DatabaseClient;
+	apiToken: string;
 };
 
 export const test = base.extend<{}, WorkerFixtures>({
-  dbClient: [
-    async ({}, use) => {
-      const client = await DatabaseClient.connect(process.env.DB_URL!);
-      await use(client);
-      await client.disconnect();
-    },
-    { scope: "worker" },
-  ],
+	dbClient: [
+		async ({}, use) => {
+			const client = await DatabaseClient.connect(process.env.DB_URL!);
+			await use(client);
+			await client.disconnect();
+		},
+		{ scope: "worker" },
+	],
 
-  apiToken: [
-    async ({}, use, workerInfo) => {
-      const res = await fetch(`${process.env.API_URL}/auth`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user: `test-user-${workerInfo.workerIndex}`,
-          password: process.env.TEST_PASSWORD,
-        }),
-      });
-      const { token } = await res.json();
-      await use(token);
-    },
-    { scope: "worker" },
-  ],
+	apiToken: [
+		async ({}, use, workerInfo) => {
+			const res = await fetch(`${process.env.API_URL}/auth`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					user: `test-user-${workerInfo.workerIndex}`,
+					password: process.env.TEST_PASSWORD,
+				}),
+			});
+			const { token } = await res.json();
+			await use(token);
+		},
+		{ scope: "worker" },
+	],
 });
 
 export { expect } from "@playwright/test";
@@ -195,24 +193,24 @@ Each test must create its own state. No test should depend on or modify shared s
 ```ts
 // BAD: Shared user causes race conditions
 test("edit settings", async ({ page }) => {
-  await page.goto("/users/test-user/settings");
-  await page.getByLabel("Email").fill("new@example.com");
-  await page.getByRole("button", { name: "Save" }).click();
+	await page.goto("/users/test-user/settings");
+	await page.getByLabel("Email").fill("new@example.com");
+	await page.getByRole("button", { name: "Save" }).click();
 });
 
 // GOOD: Unique user per test
 test("edit settings", async ({ page, request }) => {
-  const res = await request.post("/api/users", {
-    data: { name: `user-${Date.now()}`, email: `${Date.now()}@test.com` },
-  });
-  const user = await res.json();
+	const res = await request.post("/api/users", {
+		data: { name: `user-${Date.now()}`, email: `${Date.now()}@test.com` },
+	});
+	const user = await res.json();
 
-  await page.goto(`/users/${user.id}/settings`);
-  await page.getByLabel("Email").fill("updated@example.com");
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByLabel("Email")).toHaveValue("updated@example.com");
+	await page.goto(`/users/${user.id}/settings`);
+	await page.getByLabel("Email").fill("updated@example.com");
+	await page.getByRole("button", { name: "Save" }).click();
+	await expect(page.getByLabel("Email")).toHaveValue("updated@example.com");
 
-  await request.delete(`/api/users/${user.id}`);
+	await request.delete(`/api/users/${user.id}`);
 });
 ```
 
@@ -222,9 +220,9 @@ test("edit settings", async ({ page, request }) => {
 import { test, expect } from "@playwright/test";
 
 test("submit order", async ({ page }, testInfo) => {
-  const orderId = `order-${testInfo.workerIndex}-${Date.now()}`;
-  await page.goto(`/orders/new?ref=${orderId}`);
-  // ...
+	const orderId = `order-${testInfo.workerIndex}-${Date.now()}`;
+	await page.goto(`/orders/new?ref=${orderId}`);
+	// ...
 });
 ```
 
@@ -280,7 +278,7 @@ jobs:
 ## Decision Guide
 
 | Scenario                         | Workers        | Shards | Reason                                  |
-|----------------------------------|----------------|--------|-----------------------------------------|
+| -------------------------------- | -------------- | ------ | --------------------------------------- |
 | < 50 tests, < 5 min              | Auto (default) | None   | No optimization needed                  |
 | 50-200 tests, 5-15 min           | `'50%'` in CI  | 2-4    | Balance speed and cost                  |
 | 200+ tests, > 15 min             | `'50%'` in CI  | 4-8    | Keep feedback under 10 min              |
@@ -289,7 +287,7 @@ jobs:
 | CI has limited resources         | 1 or `'25%'`   | More   | Compensate with more machines           |
 
 | Aspect         | Workers (separate processes) | Shards (across machines)   |
-|----------------|------------------------------|----------------------------|
+| -------------- | ---------------------------- | -------------------------- |
 | What it splits | Tests across CPU cores       | Test files across CI jobs  |
 | Controlled by  | Config or `--workers` CLI    | `--shard=X/Y` CLI flag     |
 | Shares memory  | No                           | No                         |
@@ -299,7 +297,7 @@ jobs:
 ## Anti-Patterns
 
 | Anti-Pattern                            | Problem                                  | Solution                                             |
-|-----------------------------------------|------------------------------------------|------------------------------------------------------|
+| --------------------------------------- | ---------------------------------------- | ---------------------------------------------------- |
 | `fullyParallel: false` without reason   | Tests in files run serially              | Set `fullyParallel: true` unless tests need serial   |
 | `workers: 1` in CI "for safety"         | Negates parallelism                      | Fix isolation issues; use `workers: '50%'`           |
 | Hardcoded shared user account           | Race conditions in parallel runs         | Each test creates unique data                        |
@@ -314,6 +312,7 @@ jobs:
 ### Tests pass solo but fail together
 
 - **Shared state**. Make test data unique:
+
   ```ts
   test("create item", async ({ request }, ti) => {
     await request.post("/api/items", {
@@ -325,6 +324,7 @@ jobs:
 ### "No tests found" in some shards
 
 - **Too many shards**. Never exceed file count:
+
   ```bash
   npx playwright test --shard=1/10   # ok if 10 files
   npx playwright test --shard=1/20   # too many, some shards empty
@@ -333,6 +333,7 @@ jobs:
 ### Merged report missing results
 
 - **Blob reports collide**. Use unique names:
+
   ```yaml
   # Each shard
   - uses: actions/upload-artifact@v4
@@ -350,6 +351,7 @@ jobs:
 ### Worker-scoped fixture not working
 
 - **Missing `{ scope: 'worker' }`**. Fix:
+
   ```ts
   export const test = base.extend({
     resource: [
@@ -366,6 +368,7 @@ jobs:
 ### More workers = Slower
 
 - **Too many workers thrash**. Limit in CI:
+
   ```ts
   export default defineConfig({
     workers: process.env.CI ? 2 : undefined,

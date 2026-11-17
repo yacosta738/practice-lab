@@ -23,7 +23,7 @@ Tests should prove YOUR code works, not that third-party APIs are available.
 ## Decision Matrix
 
 | Scenario                          | Mock?                    | Strategy                                        |
-|-----------------------------------|--------------------------|-------------------------------------------------|
+| --------------------------------- | ------------------------ | ----------------------------------------------- |
 | Your own REST/GraphQL API         | Never                    | Hit real API against staging or local dev       |
 | Your database (through your API)  | Never                    | Seed via API or fixtures                        |
 | Authentication (your auth system) | Mostly no                | Use `storageState` to skip login in most tests  |
@@ -59,14 +59,14 @@ Block third-party scripts that slow tests and add no coverage:
 
 ```typescript
 test.beforeEach(async ({ page }) => {
-  await page.route('**/{analytics,tracking,segment,hotjar}.{com,io}/**', (route) => {
-    route.abort();
-  });
+	await page.route("**/{analytics,tracking,segment,hotjar}.{com,io}/**", (route) => {
+		route.abort();
+	});
 });
 
-test('dashboard renders without tracking scripts', async ({ page }) => {
-  await page.goto('/dashboard');
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+test("dashboard renders without tracking scripts", async ({ page }) => {
+	await page.goto("/dashboard");
+	await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 });
 ```
 
@@ -75,37 +75,37 @@ test('dashboard renders without tracking scripts', async ({ page }) => {
 Completely replace a third-party API response:
 
 ```typescript
-test('order flow with mocked payment service', async ({ page }) => {
-  await page.route('**/api/charge', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        transactionId: 'txn_mock_abc',
-        status: 'completed',
-      }),
-    });
-  });
+test("order flow with mocked payment service", async ({ page }) => {
+	await page.route("**/api/charge", (route) => {
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				transactionId: "txn_mock_abc",
+				status: "completed",
+			}),
+		});
+	});
 
-  await page.goto('/order/confirm');
-  await page.getByRole('button', { name: 'Complete Purchase' }).click();
-  await expect(page.getByText('Order confirmed')).toBeVisible();
+	await page.goto("/order/confirm");
+	await page.getByRole("button", { name: "Complete Purchase" }).click();
+	await expect(page.getByText("Order confirmed")).toBeVisible();
 });
 
-test('display error on payment decline', async ({ page }) => {
-  await page.route('**/api/charge', (route) => {
-    route.fulfill({
-      status: 402,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        error: { code: 'insufficient_funds', message: 'Card declined.' },
-      }),
-    });
-  });
+test("display error on payment decline", async ({ page }) => {
+	await page.route("**/api/charge", (route) => {
+		route.fulfill({
+			status: 402,
+			contentType: "application/json",
+			body: JSON.stringify({
+				error: { code: "insufficient_funds", message: "Card declined." },
+			}),
+		});
+	});
 
-  await page.goto('/order/confirm');
-  await page.getByRole('button', { name: 'Complete Purchase' }).click();
-  await expect(page.getByRole('alert')).toContainText('Card declined');
+	await page.goto("/order/confirm");
+	await page.getByRole("button", { name: "Complete Purchase" }).click();
+	await expect(page.getByRole("alert")).toContainText("Card declined");
 });
 ```
 
@@ -114,43 +114,43 @@ test('display error on payment decline', async ({ page }) => {
 Let the real API call happen but tweak the response:
 
 ```typescript
-test('display low inventory warning', async ({ page }) => {
-  await page.route('**/api/inventory/*', async (route) => {
-    const response = await route.fetch();
-    const data = await response.json();
+test("display low inventory warning", async ({ page }) => {
+	await page.route("**/api/inventory/*", async (route) => {
+		const response = await route.fetch();
+		const data = await response.json();
 
-    data.quantity = 1;
-    data.lowStock = true;
+		data.quantity = 1;
+		data.lowStock = true;
 
-    await route.fulfill({
-      response,
-      body: JSON.stringify(data),
-    });
-  });
+		await route.fulfill({
+			response,
+			body: JSON.stringify(data),
+		});
+	});
 
-  await page.goto('/products/widget-pro');
-  await expect(page.getByText('Only 1 remaining')).toBeVisible();
+	await page.goto("/products/widget-pro");
+	await expect(page.getByText("Only 1 remaining")).toBeVisible();
 });
 
-test('inject test notification into real response', async ({ page }) => {
-  await page.route('**/api/alerts', async (route) => {
-    const response = await route.fetch();
-    const data = await response.json();
+test("inject test notification into real response", async ({ page }) => {
+	await page.route("**/api/alerts", async (route) => {
+		const response = await route.fetch();
+		const data = await response.json();
 
-    data.items.push({
-      id: 'test-alert',
-      text: 'Report generated',
-      category: 'info',
-    });
+		data.items.push({
+			id: "test-alert",
+			text: "Report generated",
+			category: "info",
+		});
 
-    await route.fulfill({
-      response,
-      body: JSON.stringify(data),
-    });
-  });
+		await route.fulfill({
+			response,
+			body: JSON.stringify(data),
+		});
+	});
 
-  await page.goto('/home');
-  await expect(page.getByText('Report generated')).toBeVisible();
+	await page.goto("/home");
+	await expect(page.getByText("Report generated")).toBeVisible();
 });
 ```
 
@@ -161,29 +161,29 @@ For complex API sequences (OAuth flows, multi-step wizards):
 **Recording:**
 
 ```typescript
-test('capture API traffic for admin panel', async ({ page }) => {
-  await page.routeFromHAR('tests/fixtures/admin-panel.har', {
-    url: '**/api/**',
-    update: true,
-  });
+test("capture API traffic for admin panel", async ({ page }) => {
+	await page.routeFromHAR("tests/fixtures/admin-panel.har", {
+		url: "**/api/**",
+		update: true,
+	});
 
-  await page.goto('/admin');
-  await page.getByRole('tab', { name: 'Reports' }).click();
-  await page.getByRole('tab', { name: 'Settings' }).click();
+	await page.goto("/admin");
+	await page.getByRole("tab", { name: "Reports" }).click();
+	await page.getByRole("tab", { name: "Settings" }).click();
 });
 ```
 
 **Replaying:**
 
 ```typescript
-test('admin panel loads with recorded data', async ({ page }) => {
-  await page.routeFromHAR('tests/fixtures/admin-panel.har', {
-    url: '**/api/**',
-    update: false,
-  });
+test("admin panel loads with recorded data", async ({ page }) => {
+	await page.routeFromHAR("tests/fixtures/admin-panel.har", {
+		url: "**/api/**",
+		update: false,
+	});
 
-  await page.goto('/admin');
-  await expect(page.getByRole('heading', { name: 'Reports' })).toBeVisible();
+	await page.goto("/admin");
+	await expect(page.getByRole("heading", { name: "Reports" })).toBeVisible();
 });
 ```
 
@@ -201,15 +201,15 @@ test('admin panel loads with recorded data', async ({ page }) => {
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 30_000,
-  },
-  use: {
-    baseURL: 'http://localhost:3000',
-  },
+	webServer: {
+		command: "npm run dev",
+		url: "http://localhost:3000",
+		reuseExistingServer: !process.env.CI,
+		timeout: 30_000,
+	},
+	use: {
+		baseURL: "http://localhost:3000",
+	},
 });
 ```
 
@@ -218,11 +218,9 @@ export default defineConfig({
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  use: {
-    baseURL: process.env.CI
-      ? 'https://staging.example.com'
-      : 'http://localhost:3000',
-  },
+	use: {
+		baseURL: process.env.CI ? "https://staging.example.com" : "http://localhost:3000",
+	},
 });
 ```
 
@@ -231,24 +229,24 @@ export default defineConfig({
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  webServer: {
-    command: 'docker compose -f docker-compose.test.yml up --wait',
-    url: 'http://localhost:3000/health',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
-  globalTeardown: './tests/global-teardown.ts',
+	webServer: {
+		command: "docker compose -f docker-compose.test.yml up --wait",
+		url: "http://localhost:3000/health",
+		reuseExistingServer: !process.env.CI,
+		timeout: 120_000,
+	},
+	globalTeardown: "./tests/global-teardown.ts",
 });
 ```
 
 ```typescript
 // tests/global-teardown.ts
-import { execSync } from 'child_process';
+import { execSync } from "child_process";
 
 export default function globalTeardown() {
-  if (process.env.CI) {
-    execSync('docker compose -f docker-compose.test.yml down -v');
-  }
+	if (process.env.CI) {
+		execSync("docker compose -f docker-compose.test.yml down -v");
+	}
 }
 ```
 
@@ -258,71 +256,71 @@ Create fixtures that let individual tests opt into mocking specific services:
 
 ```typescript
 // tests/fixtures/service-mocks.ts
-import { test as base } from '@playwright/test';
+import { test as base } from "@playwright/test";
 
 type MockConfig = {
-  mockPayments: boolean;
-  mockNotifications: boolean;
-  mockAnalytics: boolean;
+	mockPayments: boolean;
+	mockNotifications: boolean;
+	mockAnalytics: boolean;
 };
 
 export const test = base.extend<MockConfig>({
-  mockPayments: [true, { option: true }],
-  mockNotifications: [true, { option: true }],
-  mockAnalytics: [true, { option: true }],
+	mockPayments: [true, { option: true }],
+	mockNotifications: [true, { option: true }],
+	mockAnalytics: [true, { option: true }],
 
-  page: async ({ page, mockPayments, mockNotifications, mockAnalytics }, use) => {
-    if (mockPayments) {
-      await page.route('**/api/billing/**', (route) => {
-        route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ status: 'paid', id: 'inv_mock_789' }),
-        });
-      });
-    }
+	page: async ({ page, mockPayments, mockNotifications, mockAnalytics }, use) => {
+		if (mockPayments) {
+			await page.route("**/api/billing/**", (route) => {
+				route.fulfill({
+					status: 200,
+					contentType: "application/json",
+					body: JSON.stringify({ status: "paid", id: "inv_mock_789" }),
+				});
+			});
+		}
 
-    if (mockNotifications) {
-      await page.route('**/api/notify', (route) => {
-        route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ delivered: true }),
-        });
-      });
-    }
+		if (mockNotifications) {
+			await page.route("**/api/notify", (route) => {
+				route.fulfill({
+					status: 200,
+					contentType: "application/json",
+					body: JSON.stringify({ delivered: true }),
+				});
+			});
+		}
 
-    if (mockAnalytics) {
-      await page.route('**/{segment,mixpanel,amplitude}.**/**', (route) => {
-        route.abort();
-      });
-    }
+		if (mockAnalytics) {
+			await page.route("**/{segment,mixpanel,amplitude}.**/**", (route) => {
+				route.abort();
+			});
+		}
 
-    await use(page);
-  },
+		await use(page);
+	},
 });
 
-export { expect } from '@playwright/test';
+export { expect } from "@playwright/test";
 ```
 
 ```typescript
 // tests/billing.spec.ts
-import { test, expect } from './fixtures/service-mocks';
+import { test, expect } from "./fixtures/service-mocks";
 
-test('subscription renewal sends notification', async ({ page }) => {
-  await page.goto('/account/billing');
-  await page.getByRole('button', { name: 'Renew Now' }).click();
-  await expect(page.getByText('Subscription renewed')).toBeVisible();
+test("subscription renewal sends notification", async ({ page }) => {
+	await page.goto("/account/billing");
+	await page.getByRole("button", { name: "Renew Now" }).click();
+	await expect(page.getByText("Subscription renewed")).toBeVisible();
 });
 
-test.describe('integration suite', () => {
-  test.use({ mockPayments: false });
+test.describe("integration suite", () => {
+	test.use({ mockPayments: false });
 
-  test('real billing flow against test gateway', async ({ page }) => {
-    await page.goto('/account/billing');
-    await page.getByRole('button', { name: 'Renew Now' }).click();
-    await expect(page.getByText('Subscription renewed')).toBeVisible();
-  });
+	test("real billing flow against test gateway", async ({ page }) => {
+		await page.goto("/account/billing");
+		await page.getByRole("button", { name: "Renew Now" }).click();
+		await expect(page.getByText("Subscription renewed")).toBeVisible();
+	});
 });
 ```
 
@@ -331,19 +329,19 @@ test.describe('integration suite', () => {
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  projects: [
-    {
-      name: 'ci-fast',
-      testMatch: '**/*.spec.ts',
-      use: { baseURL: 'http://localhost:3000' },
-    },
-    {
-      name: 'nightly-full',
-      testMatch: '**/*.integration.spec.ts',
-      use: { baseURL: 'https://staging.example.com' },
-      timeout: 120_000,
-    },
-  ],
+	projects: [
+		{
+			name: "ci-fast",
+			testMatch: "**/*.spec.ts",
+			use: { baseURL: "http://localhost:3000" },
+		},
+		{
+			name: "nightly-full",
+			testMatch: "**/*.integration.spec.ts",
+			use: { baseURL: "https://staging.example.com" },
+			timeout: 120_000,
+		},
+	],
 });
 ```
 
@@ -352,31 +350,31 @@ export default defineConfig({
 Guard against mock drift from real APIs:
 
 ```typescript
-test.describe('contract validation', () => {
-  test('billing mock matches real API shape', async ({ request }) => {
-    const realResponse = await request.post('/api/billing/charge', {
-      data: { amount: 5000, currency: 'usd' },
-    });
-    const realBody = await realResponse.json();
+test.describe("contract validation", () => {
+	test("billing mock matches real API shape", async ({ request }) => {
+		const realResponse = await request.post("/api/billing/charge", {
+			data: { amount: 5000, currency: "usd" },
+		});
+		const realBody = await realResponse.json();
 
-    const mockBody = {
-      status: 'paid',
-      id: 'inv_mock_789',
-    };
+		const mockBody = {
+			status: "paid",
+			id: "inv_mock_789",
+		};
 
-    expect(Object.keys(mockBody).sort()).toEqual(Object.keys(realBody).sort());
+		expect(Object.keys(mockBody).sort()).toEqual(Object.keys(realBody).sort());
 
-    for (const key of Object.keys(mockBody)) {
-      expect(typeof mockBody[key]).toBe(typeof realBody[key]);
-    }
-  });
+		for (const key of Object.keys(mockBody)) {
+			expect(typeof mockBody[key]).toBe(typeof realBody[key]);
+		}
+	});
 });
 ```
 
 ## Anti-Patterns
 
 | Don't Do This                             | Problem                                                       | Do This Instead                                               |
-|-------------------------------------------|---------------------------------------------------------------|---------------------------------------------------------------|
+| ----------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
 | Mock your own API                         | Tests pass, app breaks. Zero integration coverage.            | Hit your real API. Mock only third-party services.            |
 | Mock everything for speed                 | You test a fiction. Frontend and backend may be incompatible. | Mock only external boundaries.                                |
 | Never mock anything                       | Tests are slow, flaky, fail when third parties have outages.  | Mock third-party services.                                    |

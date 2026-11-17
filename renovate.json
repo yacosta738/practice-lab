@@ -1,91 +1,77 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:best-practices"
-  ],
-  "timezone": "Europe/Madrid",
-  "schedule": [
-    "* * * * 1-5"
-  ],
-  "semanticCommits": "enabled",
-  "labels": [
-    "dependencies"
-  ],
-  "minimumReleaseAge": "2 days",
-  "separateMinorPatch": true,
-  "packageRules": [
-    {
-      "description": "Pin TypeScript to v6 only — never auto-upgrade to v7",
-      "matchPackageNames": ["typescript"],
-      "allowedVersions": "<7.0.0"
-    },
-    {
-      "description": "Automerge stable patch updates for npm",
-      "matchManagers": ["npm"],
-      "matchUpdateTypes": ["patch"],
-      "matchCurrentVersion": "!/^0/",
-      "automerge": true
-    },
-    {
-      "description": "Group npm minor dependencies",
-      "matchManagers": ["npm"],
-      "matchUpdateTypes": ["minor"],
-      "groupName": "npm dependencies (minor)"
-    },
-    {
-      "description": "Group Docker minor updates",
-      "matchManagers": ["dockerfile", "docker-compose"],
-      "matchUpdateTypes": ["minor"],
-      "groupName": "Docker dependencies (minor)"
-    },
-    {
-      "description": "Group GitHub Actions minor updates",
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["minor"],
-      "groupName": "GitHub Actions (minor)"
-    },
-    {
-      "description": "Group GitHub Actions digest updates together",
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["digest"],
-      "groupName": "GitHub Actions digests",
-      "groupSlug": "github-actions-digests"
-    },
-    {
-      "description": "Group pnpm updates (runtime + action)",
-      "matchPackageNames": ["pnpm", "pnpm/action-setup"],
-      "groupName": "pnpm ecosystem",
-      "groupSlug": "pnpm-ecosystem"
-    },
-    {
-      "description": "Group test tooling together",
-      "matchPackageNames": [
-        "vitest",
-        "@vitest/**",
-        "@playwright/test",
-        "@axe-core/playwright"
-      ],
-      "groupName": "test tooling",
-      "groupSlug": "test-tooling"
-    },
-    {
-      "description": "Group linter and type-check tooling together",
-      "matchPackageNames": [
-        "@biomejs/biome",
-        "@astrojs/check"
-      ],
-      "groupName": "lint & type-check tooling",
-      "groupSlug": "lint-typecheck-tooling"
-    },
-    {
-      "description": "Major updates are non-urgent — no automerge",
-      "matchUpdateTypes": ["major"],
-      "automerge": false
-    },
-    {
-      "description": "Use chore for all dependency updates",
-      "matchPackageNames": ["*"],
-      "semanticCommitType": "chore"
-    }
-  ]
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": ["config:best-practices"],
+	"timezone": "Europe/Madrid",
+	"schedule": ["* * * * 1-5"],
+	"semanticCommits": "enabled",
+	"labels": ["dependencies"],
+	"minimumReleaseAge": "2 days",
+	"separateMinorPatch": true,
+	"packageRules": [
+		{
+			"description": "Pin TypeScript to v6 only — never auto-upgrade to v7",
+			"matchPackageNames": ["typescript"],
+			"allowedVersions": "<7.0.0"
+		},
+		{
+			"description": "Automerge stable patch updates for npm",
+			"matchManagers": ["npm"],
+			"matchUpdateTypes": ["patch"],
+			"matchCurrentVersion": "!/^0/",
+			"automerge": true
+		},
+		{
+			"description": "Group npm minor dependencies",
+			"matchManagers": ["npm"],
+			"matchUpdateTypes": ["minor"],
+			"groupName": "npm dependencies (minor)"
+		},
+		{
+			"description": "Group Docker minor updates",
+			"matchManagers": ["dockerfile", "docker-compose"],
+			"matchUpdateTypes": ["minor"],
+			"groupName": "Docker dependencies (minor)"
+		},
+		{
+			"description": "Group GitHub Actions minor updates",
+			"matchManagers": ["github-actions"],
+			"matchUpdateTypes": ["minor"],
+			"groupName": "GitHub Actions (minor)"
+		},
+		{
+			"description": "Group GitHub Actions digest updates together",
+			"matchManagers": ["github-actions"],
+			"matchUpdateTypes": ["digest"],
+			"groupName": "GitHub Actions digests",
+			"groupSlug": "github-actions-digests"
+		},
+		{
+			"description": "Group pnpm updates (runtime + action)",
+			"matchPackageNames": ["pnpm", "pnpm/action-setup"],
+			"groupName": "pnpm ecosystem",
+			"groupSlug": "pnpm-ecosystem"
+		},
+		{
+			"description": "Group test tooling together",
+			"matchPackageNames": ["vitest", "@vitest/**", "@playwright/test", "@axe-core/playwright"],
+			"groupName": "test tooling",
+			"groupSlug": "test-tooling"
+		},
+		{
+			"description": "Group linter and type-check tooling together",
+			"matchPackageNames": ["@biomejs/biome", "@astrojs/check"],
+			"groupName": "lint & type-check tooling",
+			"groupSlug": "lint-typecheck-tooling"
+		},
+		{
+			"description": "Major updates are non-urgent — no automerge",
+			"matchUpdateTypes": ["major"],
+			"automerge": false
+		},
+		{
+			"description": "Use chore for all dependency updates",
+			"matchPackageNames": ["*"],
+			"semanticCommitType": "chore"
+		}
+	]
 }

@@ -1,10 +1,11 @@
 ---
+
 name: seo
 description: Optimize for search engine visibility and ranking. Use when asked to "improve SEO", "optimize for search", "fix meta tags", "add structured data", "sitemap optimization", or "search engine optimization".
 license: MIT
 metadata:
-  author: web-quality-skills
-  version: "2.0"
+author: web-quality-skills
+version: "2.0"
 ---
 
 # SEO optimization
@@ -31,7 +32,7 @@ HTTP inspection. A Lighthouse SEO score covers a useful subset of technical chec
 prediction of rankings.
 
 | Area                             | What this skill can verify                                         |
-|----------------------------------|--------------------------------------------------------------------|
+| -------------------------------- | ------------------------------------------------------------------ |
 | Crawl and index controls         | Technical configuration and consistency                            |
 | Rendered metadata and semantics  | Presence, validity, and page-template issues                       |
 | Structured data                  | Syntax and eligibility signals, not guaranteed rich results        |
@@ -282,22 +283,22 @@ Read [the structured data reference](references/STRUCTURED-DATA.md) when the use
 markup or an audit surfaces a structured-data issue. It contains Organization, Article, Product,
 FAQ, and Breadcrumb examples plus validation links.
 
-* **Describe visible, accurate content.** Do not add a type or claim solely to obtain a rich result.
-* **Use the most specific applicable type.** Keep identifiers and absolute URLs stable across
+- **Describe visible, accurate content.** Do not add a type or claim solely to obtain a rich result.
+- **Use the most specific applicable type.** Keep identifiers and absolute URLs stable across
   renders.
-* **Validate rendered output.** Passing syntax does not guarantee search-engine eligibility or
+- **Validate rendered output.** Passing syntax does not guarantee search-engine eligibility or
   display.
 
 ## Agentic browsing and AI discoverability
 
 Keep these concepts separate:
 
-* **Lighthouse Agentic Browsing** measures technical signals that help an assistant understand and
+- **Lighthouse Agentic Browsing** measures technical signals that help an assistant understand and
   interact with the rendered page. Current checks include the agent-facing accessibility tree,
   optional `llms.txt`, and WebMCP registrations, schemas, and form coverage when present.
-* **Search indexing and ranking** depend on search-engine systems and cannot be inferred from the
+- **Search indexing and ranking** depend on search-engine systems and cannot be inferred from the
   Agentic Browsing score.
-* **AI ingestion or citation** is product-specific. A technically browsable page or valid `llms.txt`
+- **AI ingestion or citation** is product-specific. A technically browsable page or valid `llms.txt`
   file does not prove that an AI product will ingest, rank, or cite it.
 
 Prioritize semantic HTML, descriptive labels, crawlable content, accurate metadata, and clear page
@@ -310,7 +311,7 @@ descriptions, schemas, and form annotations with Lighthouse.
 Audit each documented user agent separately instead of applying a blanket "AI bot" rule:
 
 | Control                            | Documented purpose                                                           | Effect of blocking                                                                                                                            |
-|------------------------------------|------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| ---------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `OAI-SearchBot`                    | ChatGPT search discovery                                                     | Prevents page content from being included in ChatGPT summaries and snippets; a link and title may still surface through third-party discovery |
 | `PerplexityBot`                    | Perplexity search indexing                                                   | Prevents that crawler from indexing the blocked content for search results                                                                    |
 | `Claude-SearchBot` / `Claude-User` | Claude search indexing / user-directed retrieval                             | May reduce search visibility / prevents retrieval for user-directed requests                                                                  |
@@ -350,16 +351,16 @@ raise this audit.
 ```css
 /* ❌ Too small for mobile */
 .small-link {
-  padding: 4px;
-  font-size: 12px;
+	padding: 4px;
+	font-size: 12px;
 }
 
 /* ✅ Adequate tap target */
 .mobile-friendly-link {
-  padding: 12px;
-  font-size: 16px;
-  min-height: 48px;
-  min-width: 48px;
+	padding: 12px;
+	font-size: 16px;
+	min-height: 48px;
+	min-width: 48px;
 }
 ```
 
@@ -368,13 +369,13 @@ raise this audit.
 ```css
 /* ❌ Too small on mobile */
 body {
-  font-size: 10px;
+	font-size: 10px;
 }
 
 /* ✅ Readable without zooming */
 body {
-  font-size: 16px;
-  line-height: 1.5;
+	font-size: 16px;
+	line-height: 1.5;
 }
 ```
 
@@ -442,7 +443,7 @@ body {
 ## Tools
 
 | Tool                                                            | Use                                                 |
-|-----------------------------------------------------------------|-----------------------------------------------------|
+| --------------------------------------------------------------- | --------------------------------------------------- |
 | Google Search Console                                           | Monitor indexing, fix issues                        |
 | Google PageSpeed Insights                                       | Performance + Core Web Vitals                       |
 | Rich Results Test                                               | Validate structured data                            |

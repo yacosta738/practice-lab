@@ -22,9 +22,9 @@ import { test, expect } from "@playwright/test";
 const GQL_ENDPOINT = "/graphql";
 
 test("query with variables", async ({ request }) => {
-  const resp = await request.post(GQL_ENDPOINT, {
-    data: {
-      query: `
+	const resp = await request.post(GQL_ENDPOINT, {
+		data: {
+			query: `
         query FetchItem($id: ID!) {
           item(id: $id) {
             id
@@ -34,28 +34,28 @@ test("query with variables", async ({ request }) => {
           }
         }
       `,
-      variables: { id: "101" },
-    },
-  });
+			variables: { id: "101" },
+		},
+	});
 
-  expect(resp.ok()).toBeTruthy();
-  const { data, errors } = await resp.json();
+	expect(resp.ok()).toBeTruthy();
+	const { data, errors } = await resp.json();
 
-  // GraphQL returns 200 even on errors — always check both
-  expect(errors).toBeUndefined();
-  expect(data.item).toMatchObject({
-    id: "101",
-    title: expect.any(String),
-    price: expect.any(Number),
-  });
-  expect(data.item.reviews).toEqual(
-    expect.arrayContaining([
-      expect.objectContaining({
-        id: expect.any(String),
-        rating: expect.any(Number),
-      }),
-    ])
-  );
+	// GraphQL returns 200 even on errors — always check both
+	expect(errors).toBeUndefined();
+	expect(data.item).toMatchObject({
+		id: "101",
+		title: expect.any(String),
+		price: expect.any(Number),
+	});
+	expect(data.item.reviews).toEqual(
+		expect.arrayContaining([
+			expect.objectContaining({
+				id: expect.any(String),
+				rating: expect.any(Number),
+			}),
+		]),
+	);
 });
 ```
 
@@ -67,9 +67,9 @@ import { test, expect } from "@playwright/test";
 const GQL_ENDPOINT = "/graphql";
 
 test("mutation creates resource", async ({ request }) => {
-  const resp = await request.post(GQL_ENDPOINT, {
-    data: {
-      query: `
+	const resp = await request.post(GQL_ENDPOINT, {
+		data: {
+			query: `
         mutation AddItem($input: ItemInput!) {
           addItem(input: $input) {
             id
@@ -78,23 +78,23 @@ test("mutation creates resource", async ({ request }) => {
           }
         }
       `,
-      variables: {
-        input: {
-          title: "New Widget",
-          price: 15.0,
-          status: "DRAFT",
-        },
-      },
-    },
-  });
+			variables: {
+				input: {
+					title: "New Widget",
+					price: 15.0,
+					status: "DRAFT",
+				},
+			},
+		},
+	});
 
-  const { data, errors } = await resp.json();
-  expect(errors).toBeUndefined();
-  expect(data.addItem).toMatchObject({
-    id: expect.any(String),
-    title: "New Widget",
-    status: "DRAFT",
-  });
+	const { data, errors } = await resp.json();
+	expect(errors).toBeUndefined();
+	expect(data.addItem).toMatchObject({
+		id: expect.any(String),
+		title: "New Widget",
+		status: "DRAFT",
+	});
 });
 ```
 
@@ -106,22 +106,22 @@ import { test, expect } from "@playwright/test";
 const GQL_ENDPOINT = "/graphql";
 
 test("handles validation errors", async ({ request }) => {
-  const resp = await request.post(GQL_ENDPOINT, {
-    data: {
-      query: `
+	const resp = await request.post(GQL_ENDPOINT, {
+		data: {
+			query: `
         mutation AddItem($input: ItemInput!) {
           addItem(input: $input) { id }
         }
       `,
-      variables: { input: { title: "" } },
-    },
-  });
+			variables: { input: { title: "" } },
+		},
+	});
 
-  const { data, errors } = await resp.json();
-  expect(errors).toBeDefined();
-  expect(errors.length).toBeGreaterThan(0);
-  expect(errors[0].message).toContain("title");
-  expect(errors[0].extensions?.code).toBe("BAD_USER_INPUT");
+	const { data, errors } = await resp.json();
+	expect(errors).toBeDefined();
+	expect(errors.length).toBeGreaterThan(0);
+	expect(errors[0].message).toContain("title");
+	expect(errors[0].extensions?.code).toBe("BAD_USER_INPUT");
 });
 ```
 
@@ -133,20 +133,20 @@ import { test, expect } from "@playwright/test";
 const GQL_ENDPOINT = "/graphql";
 
 test("handles authorization errors", async ({ request }) => {
-  const resp = await request.post(GQL_ENDPOINT, {
-    data: {
-      query: `
+	const resp = await request.post(GQL_ENDPOINT, {
+		data: {
+			query: `
         query AdminDashboard {
           adminMetrics { revenue activeUsers }
         }
       `,
-    },
-  });
+		},
+	});
 
-  const { data, errors } = await resp.json();
-  expect(errors).toBeDefined();
-  expect(errors[0].extensions?.code).toBe("UNAUTHORIZED");
-  expect(data?.adminMetrics).toBeNull();
+	const { data, errors } = await resp.json();
+	expect(errors).toBeDefined();
+	expect(errors[0].extensions?.code).toBe("UNAUTHORIZED");
+	expect(data?.adminMetrics).toBeNull();
 });
 ```
 
@@ -157,58 +157,60 @@ test("handles authorization errors", async ({ request }) => {
 import { test as base, expect, APIRequestContext } from "@playwright/test";
 
 type GraphQLFixtures = {
-  gqlClient: APIRequestContext;
-  adminGqlClient: APIRequestContext;
+	gqlClient: APIRequestContext;
+	adminGqlClient: APIRequestContext;
 };
 
 export const test = base.extend<GraphQLFixtures>({
-  gqlClient: async ({ playwright }, use) => {
-    const ctx = await playwright.request.newContext({
-      baseURL: "https://api.myapp.io",
-      extraHTTPHeaders: {
-        Authorization: `Bearer ${process.env.API_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-    });
-    await use(ctx);
-    await ctx.dispose();
-  },
+	gqlClient: async ({ playwright }, use) => {
+		const ctx = await playwright.request.newContext({
+			baseURL: "https://api.myapp.io",
+			extraHTTPHeaders: {
+				Authorization: `Bearer ${process.env.API_TOKEN}`,
+				"Content-Type": "application/json",
+			},
+		});
+		await use(ctx);
+		await ctx.dispose();
+	},
 
-  adminGqlClient: async ({ playwright }, use) => {
-    const loginCtx = await playwright.request.newContext({
-      baseURL: "https://api.myapp.io",
-    });
-    const loginResp = await loginCtx.post("/graphql", {
-      data: {
-        query: `
+	adminGqlClient: async ({ playwright }, use) => {
+		const loginCtx = await playwright.request.newContext({
+			baseURL: "https://api.myapp.io",
+		});
+		const loginResp = await loginCtx.post("/graphql", {
+			data: {
+				query: `
           mutation Login($email: String!, $password: String!) {
             login(email: $email, password: $password) { token }
           }
         `,
-        variables: {
-          email: process.env.ADMIN_EMAIL,
-          password: process.env.ADMIN_PASSWORD,
-        },
-      },
-    });
-    const { data } = await loginResp.json();
-    
-    if (!data?.login?.token) {
-      throw new Error(`Admin login failed: status ${loginResp.status()}, response: ${JSON.stringify(data)}`);
-    }
-    
-    await loginCtx.dispose();
+				variables: {
+					email: process.env.ADMIN_EMAIL,
+					password: process.env.ADMIN_PASSWORD,
+				},
+			},
+		});
+		const { data } = await loginResp.json();
 
-    const ctx = await playwright.request.newContext({
-      baseURL: "https://api.myapp.io",
-      extraHTTPHeaders: {
-        Authorization: `Bearer ${data.login.token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    await use(ctx);
-    await ctx.dispose();
-  },
+		if (!data?.login?.token) {
+			throw new Error(
+				`Admin login failed: status ${loginResp.status()}, response: ${JSON.stringify(data)}`,
+			);
+		}
+
+		await loginCtx.dispose();
+
+		const ctx = await playwright.request.newContext({
+			baseURL: "https://api.myapp.io",
+			extraHTTPHeaders: {
+				Authorization: `Bearer ${data.login.token}`,
+				"Content-Type": "application/json",
+			},
+		});
+		await use(ctx);
+		await ctx.dispose();
+	},
 });
 
 export { expect };
@@ -221,23 +223,23 @@ export { expect };
 import { APIRequestContext, expect } from "@playwright/test";
 
 export async function gqlQuery<T = any>(
-  request: APIRequestContext,
-  query: string,
-  variables?: Record<string, any>
+	request: APIRequestContext,
+	query: string,
+	variables?: Record<string, any>,
 ): Promise<{ data: T; errors?: any[] }> {
-  const resp = await request.post("/graphql", {
-    data: { query, variables },
-  });
-  expect(resp.ok()).toBeTruthy();
-  return resp.json();
+	const resp = await request.post("/graphql", {
+		data: { query, variables },
+	});
+	expect(resp.ok()).toBeTruthy();
+	return resp.json();
 }
 
 export async function gqlMutation<T = any>(
-  request: APIRequestContext,
-  mutation: string,
-  variables?: Record<string, any>
+	request: APIRequestContext,
+	mutation: string,
+	variables?: Record<string, any>,
 ): Promise<{ data: T; errors?: any[] }> {
-  return gqlQuery<T>(request, mutation, variables);
+	return gqlQuery<T>(request, mutation, variables);
 }
 ```
 
@@ -247,29 +249,29 @@ import { test, expect } from "@playwright/test";
 import { gqlQuery, gqlMutation } from "../../utils/graphql";
 
 test("fetch and update item", async ({ request }) => {
-  const { data: fetchData } = await gqlQuery(
-    request,
-    `query GetItem($id: ID!) { item(id: $id) { id title } }`,
-    { id: "101" }
-  );
-  expect(fetchData.item.title).toBeDefined();
+	const { data: fetchData } = await gqlQuery(
+		request,
+		`query GetItem($id: ID!) { item(id: $id) { id title } }`,
+		{ id: "101" },
+	);
+	expect(fetchData.item.title).toBeDefined();
 
-  const { data: updateData, errors } = await gqlMutation(
-    request,
-    `mutation UpdateItem($id: ID!, $title: String!) {
+	const { data: updateData, errors } = await gqlMutation(
+		request,
+		`mutation UpdateItem($id: ID!, $title: String!) {
       updateItem(id: $id, title: $title) { id title }
     }`,
-    { id: "101", title: "Updated Title" }
-  );
-  expect(errors).toBeUndefined();
-  expect(updateData.updateItem.title).toBe("Updated Title");
+		{ id: "101", title: "Updated Title" },
+	);
+	expect(errors).toBeUndefined();
+	expect(updateData.updateItem.title).toBe("Updated Title");
 });
 ```
 
 ## Anti-Patterns
 
 | Don't Do This                            | Problem                                                                | Do This Instead                                            |
-|------------------------------------------|------------------------------------------------------------------------|------------------------------------------------------------|
+| ---------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------- |
 | Check only `response.ok()`               | GraphQL returns 200 even on errors — `errors` array is the real signal | Always check both `data` and `errors` in the response body |
 | Ignore `errors` array                    | Validation and auth errors appear in `errors`, not HTTP status         | Destructure and assert: `expect(errors).toBeUndefined()`   |
 | Hardcode query strings inline everywhere | Duplicated queries are hard to maintain                                | Extract queries to constants or use a helper function      |
@@ -287,7 +289,7 @@ the `errors` array.
 ```typescript
 const { data, errors } = await resp.json();
 if (errors) {
-  console.error("GraphQL errors:", JSON.stringify(errors, null, 2));
+	console.error("GraphQL errors:", JSON.stringify(errors, null, 2));
 }
 expect(errors).toBeUndefined();
 expect(data.item).toBeDefined();
@@ -302,9 +304,9 @@ expect(data.item).toBeDefined();
 ```typescript
 // Introspection query to debug schema
 const response = await request.post("/graphql", {
-  data: {
-    query: `{ __type(name: "Item") { fields { name type { name } } } }`,
-  },
+	data: {
+		query: `{ __type(name: "Item") { fields { name type { name } } } }`,
+	},
 });
 const { data } = await response.json();
 console.log(data.__type.fields);
@@ -320,17 +322,17 @@ match.
 ```typescript
 // Wrong: variable name mismatch
 const resp = await request.post("/graphql", {
-  data: {
-    query: `query GetItem($itemId: ID!) { item(id: $itemId) { id } }`,
-    variables: { id: "101" }, // Should be { itemId: "101" }
-  },
+	data: {
+		query: `query GetItem($itemId: ID!) { item(id: $itemId) { id } }`,
+		variables: { id: "101" }, // Should be { itemId: "101" }
+	},
 });
 
 // Correct
 const resp = await request.post("/graphql", {
-  data: {
-    query: `query GetItem($itemId: ID!) { item(id: $itemId) { id } }`,
-    variables: { itemId: "101" },
-  },
+	data: {
+		query: `query GetItem($itemId: ID!) { item(id: $itemId) { id } }`,
+		variables: { itemId: "101" },
+	},
 });
 ```

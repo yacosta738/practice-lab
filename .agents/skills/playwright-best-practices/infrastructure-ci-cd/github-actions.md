@@ -182,12 +182,10 @@ jobs:
 
 ```typescript
 // playwright.config.ts
-import { defineConfig } from '@playwright/test';
+import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  reporter: process.env.CI
-    ? [['blob'], ['github']]
-    : [['html', { open: 'on-failure' }]],
+	reporter: process.env.CI ? [["blob"], ["github"]] : [["html", { open: "on-failure" }]],
 });
 ```
 
@@ -297,7 +295,7 @@ name: Nightly Regression
 
 on:
   schedule:
-    - cron: '0 3 * * 1-5'
+    - cron: "0 3 * * 1-5"
   workflow_dispatch:
 
 jobs:
@@ -353,10 +351,10 @@ on:
     inputs:
       node-version:
         type: string
-        default: 'lts/*'
+        default: "lts/*"
       test-command:
         type: string
-        default: 'npx playwright test'
+        default: "npx playwright test"
     secrets:
       BASE_URL:
         required: false
@@ -422,7 +420,7 @@ jobs:
   e2e:
     uses: ./.github/workflows/pw-reusable.yml
     with:
-      node-version: 'lts/*'
+      node-version: "lts/*"
     secrets:
       BASE_URL: ${{ secrets.STAGING_URL }}
       TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
@@ -431,7 +429,7 @@ jobs:
 ## Scenario Guide
 
 | Scenario                   | Approach                                   |
-|----------------------------|--------------------------------------------|
+| -------------------------- | ------------------------------------------ |
 | Small suite (< 5 min)      | Single job, no sharding                    |
 | Medium suite (5-20 min)    | 2-4 shards with matrix                     |
 | Large suite (20+ min)      | 4-8 shards + blob merge                    |
@@ -444,7 +442,7 @@ jobs:
 ## Common Mistakes
 
 | Mistake                         | Problem                      | Fix                                                         |
-|---------------------------------|------------------------------|-------------------------------------------------------------|
+| ------------------------------- | ---------------------------- | ----------------------------------------------------------- |
 | No `concurrency` group          | Duplicate runs waste minutes | Add `concurrency: { group: ..., cancel-in-progress: true }` |
 | `fail-fast: true` with sharding | One failure cancels others   | Set `fail-fast: false`                                      |
 | No browser caching              | 60-90 seconds wasted per run | Cache `~/.cache/ms-playwright`                              |
@@ -477,14 +475,14 @@ jobs:
 
 ```typescript
 // playwright.config.ts
-import { defineConfig } from '@playwright/test';
+import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  workers: process.env.CI ? '50%' : undefined,
-  use: {
-    actionTimeout: process.env.CI ? 15_000 : 10_000,
-    navigationTimeout: process.env.CI ? 30_000 : 15_000,
-  },
+	workers: process.env.CI ? "50%" : undefined,
+	use: {
+		actionTimeout: process.env.CI ? 15_000 : 10_000,
+		navigationTimeout: process.env.CI ? 30_000 : 15_000,
+	},
 });
 ```
 
@@ -528,12 +526,12 @@ export default defineConfig({
 
 ```typescript
 // playwright.config.ts
-import { defineConfig } from '@playwright/test';
+import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  reporter: process.env.CI
-    ? [['html', { open: 'never' }], ['github']]
-    : [['html', { open: 'on-failure' }]],
+	reporter: process.env.CI
+		? [["html", { open: "never" }], ["github"]]
+		: [["html", { open: "on-failure" }]],
 });
 ```
 

@@ -1,12 +1,13 @@
 ---
+
 name: accessibility
 description: >-
-  Audit and improve web accessibility following WCAG 2.1 guidelines. Use when the task
-  involves `improve accessibility`, `a11y audit`, `WCAG compliance`, `screen reader
+Audit and improve web accessibility following WCAG 2.1 guidelines. Use when the task
+involves `improve accessibility`, `a11y audit`, `WCAG compliance`, `screen reader
   support`, `keyboard navigation`, or `make accessible`.
 license: MIT
 metadata:
-  version: "1.0.0"
+version: "1.0.0"
 ---
 
 # Accessibility (a11y)
@@ -17,7 +18,7 @@ make content usable by everyone, including people with disabilities.
 ## WCAG Principles: POUR
 
 | Principle          | Description                                       |
-|--------------------|---------------------------------------------------|
+| ------------------ | ------------------------------------------------- |
 | **P**erceivable    | Content can be perceived through different senses |
 | **O**perable       | Interface can be operated by all users            |
 | **U**nderstandable | Content and interface are understandable          |
@@ -26,7 +27,7 @@ make content usable by everyone, including people with disabilities.
 ## Conformance levels
 
 | Level   | Requirement            | Target                                                |
-|---------|------------------------|-------------------------------------------------------|
+| ------- | ---------------------- | ----------------------------------------------------- |
 | **A**   | Minimum accessibility  | Must pass                                             |
 | **AA**  | Standard compliance    | Should pass (legal requirement in many jurisdictions) |
 | **AAA** | Enhanced accessibility | Nice to have                                          |
@@ -81,22 +82,22 @@ make content usable by everyone, including people with disabilities.
 
 ```css
 .visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
 }
 ```
 
 ### Color contrast (1.4.3, 1.4.6)
 
 | Text Size                          | AA minimum | AAA enhanced |
-|------------------------------------|------------|--------------|
+| ---------------------------------- | ---------- | ------------ |
 | Normal text (< 18px / < 14px bold) | 4.5:1      | 7:1          |
 | Large text (≥ 18px / ≥ 14px bold)  | 3:1        | 4.5:1        |
 | UI components & graphics           | 3:1        | 3:1          |
@@ -104,20 +105,20 @@ make content usable by everyone, including people with disabilities.
 ```css
 /* ❌ Low contrast (2.5:1) */
 .low-contrast {
-  color: #999;
-  background: #fff;
+	color: #999;
+	background: #fff;
 }
 
 /* ✅ Sufficient contrast (7:1) */
 .high-contrast {
-  color: #333;
-  background: #fff;
+	color: #333;
+	background: #fff;
 }
 
 /* ✅ Focus states need contrast too */
 :focus-visible {
-  outline: 2px solid #005fcc;
-  outline-offset: 2px;
+	outline: 2px solid #005fcc;
+	outline-offset: 2px;
 }
 ```
 
@@ -168,15 +169,15 @@ make content usable by everyone, including people with disabilities.
 
 ```javascript
 // ❌ Only handles click
-element.addEventListener('click', handleAction);
+element.addEventListener("click", handleAction);
 
 // ✅ Handles both click and keyboard
-element.addEventListener('click', handleAction);
-element.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault();
-    handleAction();
-  }
+element.addEventListener("click", handleAction);
+element.addEventListener("keydown", (e) => {
+	if (e.key === "Enter" || e.key === " ") {
+		e.preventDefault();
+		handleAction();
+	}
 });
 ```
 
@@ -185,29 +186,29 @@ element.addEventListener('keydown', (e) => {
 ```javascript
 // Modal focus management
 function openModal(modal) {
-  const focusableElements = modal.querySelectorAll(
-    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-  );
-  const firstElement = focusableElements[0];
-  const lastElement = focusableElements[focusableElements.length - 1];
-  
-  // Trap focus within modal
-  modal.addEventListener('keydown', (e) => {
-    if (e.key === 'Tab') {
-      if (e.shiftKey && document.activeElement === firstElement) {
-        e.preventDefault();
-        lastElement.focus();
-      } else if (!e.shiftKey && document.activeElement === lastElement) {
-        e.preventDefault();
-        firstElement.focus();
-      }
-    }
-    if (e.key === 'Escape') {
-      closeModal();
-    }
-  });
-  
-  firstElement.focus();
+	const focusableElements = modal.querySelectorAll(
+		'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+	);
+	const firstElement = focusableElements[0];
+	const lastElement = focusableElements[focusableElements.length - 1];
+
+	// Trap focus within modal
+	modal.addEventListener("keydown", (e) => {
+		if (e.key === "Tab") {
+			if (e.shiftKey && document.activeElement === firstElement) {
+				e.preventDefault();
+				lastElement.focus();
+			} else if (!e.shiftKey && document.activeElement === lastElement) {
+				e.preventDefault();
+				firstElement.focus();
+			}
+		}
+		if (e.key === "Escape") {
+			closeModal();
+		}
+	});
+
+	firstElement.focus();
 }
 ```
 
@@ -215,21 +216,23 @@ function openModal(modal) {
 
 ```css
 /* ❌ Never remove focus outlines */
-*:focus { outline: none; }
+*:focus {
+	outline: none;
+}
 
 /* ✅ Use :focus-visible for keyboard-only focus */
 :focus {
-  outline: none;
+	outline: none;
 }
 
 :focus-visible {
-  outline: 2px solid #005fcc;
-  outline-offset: 2px;
+	outline: 2px solid #005fcc;
+	outline-offset: 2px;
 }
 
 /* ✅ Or custom focus styles */
 button:focus-visible {
-  box-shadow: 0 0 0 3px rgba(0, 95, 204, 0.5);
+	box-shadow: 0 0 0 3px rgba(0, 95, 204, 0.5);
 }
 ```
 
@@ -247,17 +250,17 @@ button:focus-visible {
 
 ```css
 .skip-link {
-  position: absolute;
-  top: -40px;
-  left: 0;
-  background: #000;
-  color: #fff;
-  padding: 8px 16px;
-  z-index: 100;
+	position: absolute;
+	top: -40px;
+	left: 0;
+	background: #000;
+	color: #fff;
+	padding: 8px 16px;
+	z-index: 100;
 }
 
 .skip-link:focus {
-  top: 0;
+	top: 0;
 }
 ```
 
@@ -266,15 +269,15 @@ button:focus-visible {
 ```javascript
 // Allow users to extend time limits
 function showSessionWarning() {
-  const modal = createModal({
-    title: 'Session Expiring',
-    content: 'Your session will expire in 2 minutes.',
-    actions: [
-      { label: 'Extend session', action: extendSession },
-      { label: 'Log out', action: logout }
-    ],
-    timeout: 120000 // 2 minutes to respond
-  });
+	const modal = createModal({
+		title: "Session Expiring",
+		content: "Your session will expire in 2 minutes.",
+		actions: [
+			{ label: "Extend session", action: extendSession },
+			{ label: "Log out", action: logout },
+		],
+		timeout: 120000, // 2 minutes to respond
+	});
 }
 ```
 
@@ -283,14 +286,14 @@ function showSessionWarning() {
 ```css
 /* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
 }
 ```
 
@@ -369,17 +372,17 @@ function showSessionWarning() {
 
 ```javascript
 // Focus first error on submit
-form.addEventListener('submit', (e) => {
-  const firstError = form.querySelector('[aria-invalid="true"]');
-  if (firstError) {
-    e.preventDefault();
-    firstError.focus();
-    
-    // Announce error summary
-    const errorSummary = document.getElementById('error-summary');
-    errorSummary.textContent = `${errors.length} errors found. Please fix them and try again.`;
-    errorSummary.focus();
-  }
+form.addEventListener("submit", (e) => {
+	const firstError = form.querySelector('[aria-invalid="true"]');
+	if (firstError) {
+		e.preventDefault();
+		firstError.focus();
+
+		// Announce error summary
+		const errorSummary = document.getElementById("error-summary");
+		errorSummary.textContent = `${errors.length} errors found. Please fix them and try again.`;
+		errorSummary.focus();
+	}
 });
 ```
 
@@ -457,12 +460,12 @@ form.addEventListener('submit', (e) => {
 
 ```javascript
 // Announce dynamic content changes
-function showNotification(message, type = 'polite') {
-  const container = document.getElementById(`${type}-announcer`);
-  container.textContent = ''; // Clear first
-  requestAnimationFrame(() => {
-    container.textContent = message;
-  });
+function showNotification(message, type = "polite") {
+	const container = document.getElementById(`${type}-announcer`);
+	container.textContent = ""; // Clear first
+	requestAnimationFrame(() => {
+		container.textContent = message;
+	});
 }
 ```
 

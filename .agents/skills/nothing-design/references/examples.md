@@ -121,17 +121,20 @@ Fonts required: Space Grotesk, Space Mono
 Mode: Light
 
 Hierarchy:
+
 - Primary: SETTINGS
 - Secondary: toggle labels, selected mode, connectivity values
 - Tertiary: helper descriptions and sync metadata
 
 Layout:
+
 - Back button pinned top-left
 - Title near top with 64px breathing room below nav
 - Display mode segmented control first
 - Settings rows follow with full-width dividers
 
 Components:
+
 - Circular back button
 - Segmented control for LIGHT / DARK / AUTO
 - Toggle rows with right-aligned switch

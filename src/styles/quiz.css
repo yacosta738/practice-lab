@@ -1,7 +1,7 @@
 /* Quiz Practice Lab — premium prep style */
 /* Light-first, IBM Plex Sans, navy + coral palette */
 
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
 
 :root {
 	/* Surface palette — warm light (default) */
@@ -619,7 +619,9 @@ label.small {
 	padding: 34px;
 	text-decoration: none;
 	color: inherit;
-	transition: border-color 0.12s ease, transform 0.12s ease;
+	transition:
+		border-color 0.12s ease,
+		transform 0.12s ease;
 }
 
 .certCard:hover {

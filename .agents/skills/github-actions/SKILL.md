@@ -1,13 +1,14 @@
 ---
+
 name: github-actions
 description: >-
-  Comprehensive guide for building robust, secure, and efficient CI/CD pipelines using
-  GitHub Actions. Use when the task involves `creating or editing GitHub Actions
+Comprehensive guide for building robust, secure, and efficient CI/CD pipelines using
+GitHub Actions. Use when the task involves `creating or editing GitHub Actions
   workflows`, `.github/workflows/*.yml`, `CI/CD pipelines`, `GitHub Actions best
   practices`, or `workflow optimization`.
 license: MIT
 metadata:
-  version: "1.0.0"
+version: "1.0.0"
 ---
 
 ## When to Use
@@ -44,24 +45,24 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Deploy target'
+        description: "Deploy target"
         required: false
-        default: 'staging'
+        default: "staging"
         type: choice
-        options: [ staging, production ]
+        options: [staging, production]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: read  # Least privilege default
+  contents: read # Least privilege default
 
 jobs:
   lint:
@@ -73,7 +74,7 @@ jobs:
       - uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3.9.1
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
       - run: npm ci
       - run: npm run lint
 
@@ -85,7 +86,7 @@ jobs:
       - uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3.9.1
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
       - run: npm ci
       - run: npm test -- --coverage
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -105,7 +106,7 @@ jobs:
       - uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3.9.1
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
       - run: npm ci
       - run: npm run build
       - name: Package application
@@ -163,19 +164,19 @@ permissions:
 jobs:
   lint:
     # Inherits read-only — no override needed
-    steps: [ ... ]
+    steps: [...]
 
   deploy:
     permissions:
       contents: read
-      deployments: write  # Only this job needs write
-    steps: [ ... ]
+      deployments: write # Only this job needs write
+    steps: [...]
 
   comment-on-pr:
     permissions:
       contents: read
-      pull-requests: write  # Only this job needs PR write
-    steps: [ ... ]
+      pull-requests: write # Only this job needs PR write
+    steps: [...]
 ```
 
 ### Caching
@@ -201,8 +202,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest ]
-        node-version: [ 18, 20, 22 ]
+        os: [ubuntu-latest, windows-latest]
+        node-version: [18, 20, 22]
         exclude:
           - os: windows-latest
             node-version: 18
@@ -221,7 +222,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write   # Required for OIDC
+      id-token: write # Required for OIDC
       contents: read
     steps:
       - uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 # v4.1.0
@@ -271,7 +272,7 @@ jobs:
 jobs:
   deploy-prod:
     runs-on: ubuntu-latest
-    needs: [ test, build, deploy-staging ]
+    needs: [test, build, deploy-staging]
     if: github.ref == 'refs/heads/main'
     environment:
       name: production
@@ -301,10 +302,10 @@ on:
       node-version:
         required: false
         type: string
-        default: '20'
+        default: "20"
     outputs:
       artifact-name:
-        description: 'Name of the uploaded artifact'
+        description: "Name of the uploaded artifact"
         value: ${{ jobs.build.outputs.artifact-name }}
 
 jobs:
@@ -317,7 +318,7 @@ jobs:
       - uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3.9.1
         with:
           node-version: ${{ inputs.node-version }}
-          cache: 'npm'
+          cache: "npm"
       - run: npm ci && npm run build
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
@@ -330,13 +331,13 @@ jobs:
   build:
     uses: ./.github/workflows/reusable-build.yml
     with:
-      node-version: '20'
+      node-version: "20"
 ```
 
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern                              | Risk                                                       | Do Instead                                                            |
-|-------------------------------------------|------------------------------------------------------------|-----------------------------------------------------------------------|
+| ----------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------- |
 | `uses: actions/checkout@v4` (mutable tag) | Supply chain attack — tag can be moved to malicious commit | Pin to full SHA: `@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1` |
 | No `permissions` block                    | `GITHUB_TOKEN` gets default broad access                   | Set `permissions: contents: read` at workflow level                   |
 | `secrets.MY_KEY` in `echo` or logs        | Secret leakage even with masking                           | Never print secrets; use them only in env vars for commands           |
@@ -351,7 +352,7 @@ jobs:
 ## Deployment Strategies Reference
 
 | Strategy        | How It Works                       | Best For                       | Rollback                    |
-|-----------------|------------------------------------|--------------------------------|-----------------------------|
+| --------------- | ---------------------------------- | ------------------------------ | --------------------------- |
 | **Rolling**     | Gradually replaces old instances   | Stateless apps, most cases     | Redeploy previous version   |
 | **Blue/Green**  | Full parallel env, switch traffic  | Zero-downtime critical apps    | Switch traffic back to blue |
 | **Canary**      | Route small % to new version       | Risk-sensitive changes         | Route 100% back to stable   |

@@ -1,13 +1,14 @@
 ---
+
 name: frontend-design
 description: >-
-  Create distinctive, production-grade frontend interfaces with high design quality that
-  avoids generic AI aesthetics. Use when the task involves `build web components`, `create
+Create distinctive, production-grade frontend interfaces with high design quality that
+avoids generic AI aesthetics. Use when the task involves `build web components`, `create
   frontend interface`, `build web page`, `build web application`, `frontend design`,
-  `create UI component`, or `design web interface`.
+`create UI component`, or `design web interface`.
 license: MIT
 metadata:
-  version: "1.0.0"
+version: "1.0.0"
 ---
 
 # Frontend Design Skill

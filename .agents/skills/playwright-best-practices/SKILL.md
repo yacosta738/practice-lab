@@ -1,10 +1,11 @@
 ---
+
 name: playwright-best-practices
 description: Use when writing Playwright tests, fixing flaky tests, debugging failures, implementing Page Object Model, configuring CI/CD, optimizing performance, mocking APIs, handling authentication or OAuth, testing accessibility (axe-core), file uploads/downloads, date/time mocking, WebSockets, geolocation, permissions, multi-tab/popup flows, mobile/responsive layouts, touch gestures, GraphQL, error handling, offline mode, multi-user collaboration, third-party services (payments, email verification), console error monitoring, global setup/teardown, test annotations (skip, fixme, slow), test tags (@smoke, @fast, @critical, filtering with --grep), project dependencies, security testing (XSS, CSRF, auth), performance budgets (Web Vitals, Lighthouse), iframes, component testing, canvas/WebGL, service workers/PWA, test coverage, i18n/localization, Electron apps, or browser extension testing. Covers E2E, component, API, visual, accessibility, security, Electron, and extension testing.
 license: MIT
 metadata:
-  author: currents.dev
-  version: "1.2"
+author: currents.dev
+version: "1.2"
 ---
 
 # Playwright Best Practices
@@ -21,7 +22,7 @@ Consult these references based on what you're doing:
 **When to use**: Creating new test files, writing test cases, implementing test scenarios
 
 | Activity                            | Reference Files                                                                                                                               |
-|-------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Writing E2E tests**               | [test-suite-structure.md](core/test-suite-structure.md), [locators.md](core/locators.md), [assertions-waiting.md](core/assertions-waiting.md) |
 | **Writing component tests**         | [component-testing.md](testing-patterns/component-testing.md), [test-suite-structure.md](core/test-suite-structure.md)                        |
 | **Writing API tests**               | [api-testing.md](testing-patterns/api-testing.md), [test-suite-structure.md](core/test-suite-structure.md)                                    |
@@ -49,7 +50,7 @@ Consult these references based on what you're doing:
 **When to use**: Testing mobile devices, touch interactions, responsive layouts
 
 | Activity                        | Reference Files                                                                  |
-|---------------------------------|----------------------------------------------------------------------------------|
+| ------------------------------- | -------------------------------------------------------------------------------- |
 | **Device emulation**            | [mobile-testing.md](advanced/mobile-testing.md)                                  |
 | **Touch gestures (swipe, tap)** | [mobile-testing.md](advanced/mobile-testing.md)                                  |
 | **Viewport/breakpoint testing** | [mobile-testing.md](advanced/mobile-testing.md)                                  |
@@ -60,7 +61,7 @@ Consult these references based on what you're doing:
 **When to use**: Testing WebSockets, geolocation, permissions, multi-tab flows
 
 | Activity                        | Reference Files                                                                          |
-|---------------------------------|------------------------------------------------------------------------------------------|
+| ------------------------------- | ---------------------------------------------------------------------------------------- |
 | **WebSocket/real-time testing** | [websockets.md](browser-apis/websockets.md)                                              |
 | **Geolocation mocking**         | [browser-apis.md](browser-apis/browser-apis.md)                                          |
 | **Permission handling**         | [browser-apis.md](browser-apis/browser-apis.md)                                          |
@@ -74,7 +75,7 @@ Consult these references based on what you're doing:
 **When to use**: Test failures, element not found, timeouts, unexpected behavior
 
 | Activity                                          | Reference Files                                                                                                                                |
-|---------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Debugging test failures**                       | [debugging.md](debugging/debugging.md), [assertions-waiting.md](core/assertions-waiting.md)                                                    |
 | **Fixing flaky tests**                            | [flaky-tests.md](debugging/flaky-tests.md), [debugging.md](debugging/debugging.md), [assertions-waiting.md](core/assertions-waiting.md)        |
 | **Debugging flaky parallel runs**                 | [flaky-tests.md](debugging/flaky-tests.md), [performance.md](infrastructure-ci-cd/performance.md), [fixtures-hooks.md](core/fixtures-hooks.md) |
@@ -90,7 +91,7 @@ Consult these references based on what you're doing:
 **When to use**: Testing error states, offline mode, network failures, validation
 
 | Activity                       | Reference Files                                                                                       |
-|--------------------------------|-------------------------------------------------------------------------------------------------------|
+| ------------------------------ | ----------------------------------------------------------------------------------------------------- |
 | **Error boundary testing**     | [error-testing.md](debugging/error-testing.md)                                                        |
 | **Network failure simulation** | [error-testing.md](debugging/error-testing.md), [network-advanced.md](advanced/network-advanced.md)   |
 | **Offline mode testing**       | [error-testing.md](debugging/error-testing.md), [service-workers.md](browser-apis/service-workers.md) |
@@ -103,7 +104,7 @@ Consult these references based on what you're doing:
 **When to use**: Testing features involving multiple users, roles, or real-time collaboration
 
 | Activity                       | Reference Files                                                                      |
-|--------------------------------|--------------------------------------------------------------------------------------|
+| ------------------------------ | ------------------------------------------------------------------------------------ |
 | **Multiple users in one test** | [multi-user.md](advanced/multi-user.md)                                              |
 | **Real-time collaboration**    | [multi-user.md](advanced/multi-user.md), [websockets.md](browser-apis/websockets.md) |
 | **Role-based access testing**  | [multi-user.md](advanced/multi-user.md)                                              |
@@ -114,7 +115,7 @@ Consult these references based on what you're doing:
 **When to use**: Choosing test patterns, deciding between approaches, planning test architecture
 
 | Activity                     | Reference Files                                           |
-|------------------------------|-----------------------------------------------------------|
+| ---------------------------- | --------------------------------------------------------- |
 | **POM vs fixtures decision** | [pom-vs-fixtures.md](architecture/pom-vs-fixtures.md)     |
 | **Test type selection**      | [test-architecture.md](architecture/test-architecture.md) |
 | **Mock vs real services**    | [when-to-mock.md](architecture/when-to-mock.md)           |
@@ -125,7 +126,7 @@ Consult these references based on what you're doing:
 **When to use**: Testing React, Angular, Vue, or Next.js applications
 
 | Activity                  | Reference Files                     |
-|---------------------------|-------------------------------------|
+| ------------------------- | ----------------------------------- |
 | **Testing React apps**    | [react.md](frameworks/react.md)     |
 | **Testing Angular apps**  | [angular.md](frameworks/angular.md) |
 | **Testing Vue/Nuxt apps** | [vue.md](frameworks/vue.md)         |
@@ -136,7 +137,7 @@ Consult these references based on what you're doing:
 **When to use**: Improving existing tests, code review, reducing duplication
 
 | Activity                             | Reference Files                                                                                            |
-|--------------------------------------|------------------------------------------------------------------------------------------------------------|
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
 | **Refactoring to Page Object Model** | [page-object-model.md](core/page-object-model.md), [test-suite-structure.md](core/test-suite-structure.md) |
 | **Improving test organization**      | [test-suite-structure.md](core/test-suite-structure.md), [page-object-model.md](core/page-object-model.md) |
 | **Extracting common setup/teardown** | [fixtures-hooks.md](core/fixtures-hooks.md)                                                                |
@@ -150,7 +151,7 @@ Consult these references based on what you're doing:
 **When to use**: Setting up projects, configuring CI/CD, optimizing performance
 
 | Activity                                | Reference Files                                                                                                          |
-|-----------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | **Configuring Playwright project**      | [configuration.md](core/configuration.md), [projects-dependencies.md](core/projects-dependencies.md)                     |
 | **Setting up CI/CD pipelines**          | [ci-cd.md](infrastructure-ci-cd/ci-cd.md), [github-actions.md](infrastructure-ci-cd/github-actions.md)                   |
 | **GitHub Actions setup**                | [github-actions.md](infrastructure-ci-cd/github-actions.md)                                                              |
@@ -170,7 +171,7 @@ Consult these references based on what you're doing:
 **When to use**: Complex scenarios, API mocking, network interception
 
 | Activity                             | Reference Files                                                                                              |
-|--------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | **Mocking API responses**            | [test-suite-structure.md](core/test-suite-structure.md), [network-advanced.md](advanced/network-advanced.md) |
 | **Network interception**             | [network-advanced.md](advanced/network-advanced.md), [assertions-waiting.md](core/assertions-waiting.md)     |
 | **GraphQL mocking**                  | [network-advanced.md](advanced/network-advanced.md)                                                          |
@@ -297,8 +298,8 @@ After writing or modifying tests:
 
 1. **Run tests**: `npx playwright test --reporter=list`
 2. **If tests fail**:
-    - Review error output and trace (`npx playwright show-trace`)
-    - Fix locators, waits, or assertions
-    - Re-run tests
+   - Review error output and trace (`npx playwright show-trace`)
+   - Fix locators, waits, or assertions
+   - Re-run tests
 3. **Only proceed when all tests pass**
 4. **Run multiple times** for critical tests: `npx playwright test --repeat-each=5`

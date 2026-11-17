@@ -15,17 +15,17 @@
 
 ```typescript
 test("service worker registers", async ({ page }) => {
-  await page.goto("/pwa-app");
+	await page.goto("/pwa-app");
 
-  // Wait for SW to register
-  const swRegistered = await page.evaluate(async () => {
-    if (!("serviceWorker" in navigator)) return false;
+	// Wait for SW to register
+	const swRegistered = await page.evaluate(async () => {
+		if (!("serviceWorker" in navigator)) return false;
 
-    const registration = await navigator.serviceWorker.ready;
-    return !!registration.active;
-  });
+		const registration = await navigator.serviceWorker.ready;
+		return !!registration.active;
+	});
 
-  expect(swRegistered).toBe(true);
+	expect(swRegistered).toBe(true);
 });
 ```
 
@@ -33,22 +33,22 @@ test("service worker registers", async ({ page }) => {
 
 ```typescript
 test("check SW state", async ({ page }) => {
-  await page.goto("/");
+	await page.goto("/");
 
-  const swState = await page.evaluate(async () => {
-    const registration = await navigator.serviceWorker.getRegistration();
-    if (!registration) return null;
+	const swState = await page.evaluate(async () => {
+		const registration = await navigator.serviceWorker.getRegistration();
+		if (!registration) return null;
 
-    return {
-      installing: !!registration.installing,
-      waiting: !!registration.waiting,
-      active: !!registration.active,
-      scope: registration.scope,
-    };
-  });
+		return {
+			installing: !!registration.installing,
+			waiting: !!registration.waiting,
+			active: !!registration.active,
+			scope: registration.scope,
+		};
+	});
 
-  expect(swState?.active).toBe(true);
-  expect(swState?.scope).toContain(page.url());
+	expect(swState?.active).toBe(true);
+	expect(swState?.scope).toContain(page.url());
 });
 ```
 
@@ -56,18 +56,18 @@ test("check SW state", async ({ page }) => {
 
 ```typescript
 test("access service worker", async ({ context, page }) => {
-  await page.goto("/pwa-app");
+	await page.goto("/pwa-app");
 
-  // Get all service workers in context
-  const workers = context.serviceWorkers();
+	// Get all service workers in context
+	const workers = context.serviceWorkers();
 
-  // Wait for service worker if not yet available
-  if (workers.length === 0) {
-    await context.waitForEvent("serviceworker");
-  }
+	// Wait for service worker if not yet available
+	if (workers.length === 0) {
+		await context.waitForEvent("serviceworker");
+	}
 
-  const sw = context.serviceWorkers()[0];
-  expect(sw.url()).toContain("sw.js");
+	const sw = context.serviceWorkers()[0];
+	expect(sw.url()).toContain("sw.js");
 });
 ```
 
@@ -77,42 +77,42 @@ test("access service worker", async ({ context, page }) => {
 
 ```typescript
 test("service worker updates", async ({ page }) => {
-  await page.goto("/pwa-app");
+	await page.goto("/pwa-app");
 
-  // Check for update
-  const hasUpdate = await page.evaluate(async () => {
-    const registration = await navigator.serviceWorker.ready;
-    await registration.update();
+	// Check for update
+	const hasUpdate = await page.evaluate(async () => {
+		const registration = await navigator.serviceWorker.ready;
+		await registration.update();
 
-    return new Promise<boolean>((resolve) => {
-      if (registration.waiting) {
-        resolve(true);
-      } else {
-        registration.addEventListener("updatefound", () => {
-          resolve(true);
-        });
-        // Timeout if no update
-        setTimeout(() => resolve(false), 5000);
-      }
-    });
-  });
+		return new Promise<boolean>((resolve) => {
+			if (registration.waiting) {
+				resolve(true);
+			} else {
+				registration.addEventListener("updatefound", () => {
+					resolve(true);
+				});
+				// Timeout if no update
+				setTimeout(() => resolve(false), 5000);
+			}
+		});
+	});
 
-  // If update found, test skip waiting flow
-  if (hasUpdate) {
-    await page.evaluate(async () => {
-      const registration = await navigator.serviceWorker.ready;
-      registration.waiting?.postMessage({ type: "SKIP_WAITING" });
-    });
+	// If update found, test skip waiting flow
+	if (hasUpdate) {
+		await page.evaluate(async () => {
+			const registration = await navigator.serviceWorker.ready;
+			registration.waiting?.postMessage({ type: "SKIP_WAITING" });
+		});
 
-    // Wait for controller change
-    await page.evaluate(() => {
-      return new Promise<void>((resolve) => {
-        navigator.serviceWorker.addEventListener("controllerchange", () => {
-          resolve();
-        });
-      });
-    });
-  }
+		// Wait for controller change
+		await page.evaluate(() => {
+			return new Promise<void>((resolve) => {
+				navigator.serviceWorker.addEventListener("controllerchange", () => {
+					resolve();
+				});
+			});
+		});
+	}
 });
 ```
 
@@ -120,20 +120,20 @@ test("service worker updates", async ({ page }) => {
 
 ```typescript
 test("verify SW install event", async ({ context, page }) => {
-  // Listen for service worker before navigating
-  const swPromise = context.waitForEvent("serviceworker");
+	// Listen for service worker before navigating
+	const swPromise = context.waitForEvent("serviceworker");
 
-  await page.goto("/pwa-app");
+	await page.goto("/pwa-app");
 
-  const sw = await swPromise;
+	const sw = await swPromise;
 
-  // Evaluate in SW context
-  const swVersion = await sw.evaluate(() => {
-    // Access SW globals
-    return (self as any).SW_VERSION || "unknown";
-  });
+	// Evaluate in SW context
+	const swVersion = await sw.evaluate(() => {
+		// Access SW globals
+		return (self as any).SW_VERSION || "unknown";
+	});
 
-  expect(swVersion).toBe("1.0.0");
+	expect(swVersion).toBe("1.0.0");
 });
 ```
 
@@ -141,19 +141,19 @@ test("verify SW install event", async ({ context, page }) => {
 
 ```typescript
 test.beforeEach(async ({ page }) => {
-  await page.goto("/");
+	await page.goto("/");
 
-  // Unregister all service workers for clean state
-  await page.evaluate(async () => {
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    await Promise.all(registrations.map((r) => r.unregister()));
-  });
+	// Unregister all service workers for clean state
+	await page.evaluate(async () => {
+		const registrations = await navigator.serviceWorker.getRegistrations();
+		await Promise.all(registrations.map((r) => r.unregister()));
+	});
 
-  // Clear caches
-  await page.evaluate(async () => {
-    const cacheNames = await caches.keys();
-    await Promise.all(cacheNames.map((name) => caches.delete(name)));
-  });
+	// Clear caches
+	await page.evaluate(async () => {
+		const cacheNames = await caches.keys();
+		await Promise.all(cacheNames.map((name) => caches.delete(name)));
+	});
 });
 ```
 
@@ -163,22 +163,22 @@ test.beforeEach(async ({ page }) => {
 
 ```typescript
 test("assets are cached", async ({ page }) => {
-  await page.goto("/pwa-app");
+	await page.goto("/pwa-app");
 
-  // Wait for SW to cache assets
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.ready;
-  });
+	// Wait for SW to cache assets
+	await page.evaluate(async () => {
+		await navigator.serviceWorker.ready;
+	});
 
-  // Check cache contents
-  const cachedUrls = await page.evaluate(async () => {
-    const cache = await caches.open("app-cache-v1");
-    const requests = await cache.keys();
-    return requests.map((r) => r.url);
-  });
+	// Check cache contents
+	const cachedUrls = await page.evaluate(async () => {
+		const cache = await caches.open("app-cache-v1");
+		const requests = await cache.keys();
+		return requests.map((r) => r.url);
+	});
 
-  expect(cachedUrls).toContain(expect.stringContaining("/styles.css"));
-  expect(cachedUrls).toContain(expect.stringContaining("/app.js"));
+	expect(cachedUrls).toContain(expect.stringContaining("/styles.css"));
+	expect(cachedUrls).toContain(expect.stringContaining("/app.js"));
 });
 ```
 
@@ -186,29 +186,29 @@ test("assets are cached", async ({ page }) => {
 
 ```typescript
 test("cache-first strategy", async ({ page }) => {
-  await page.goto("/pwa-app");
+	await page.goto("/pwa-app");
 
-  // Wait for initial cache
-  await page.waitForFunction(async () => {
-    const cache = await caches.open("app-cache-v1");
-    const keys = await cache.keys();
-    return keys.length > 0;
-  });
+	// Wait for initial cache
+	await page.waitForFunction(async () => {
+		const cache = await caches.open("app-cache-v1");
+		const keys = await cache.keys();
+		return keys.length > 0;
+	});
 
-  // Block network for cached resources
-  await page.route("**/styles.css", (route) => route.abort());
+	// Block network for cached resources
+	await page.route("**/styles.css", (route) => route.abort());
 
-  // Reload - should work from cache
-  await page.reload();
+	// Reload - should work from cache
+	await page.reload();
 
-  // Verify page still styled (CSS loaded from cache)
-  const hasStyles = await page.evaluate(() => {
-    const body = document.body;
-    const styles = window.getComputedStyle(body);
-    return styles.fontFamily !== ""; // Has custom font from CSS
-  });
+	// Verify page still styled (CSS loaded from cache)
+	const hasStyles = await page.evaluate(() => {
+		const body = document.body;
+		const styles = window.getComputedStyle(body);
+		return styles.fontFamily !== ""; // Has custom font from CSS
+	});
 
-  expect(hasStyles).toBe(true);
+	expect(hasStyles).toBe(true);
 });
 ```
 
@@ -216,29 +216,29 @@ test("cache-first strategy", async ({ page }) => {
 
 ```typescript
 test("cache updates on new version", async ({ page }) => {
-  await page.goto("/pwa-app");
+	await page.goto("/pwa-app");
 
-  // Get initial cache
-  const initialCacheKeys = await page.evaluate(async () => {
-    const cache = await caches.open("app-cache-v1");
-    const keys = await cache.keys();
-    return keys.map((r) => r.url);
-  });
+	// Get initial cache
+	const initialCacheKeys = await page.evaluate(async () => {
+		const cache = await caches.open("app-cache-v1");
+		const keys = await cache.keys();
+		return keys.map((r) => r.url);
+	});
 
-  // Before this step, deploy the next build so /sw.js returns the v2 worker.
-  // page.route() and context.route() cannot intercept the browser's update
-  // request for the service worker script.
+	// Before this step, deploy the next build so /sw.js returns the v2 worker.
+	// page.route() and context.route() cannot intercept the browser's update
+	// request for the service worker script.
 
-  // Trigger update
-  await page.evaluate(async () => {
-    const reg = await navigator.serviceWorker.ready;
-    await reg.update();
-  });
+	// Trigger update
+	await page.evaluate(async () => {
+		const reg = await navigator.serviceWorker.ready;
+		await reg.update();
+	});
 
-  // Verify new cache exists
-  await page.waitForFunction(async () => {
-    return await caches.has("app-cache-v2");
-  });
+	// Verify new cache exists
+	await page.waitForFunction(async () => {
+		return await caches.has("app-cache-v2");
+	});
 });
 ```
 
@@ -252,29 +252,29 @@ graceful degradation), see [error-testing.md](../debugging/error-testing.md#offl
 
 ```typescript
 test("app works offline", async ({ page, context }) => {
-  await page.goto("/pwa-app");
+	await page.goto("/pwa-app");
 
-  // Ensure SW is active and content cached
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.ready;
-  });
-  await page.waitForTimeout(1000); // Allow caching to complete
+	// Ensure SW is active and content cached
+	await page.evaluate(async () => {
+		await navigator.serviceWorker.ready;
+	});
+	await page.waitForTimeout(1000); // Allow caching to complete
 
-  // Go offline
-  await context.setOffline(true);
+	// Go offline
+	await context.setOffline(true);
 
-  // Navigate to cached page
-  await page.reload();
+	// Navigate to cached page
+	await page.reload();
 
-  // Verify content loads
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+	// Verify content loads
+	await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
-  // Verify offline indicator
-  await expect(page.locator(".offline-badge")).toBeVisible();
+	// Verify offline indicator
+	await expect(page.locator(".offline-badge")).toBeVisible();
 
-  // Go back online
-  await context.setOffline(false);
-  await expect(page.locator(".offline-badge")).not.toBeVisible();
+	// Go back online
+	await context.setOffline(false);
+	await expect(page.locator(".offline-badge")).not.toBeVisible();
 });
 ```
 
@@ -282,18 +282,18 @@ test("app works offline", async ({ page, context }) => {
 
 ```typescript
 test("shows offline page for uncached routes", async ({ page, context }) => {
-  await page.goto("/pwa-app");
-  await page.evaluate(() => navigator.serviceWorker.ready);
+	await page.goto("/pwa-app");
+	await page.evaluate(() => navigator.serviceWorker.ready);
 
-  // Go offline
-  await context.setOffline(true);
+	// Go offline
+	await context.setOffline(true);
 
-  // Navigate to uncached page
-  await page.goto("/uncached-page");
+	// Navigate to uncached page
+	await page.goto("/uncached-page");
 
-  // Should show offline fallback
-  await expect(page.getByText("You are offline")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+	// Should show offline fallback
+	await expect(page.getByText("You are offline")).toBeVisible();
+	await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
 });
 ```
 
@@ -301,30 +301,30 @@ test("shows offline page for uncached routes", async ({ page, context }) => {
 
 ```typescript
 test("queues form submission offline", async ({ page, context }) => {
-  await page.goto("/pwa-app/form");
+	await page.goto("/pwa-app/form");
 
-  // Go offline
-  await context.setOffline(true);
+	// Go offline
+	await context.setOffline(true);
 
-  // Submit form
-  await page.getByLabel("Message").fill("Offline message");
-  await page.getByRole("button", { name: "Send" }).click();
+	// Submit form
+	await page.getByLabel("Message").fill("Offline message");
+	await page.getByRole("button", { name: "Send" }).click();
 
-  // Should show queued status
-  await expect(page.getByText("Queued for sync")).toBeVisible();
+	// Should show queued status
+	await expect(page.getByText("Queued for sync")).toBeVisible();
 
-  // Go online
-  await context.setOffline(false);
+	// Go online
+	await context.setOffline(false);
 
-  // Trigger sync (or wait for automatic)
-  await page.evaluate(async () => {
-    const reg = await navigator.serviceWorker.ready;
-    // Manually trigger sync for testing
-    await (reg as any).sync?.register("form-sync");
-  });
+	// Trigger sync (or wait for automatic)
+	await page.evaluate(async () => {
+		const reg = await navigator.serviceWorker.ready;
+		// Manually trigger sync for testing
+		await (reg as any).sync?.register("form-sync");
+	});
 
-  // Verify submission completed
-  await expect(page.getByText("Message sent")).toBeVisible({ timeout: 10000 });
+	// Verify submission completed
+	await expect(page.getByText("Message sent")).toBeVisible({ timeout: 10000 });
 });
 ```
 
@@ -334,28 +334,29 @@ test("queues form submission offline", async ({ page, context }) => {
 
 ```typescript
 test("handles push subscription", async ({ page, context }) => {
-  // Grant notification permission
-  await context.grantPermissions(["notifications"]);
+	// Grant notification permission
+	await context.grantPermissions(["notifications"]);
 
-  // Mock the subscription boundary; do not contact a real push service.
-  await page.addInitScript(() => {
-    PushManager.prototype.subscribe = async () => ({
-      toJSON: () => ({ endpoint: "https://push.example.test/subscription" }),
-    }) as PushSubscription;
-  });
-  await page.goto("/pwa-app");
+	// Mock the subscription boundary; do not contact a real push service.
+	await page.addInitScript(() => {
+		PushManager.prototype.subscribe = async () =>
+			({
+				toJSON: () => ({ endpoint: "https://push.example.test/subscription" }),
+			}) as PushSubscription;
+	});
+	await page.goto("/pwa-app");
 
-  // Exercise the mock (not real VAPID key validation or push delivery)
-  const subscription = await page.evaluate(async () => {
-    const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      // The mocked subscribe method does not validate a VAPID public key.
-    });
-    return sub.toJSON();
-  });
+	// Exercise the mock (not real VAPID key validation or push delivery)
+	const subscription = await page.evaluate(async () => {
+		const reg = await navigator.serviceWorker.ready;
+		const sub = await reg.pushManager.subscribe({
+			userVisibleOnly: true,
+			// The mocked subscribe method does not validate a VAPID public key.
+		});
+		return sub.toJSON();
+	});
 
-  expect(subscription.endpoint).toBeDefined();
+	expect(subscription.endpoint).toBeDefined();
 });
 ```
 
@@ -363,24 +364,23 @@ test("handles push subscription", async ({ page, context }) => {
 
 ```typescript
 test("handles push notification", async ({ context, page }) => {
-  await context.grantPermissions(["notifications"]);
-  await page.goto("/pwa-app");
+	await context.grantPermissions(["notifications"]);
+	await page.goto("/pwa-app");
 
-  // Registration may have happened during navigation.
-  const sw = context.serviceWorkers()[0] ||
-    (await context.waitForEvent("serviceworker"));
+	// Registration may have happened during navigation.
+	const sw = context.serviceWorkers()[0] || (await context.waitForEvent("serviceworker"));
 
-  // Simulate push message to service worker
-  await sw.evaluate(async () => {
-    // Dispatch push event
-    const pushEvent = new PushEvent("push", {
-      data: JSON.stringify({ title: "Test", body: "Push message" }),
-    });
-    self.dispatchEvent(pushEvent);
-  });
+	// Simulate push message to service worker
+	await sw.evaluate(async () => {
+		// Dispatch push event
+		const pushEvent = new PushEvent("push", {
+			data: JSON.stringify({ title: "Test", body: "Push message" }),
+		});
+		self.dispatchEvent(pushEvent);
+	});
 
-  // Note: Actual notification display testing is limited in Playwright
-  // Focus on verifying the SW handles the push correctly
+	// Note: Actual notification display testing is limited in Playwright
+	// Focus on verifying the SW handles the push correctly
 });
 ```
 
@@ -388,39 +388,37 @@ test("handles push notification", async ({ context, page }) => {
 
 ```typescript
 test("notification click opens page", async ({ context, page }) => {
-  await context.grantPermissions(["notifications"]);
-  await page.goto("/pwa-app");
+	await context.grantPermissions(["notifications"]);
+	await page.goto("/pwa-app");
 
-  // Store notification URL target
-  let notificationUrl = "";
+	// Store notification URL target
+	let notificationUrl = "";
 
-  // Listen for new pages (notification click opens new page)
-  context.on("page", (newPage) => {
-    notificationUrl = newPage.url();
-  });
+	// Listen for new pages (notification click opens new page)
+	context.on("page", (newPage) => {
+		notificationUrl = newPage.url();
+	});
 
-  // Trigger notification via SW
-  await page.evaluate(async () => {
-    const reg = await navigator.serviceWorker.ready;
-    await reg.showNotification("Test", {
-      tag: "test-notification",
-      body: "Click me",
-      data: { url: "/notification-target" },
-    });
-  });
+	// Trigger notification via SW
+	await page.evaluate(async () => {
+		const reg = await navigator.serviceWorker.ready;
+		await reg.showNotification("Test", {
+			tag: "test-notification",
+			body: "Click me",
+			data: { url: "/notification-target" },
+		});
+	});
 
-  // Simulate clicking notification (via SW)
-  const sw = context.serviceWorkers()[0];
-  await sw.evaluate(async () => {
-    const [notification] = await self.registration.getNotifications({ tag: "test-notification" });
-    self.dispatchEvent(
-      new NotificationEvent("notificationclick", { notification }),
-    );
-  });
+	// Simulate clicking notification (via SW)
+	const sw = context.serviceWorkers()[0];
+	await sw.evaluate(async () => {
+		const [notification] = await self.registration.getNotifications({ tag: "test-notification" });
+		self.dispatchEvent(new NotificationEvent("notificationclick", { notification }));
+	});
 
-  // Verify navigation occurred
-  await page.waitForTimeout(1000);
-  // Check if new page opened or current page navigated
+	// Verify navigation occurred
+	await page.waitForTimeout(1000);
+	// Check if new page opened or current page navigated
 });
 ```
 
@@ -430,18 +428,18 @@ test("notification click opens page", async ({ context, page }) => {
 
 ```typescript
 test("registers background sync", async ({ page }) => {
-  await page.goto("/pwa-app");
+	await page.goto("/pwa-app");
 
-  // Register sync
-  const syncRegistered = await page.evaluate(async () => {
-    const reg = await navigator.serviceWorker.ready;
-    if (!("sync" in reg)) return false;
+	// Register sync
+	const syncRegistered = await page.evaluate(async () => {
+		const reg = await navigator.serviceWorker.ready;
+		if (!("sync" in reg)) return false;
 
-    await (reg as any).sync.register("my-sync");
-    return true;
-  });
+		await (reg as any).sync.register("my-sync");
+		return true;
+	});
 
-  expect(syncRegistered).toBe(true);
+	expect(syncRegistered).toBe(true);
 });
 ```
 
@@ -449,43 +447,43 @@ test("registers background sync", async ({ page }) => {
 
 ```typescript
 test("sync event fires when online", async ({ context, page }) => {
-  await page.goto("/pwa-app");
+	await page.goto("/pwa-app");
 
-  // Queue data while offline
-  await context.setOffline(true);
+	// Queue data while offline
+	await context.setOffline(true);
 
-  await page.evaluate(async () => {
-    // Store data in IndexedDB for sync
-    const db = await openDB();
-    await db.put("sync-queue", { id: 1, data: "test" });
+	await page.evaluate(async () => {
+		// Store data in IndexedDB for sync
+		const db = await openDB();
+		await db.put("sync-queue", { id: 1, data: "test" });
 
-    // Register sync
-    const reg = await navigator.serviceWorker.ready;
-    await (reg as any).sync.register("data-sync");
-  });
+		// Register sync
+		const reg = await navigator.serviceWorker.ready;
+		await (reg as any).sync.register("data-sync");
+	});
 
-  // Track sync completion
-  await page.evaluate(() => {
-    window.syncCompleted = false;
-    navigator.serviceWorker.addEventListener("message", (e) => {
-      if (e.data.type === "SYNC_COMPLETE") {
-        window.syncCompleted = true;
-      }
-    });
-  });
+	// Track sync completion
+	await page.evaluate(() => {
+		window.syncCompleted = false;
+		navigator.serviceWorker.addEventListener("message", (e) => {
+			if (e.data.type === "SYNC_COMPLETE") {
+				window.syncCompleted = true;
+			}
+		});
+	});
 
-  // Go online
-  await context.setOffline(false);
+	// Go online
+	await context.setOffline(false);
 
-  // Wait for sync to complete
-  await page.waitForFunction(() => window.syncCompleted, undefined, { timeout: 10000 });
+	// Wait for sync to complete
+	await page.waitForFunction(() => window.syncCompleted, undefined, { timeout: 10000 });
 });
 ```
 
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern                   | Problem                 | Solution                                     |
-|--------------------------------|-------------------------|----------------------------------------------|
+| ------------------------------ | ----------------------- | -------------------------------------------- |
 | Not clearing SW between tests  | Tests affect each other | Unregister SW in beforeEach                  |
 | Not waiting for SW ready       | Race conditions         | Always await `navigator.serviceWorker.ready` |
 | Testing in isolation only      | Misses real SW behavior | Test with actual caching                     |

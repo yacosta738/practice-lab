@@ -6,9 +6,9 @@ Interactive practice platform for certification preparation. Study by domain, ta
 
 ## Available Certifications
 
-| Certification | Description | Questions | Domains |
-|---|---|---|---|
-| **CCDV-F** | Claude Developer Foundations (Anthropic) | 122 | 8 |
+| Certification | Description                              | Questions | Domains |
+| ------------- | ---------------------------------------- | --------- | ------- |
+| **CCDV-F**    | Claude Developer Foundations (Anthropic) | 122       | 8       |
 
 ## Features
 
@@ -69,12 +69,12 @@ Each question follows this structure:
 
 ## Commands
 
-| Command | Action |
-|---|---|
-| `pnpm install` | Install dependencies |
-| `pnpm dev` | Start dev server at `localhost:4321` |
-| `pnpm build` | Generate production build in `./dist/` |
-| `pnpm preview` | Preview the build locally |
+| Command        | Action                                 |
+| -------------- | -------------------------------------- |
+| `pnpm install` | Install dependencies                   |
+| `pnpm dev`     | Start dev server at `localhost:4321`   |
+| `pnpm build`   | Generate production build in `./dist/` |
+| `pnpm preview` | Preview the build locally              |
 
 ## Requirements
 

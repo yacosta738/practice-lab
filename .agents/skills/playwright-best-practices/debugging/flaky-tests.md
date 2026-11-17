@@ -17,7 +17,7 @@
 Most flaky tests fall into distinct categories requiring different remediation:
 
 | Category                    | Symptoms                        | Common Causes                                          |
-|-----------------------------|---------------------------------|--------------------------------------------------------|
+| --------------------------- | ------------------------------- | ------------------------------------------------------ |
 | **UI-driven**               | Element not found, click missed | Missing waits, animations, dynamic rendering           |
 | **Environment-driven**      | CI-only failures                | Slower CPU, memory limits, cold browser starts         |
 | **Data/parallelism-driven** | Fails with multiple workers     | Shared backend data, reused accounts, state collisions |
@@ -61,12 +61,12 @@ CI=true npx playwright test --repeat-each=10
 ```typescript
 // playwright.config.ts - Enable artifacts for flaky test investigation
 export default defineConfig({
-  retries: process.env.CI ? 2 : 0,
-  use: {
-    trace: "on-first-retry", // Capture trace on retry
-    video: "retain-on-failure",
-    screenshot: "only-on-failure",
-  },
+	retries: process.env.CI ? 2 : 0,
+	use: {
+		trace: "on-first-retry", // Capture trace on retry
+		video: "retain-on-failure",
+		screenshot: "only-on-failure",
+	},
 });
 ```
 
@@ -75,10 +75,10 @@ export default defineConfig({
 ```typescript
 // Track test results across runs
 test.afterEach(async ({}, testInfo) => {
-  if (testInfo.retry > 0 && testInfo.status === "passed") {
-    console.warn(`FLAKY: ${testInfo.title} passed on retry ${testInfo.retry}`);
-    // Log to your tracking system
-  }
+	if (testInfo.retry > 0 && testInfo.status === "passed") {
+		console.warn(`FLAKY: ${testInfo.title} passed on retry ${testInfo.retry}`);
+		// Log to your tracking system
+	}
 });
 ```
 
@@ -90,13 +90,9 @@ Add comprehensive event logging to expose timing issues:
 
 ```typescript
 test.beforeEach(async ({ page }) => {
-  page.on("console", (msg) =>
-    console.log(`CONSOLE [${msg.type()}]:`, msg.text()),
-  );
-  page.on("pageerror", (err) => console.error("PAGE ERROR:", err.message));
-  page.on("requestfailed", (req) =>
-    console.error(`REQUEST FAILED: ${req.url()}`),
-  );
+	page.on("console", (msg) => console.log(`CONSOLE [${msg.type()}]:`, msg.text()));
+	page.on("pageerror", (err) => console.error("PAGE ERROR:", err.message));
+	page.on("requestfailed", (req) => console.error(`REQUEST FAILED: ${req.url()}`));
 });
 ```
 
@@ -108,19 +104,19 @@ test.beforeEach(async ({ page }) => {
 ```typescript
 // Capture slow or failed requests
 test.beforeEach(async ({ page }) => {
-  const slowRequests: string[] = [];
+	const slowRequests: string[] = [];
 
-  page.on("requestfinished", (request) => {
-    const timing = request.timing();
-    const duration = timing.responseEnd - timing.requestStart;
-    if (duration > 2000) {
-      slowRequests.push(`${request.url()} took ${duration}ms`);
-    }
-  });
+	page.on("requestfinished", (request) => {
+		const timing = request.timing();
+		const duration = timing.responseEnd - timing.requestStart;
+		if (duration > 2000) {
+			slowRequests.push(`${request.url()} took ${duration}ms`);
+		}
+	});
 
-  page.on("requestfailed", (request) => {
-    console.error(`Failed: ${request.url()} - ${request.failure()?.errorText}`);
-  });
+	page.on("requestfailed", (request) => {
+		console.error(`Failed: ${request.url()} - ${request.failure()?.errorText}`);
+	});
 });
 ```
 
@@ -190,10 +186,7 @@ await expect(page.locator(".data-row")).toHaveCount(10, { timeout: 10000 });
 
 // ✅ BETTER: Wait for network response, then assert
 const responsePromise = page.waitForResponse(
-  (r) =>
-    r.url().includes("/api/data") &&
-    r.request().method() === "GET" &&
-    r.ok(),
+	(r) => r.url().includes("/api/data") && r.request().method() === "GET" && r.ok(),
 );
 await page.click("#load-data");
 await responsePromise;
@@ -208,15 +201,15 @@ await expect(page.locator(".data-row")).toHaveCount(10);
 ```typescript
 // Custom wait for application-specific conditions
 await page.waitForFunction(() => {
-  const app = (window as any).__APP_STATE__;
-  return app?.isReady && !app?.isLoading;
+	const app = (window as any).__APP_STATE__;
+	return app?.isReady && !app?.isLoading;
 });
 
 // Wait for multiple conditions
 await Promise.all([
-  page.waitForResponse("**/api/user"),
-  page.waitForResponse("**/api/settings"),
-  page.getByRole("button", { name: "Load" }).click(),
+	page.waitForResponse("**/api/user"),
+	page.waitForResponse("**/api/settings"),
+	page.getByRole("button", { name: "Load" }).click(),
 ]);
 ```
 
@@ -231,19 +224,16 @@ const testUser = { email: "test@example.com", password: "pass123" };
 // ✅ GOOD: Unique data per worker
 import { test as base } from "@playwright/test";
 
-export const test = base.extend<
-  {},
-  { testUser: { email: string; id: string } }
->({
-  testUser: [
-    async ({}, use, workerInfo) => {
-      const email = `test-${workerInfo.workerIndex}-${Date.now()}@example.com`;
-      const user = await createTestUser(email);
-      await use(user);
-      await deleteTestUser(user.id);
-    },
-    { scope: "worker" },
-  ],
+export const test = base.extend<{}, { testUser: { email: string; id: string } }>({
+	testUser: [
+		async ({}, use, workerInfo) => {
+			const email = `test-${workerInfo.workerIndex}-${Date.now()}@example.com`;
+			const user = await createTestUser(email);
+			await use(user);
+			await deleteTestUser(user.id);
+		},
+		{ scope: "worker" },
+	],
 });
 ```
 
@@ -285,16 +275,16 @@ export const test = base.extend<{}, { workerStorageState: string }>({
 let sharedPage: Page;
 
 test.beforeAll(async ({ browser }) => {
-  sharedPage = await browser.newPage(); // Shared across tests!
+	sharedPage = await browser.newPage(); // Shared across tests!
 });
 
 // ✅ GOOD: Use Playwright's default isolation (fresh context per test)
 test("first test", async ({ page }) => {
-  // Fresh page for this test
+	// Fresh page for this test
 });
 
 test("second test", async ({ page }) => {
-  // Fresh page for this test
+	// Fresh page for this test
 });
 ```
 
@@ -303,17 +293,17 @@ test("second test", async ({ page }) => {
 ```typescript
 // ✅ GOOD: Proper fixture with cleanup
 export const test = base.extend<{ tempFile: string }>({
-  tempFile: async ({}, use) => {
-    const file = `/tmp/test-${Date.now()}.json`;
-    fs.writeFileSync(file, "{}");
+	tempFile: async ({}, use) => {
+		const file = `/tmp/test-${Date.now()}.json`;
+		fs.writeFileSync(file, "{}");
 
-    await use(file);
+		await use(file);
 
-    // Cleanup always runs, even on failure
-    if (fs.existsSync(file)) {
-      fs.unlinkSync(file);
-    }
-  },
+		// Cleanup always runs, even on failure
+		if (fs.existsSync(file)) {
+			fs.unlinkSync(file);
+		}
+	},
 });
 ```
 
@@ -322,7 +312,7 @@ export const test = base.extend<{ tempFile: string }>({
 ### Why Tests Fail Only in CI
 
 | CI Condition       | Impact                                | Solution                                             |
-|--------------------|---------------------------------------|------------------------------------------------------|
+| ------------------ | ------------------------------------- | ---------------------------------------------------- |
 | Slower CPU         | Actions complete later than expected  | Use auto-waiting, not timeouts                       |
 | Cold browser start | No cached assets, slower initial load | Add explicit waits for first navigation              |
 | Headless mode      | Different rendering behavior          | Test locally in headless mode                        |
@@ -351,10 +341,10 @@ docker run -it --rm \
 ```typescript
 // playwright.config.ts - Match CI rendering exactly
 export default defineConfig({
-  use: {
-    viewport: { width: 1280, height: 720 },
-    deviceScaleFactor: 1,
-  },
+	use: {
+		viewport: { width: 1280, height: 720 },
+		deviceScaleFactor: 1,
+	},
 });
 ```
 
@@ -363,21 +353,19 @@ export default defineConfig({
 ```typescript
 // Eliminate external API flakiness
 test.beforeEach(async ({ page }) => {
-  // Stub unstable third-party APIs
-  await page.route("**/api.analytics.com/**", (route) =>
-    route.fulfill({ body: "" }),
-  );
-  await page.route("**/api.payment-provider.com/**", (route) =>
-    route.fulfill({ json: { status: "ok" } }),
-  );
+	// Stub unstable third-party APIs
+	await page.route("**/api.analytics.com/**", (route) => route.fulfill({ body: "" }));
+	await page.route("**/api.payment-provider.com/**", (route) =>
+		route.fulfill({ json: { status: "ok" } }),
+	);
 });
 
 // Test-specific stub
 test("checkout with payment", async ({ page }) => {
-  await page.route("**/api/payment", (route) =>
-    route.fulfill({ json: { success: true, transactionId: "test-123" } }),
-  );
-  // Test proceeds with deterministic response
+	await page.route("**/api/payment", (route) =>
+		route.fulfill({ json: { success: true, transactionId: "test-123" } }),
+	);
+	// Test proceeds with deterministic response
 });
 ```
 
@@ -388,17 +376,17 @@ test("checkout with payment", async ({ page }) => {
 ```typescript
 // playwright.config.ts - Separate flaky tests
 export default defineConfig({
-  projects: [
-    {
-      name: "stable",
-      testIgnore: ["**/*.flaky.spec.ts"],
-    },
-    {
-      name: "quarantine",
-      testMatch: ["**/*.flaky.spec.ts"],
-      retries: 3,
-    },
-  ],
+	projects: [
+		{
+			name: "stable",
+			testIgnore: ["**/*.flaky.spec.ts"],
+		},
+		{
+			name: "quarantine",
+			testMatch: ["**/*.flaky.spec.ts"],
+			retries: 3,
+		},
+	],
 });
 ```
 
@@ -407,18 +395,18 @@ export default defineConfig({
 ```typescript
 // Mark flaky tests with annotations
 test("intermittent checkout issue", async ({ page }, testInfo) => {
-  testInfo.annotations.push({
-    type: "flaky",
-    description: "Investigating payment API timing - JIRA-1234",
-  });
+	testInfo.annotations.push({
+		type: "flaky",
+		description: "Investigating payment API timing - JIRA-1234",
+	});
 
-  // Test implementation
+	// Test implementation
 });
 
 // Skip flaky test conditionally
 test("known CI flaky", async ({ page }) => {
-  test.skip(!!process.env.CI, "Flaky in CI - investigating JIRA-5678");
-  // Test implementation
+	test.skip(!!process.env.CI, "Flaky in CI - investigating JIRA-5678");
+	// Test implementation
 });
 ```
 
@@ -439,16 +427,16 @@ npx playwright test tests/new-feature.spec.ts --repeat-each=20 --workers=4
 ```typescript
 // ✅ Each test should be self-contained
 test.describe("User profile", () => {
-  test("can update name", async ({ page, testUser }) => {
-    // Uses unique testUser fixture
-    // No dependency on other tests
-    // Cleanup handled by fixture
-  });
+	test("can update name", async ({ page, testUser }) => {
+		// Uses unique testUser fixture
+		// No dependency on other tests
+		// Cleanup handled by fixture
+	});
 
-  test("can update email", async ({ page, testUser }) => {
-    // Independent of "can update name"
-    // Own testUser, own state
-  });
+	test("can update email", async ({ page, testUser }) => {
+		// Independent of "can update name"
+		// Own testUser, own state
+	});
 });
 ```
 
@@ -469,18 +457,18 @@ await expect(page.locator(".items")).toHaveCount(5);
 ```typescript
 // playwright.config.ts - Limit retries to avoid masking issues
 export default defineConfig({
-  retries: process.env.CI ? 2 : 0, // Only retry in CI
-  expect: {
-    timeout: 10000, // Reasonable assertion timeout
-  },
-  timeout: 60000, // Test timeout
+	retries: process.env.CI ? 2 : 0, // Only retry in CI
+	expect: {
+		timeout: 10000, // Reasonable assertion timeout
+	},
+	timeout: 60000, // Test timeout
 });
 ```
 
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern                              | Problem                             | Solution                                       |
-|-------------------------------------------|-------------------------------------|------------------------------------------------|
+| ----------------------------------------- | ----------------------------------- | ---------------------------------------------- |
 | `waitForTimeout()` as primary wait        | Arbitrary, hides real timing issues | Use auto-waiting assertions                    |
 | Increasing global timeout to "fix" flakes | Masks root cause, slows all tests   | Find and fix actual timing issue               |
 | Retrying until pass                       | Hides systemic problems             | Fix root cause, use retries for diagnosis only |

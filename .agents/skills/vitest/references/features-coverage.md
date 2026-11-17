@@ -1,4 +1,5 @@
 ---
+
 name: code-coverage
 description: Code coverage with V8 or Istanbul providers
 ---
@@ -17,41 +18,38 @@ vitest run --coverage
 ```ts
 // vitest.config.ts
 defineConfig({
-  test: {
-    coverage: {
-      // Provider: 'v8' (default, faster) or 'istanbul' (more compatible)
-      provider: 'v8',
-      
-      // Enable coverage
-      enabled: true,
-      
-      // Reporters
-      reporter: ['text', 'json', 'html'],
-      
-      // v4: define `include` to report uncovered files too.
-      // Without it, only files loaded during the run are reported.
-      include: ['src/**/*.{ts,tsx}'],
-      
-      // Exclusion is applied to files matched by `include`
-      exclude: [
-        '**/*.d.ts',
-        '**/*.test.ts',
-      ],
-      
-      // Thresholds
-      thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 80,
-        statements: 80,
-      },
+	test: {
+		coverage: {
+			// Provider: 'v8' (default, faster) or 'istanbul' (more compatible)
+			provider: "v8",
 
-      // v5 (v8 only): also cover node:child_process / node:worker_threads
-      // spawned during the run (adds overhead via NODE_V8_COVERAGE)
-      autoAttachSubprocess: false,
-    },
-  },
-})
+			// Enable coverage
+			enabled: true,
+
+			// Reporters
+			reporter: ["text", "json", "html"],
+
+			// v4: define `include` to report uncovered files too.
+			// Without it, only files loaded during the run are reported.
+			include: ["src/**/*.{ts,tsx}"],
+
+			// Exclusion is applied to files matched by `include`
+			exclude: ["**/*.d.ts", "**/*.test.ts"],
+
+			// Thresholds
+			thresholds: {
+				lines: 80,
+				functions: 80,
+				branches: 80,
+				statements: 80,
+			},
+
+			// v5 (v8 only): also cover node:child_process / node:worker_threads
+			// spawned during the run (adds overhead via NODE_V8_COVERAGE)
+			autoAttachSubprocess: false,
+		},
+	},
+});
 ```
 
 ## Providers
@@ -127,7 +125,7 @@ coverage: {
 ```ts
 /* v8 ignore next -- @preserve */
 function ignored() {
-  return 'not covered'
+	return "not covered";
 }
 
 /* v8 ignore start -- @preserve */
@@ -143,7 +141,7 @@ function ignored() {}
 
 /* istanbul ignore if -- @preserve */
 if (condition) {
-  // ignored
+	// ignored
 }
 ```
 
@@ -153,11 +151,11 @@ Note: `@preserve` keeps comments through esbuild.
 
 ```json
 {
-  "scripts": {
-    "test": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "test:coverage:watch": "vitest --coverage"
-  }
+	"scripts": {
+		"test": "vitest",
+		"test:coverage": "vitest run --coverage",
+		"test:coverage:watch": "vitest --coverage"
+	}
 }
 ```
 
@@ -207,7 +205,7 @@ vitest --merge-reports --coverage --reporter=json
 - **Glob thresholds don't inherit top-level `perFile`** — set `perFile` on each glob that needs it.
 - **`coverage.autoAttachSubprocess`** (v8) tracks child-process/worker-thread coverage.
 - **Istanbul moved to the maintained [
-  `@vitest/istanbuljs`](https://github.com/vitest-dev/istanbuljs) fork**; the v8 provider merges
+`@vitest/istanbuljs`](https://github.com/vitest-dev/istanbuljs) fork**; the v8 provider merges
   reports with bounded memory.
 
 ## v4 Changes

@@ -214,25 +214,25 @@ docker-compose run --rm playwright
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  reporter: [
-    // Always generate
-    ["html", { outputFolder: "playwright-report" }],
+	reporter: [
+		// Always generate
+		["html", { outputFolder: "playwright-report" }],
 
-    // Console output
-    ["list"],
+		// Console output
+		["list"],
 
-    // CI-friendly
-    ["github"], // GitHub Actions annotations
+		// CI-friendly
+		["github"], // GitHub Actions annotations
 
-    // JUnit for CI integration
-    ["junit", { outputFile: "results.xml" }],
+		// JUnit for CI integration
+		["junit", { outputFile: "results.xml" }],
 
-    // JSON for custom processing
-    ["json", { outputFile: "results.json" }],
+		// JSON for custom processing
+		["json", { outputFile: "results.json" }],
 
-    // Blob for merging shards
-    ["blob", { outputDir: "blob-report" }],
-  ],
+		// Blob for merging shards
+		["blob", { outputDir: "blob-report" }],
+	],
 });
 ```
 
@@ -240,9 +240,7 @@ export default defineConfig({
 
 ```typescript
 export default defineConfig({
-  reporter: process.env.CI
-    ? [["github"], ["blob"], ["html"]]
-    : [["list"], ["html"]],
+	reporter: process.env.CI ? [["github"], ["blob"], ["html"]] : [["list"], ["html"]],
 });
 ```
 
@@ -263,11 +261,11 @@ npx playwright test --shard=2/4
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  // Evenly distribute tests across shards
-  fullyParallel: true,
+	// Evenly distribute tests across shards
+	fullyParallel: true,
 
-  // For blob reporter to merge later
-  reporter: process.env.CI ? [["blob"]] : [["html"]],
+	// For blob reporter to merge later
+	reporter: process.env.CI ? [["blob"]] : [["html"]],
 });
 ```
 
@@ -291,9 +289,9 @@ import dotenv from "dotenv";
 dotenv.config({ path: `.env.${process.env.NODE_ENV || "development"}` });
 
 export default defineConfig({
-  use: {
-    baseURL: process.env.BASE_URL || "http://localhost:3000",
-  },
+	use: {
+		baseURL: process.env.BASE_URL || "http://localhost:3000",
+	},
 });
 ```
 
@@ -328,8 +326,8 @@ jobs:
 ```typescript
 // tests use environment variables
 test("login", async ({ page }) => {
-  await page.getByLabel("Email").fill(process.env.TEST_EMAIL!);
-  await page.getByLabel("Password").fill(process.env.TEST_PASSWORD!);
+	await page.getByLabel("Email").fill(process.env.TEST_EMAIL!);
+	await page.getByLabel("Password").fill(process.env.TEST_PASSWORD!);
 });
 ```
 
@@ -401,8 +399,8 @@ test("login", async ({ page }) => {
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  grep: process.env.CI ? /@smoke|@critical/ : undefined,
-  grepInvert: process.env.CI ? /@flaky/ : undefined,
+	grep: process.env.CI ? /@smoke|@critical/ : undefined,
+	grepInvert: process.env.CI ? /@flaky/ : undefined,
 });
 ```
 
@@ -411,23 +409,23 @@ export default defineConfig({
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  projects: [
-    {
-      name: "smoke",
-      grep: /@smoke/,
-    },
-    {
-      name: "regression",
-      grepInvert: /@smoke/,
-    },
-  ],
+	projects: [
+		{
+			name: "smoke",
+			grep: /@smoke/,
+		},
+		{
+			name: "regression",
+			grepInvert: /@smoke/,
+		},
+	],
 });
 ```
 
 ## Best Practices
 
 | Practice                      | Benefit                   |
-|-------------------------------|---------------------------|
+| ----------------------------- | ------------------------- |
 | Use `npm ci`                  | Deterministic installs    |
 | Run headless in CI            | Faster, no display needed |
 | Set retries in CI only        | Handle flakiness          |
@@ -443,20 +441,18 @@ export default defineConfig({
 ```typescript
 // playwright.config.ts - CI optimized
 export default defineConfig({
-  testDir: "./tests",
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI
-    ? [["github"], ["blob"], ["html"]]
-    : [["list"], ["html"]],
-  use: {
-    baseURL: process.env.BASE_URL || "http://localhost:3000",
-    trace: "on-first-retry",
-    screenshot: "only-on-failure",
-    video: "on-first-retry",
-  },
+	testDir: "./tests",
+	fullyParallel: true,
+	forbidOnly: !!process.env.CI,
+	retries: process.env.CI ? 2 : 0,
+	workers: process.env.CI ? 1 : undefined,
+	reporter: process.env.CI ? [["github"], ["blob"], ["html"]] : [["list"], ["html"]],
+	use: {
+		baseURL: process.env.BASE_URL || "http://localhost:3000",
+		trace: "on-first-retry",
+		screenshot: "only-on-failure",
+		video: "on-first-retry",
+	},
 });
 ```
 

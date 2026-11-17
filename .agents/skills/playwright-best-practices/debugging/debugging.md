@@ -46,11 +46,11 @@ while debugging.
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  use: {
-    launchOptions: {
-      slowMo: 500,
-    },
-  },
+	use: {
+		launchOptions: {
+			slowMo: 500,
+		},
+	},
 });
 ```
 
@@ -73,13 +73,13 @@ Features:
 
 ```typescript
 test("debug example", async ({ page }) => {
-  await page.goto("/");
+	await page.goto("/");
 
-  // Pause and open inspector
-  await page.pause();
+	// Pause and open inspector
+	await page.pause();
 
-  // Continue test...
-  await page.click("button");
+	// Continue test...
+	await page.click("button");
 });
 ```
 
@@ -90,11 +90,11 @@ test("debug example", async ({ page }) => {
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  use: {
-    trace: "on-first-retry", // Record on retry
-    // trace: 'on',                 // Always record
-    // trace: 'retain-on-failure',  // Keep only failures
-  },
+	use: {
+		trace: "on-first-retry", // Record on retry
+		// trace: 'on',                 // Always record
+		// trace: 'retain-on-failure',  // Keep only failures
+	},
 });
 ```
 
@@ -121,12 +121,12 @@ npx playwright show-trace test-results/test-name/trace.zip
 
 ```typescript
 test("manual trace", async ({ page, context }) => {
-  await context.tracing.start({ screenshots: true, snapshots: true });
+	await context.tracing.start({ screenshots: true, snapshots: true });
 
-  await page.goto("/");
-  await page.click("button");
+	await page.goto("/");
+	await page.click("button");
 
-  await context.tracing.stop({ path: "trace.zip" });
+	await context.tracing.stop({ path: "trace.zip" });
 });
 ```
 
@@ -135,7 +135,7 @@ test("manual trace", async ({ page, context }) => {
 If a test fails intermittently, it's likely flaky. Quick checks:
 
 | Behavior                               | Likely Cause                  | Next Step                                    |
-|----------------------------------------|-------------------------------|----------------------------------------------|
+| -------------------------------------- | ----------------------------- | -------------------------------------------- |
 | Fails sometimes, passes other times    | Flaky - timing/race condition | [flaky-tests.md](flaky-tests.md)             |
 | Fails only with multiple workers       | Flaky - parallelism/isolation | [flaky-tests.md](flaky-tests.md)             |
 | Fails only in CI                       | Environment difference        | [CI Debugging](#debugging-in-ci) below       |
@@ -151,23 +151,23 @@ If a test fails intermittently, it's likely flaky. Quick checks:
 
 ```typescript
 test("debug network", async ({ page }) => {
-  const requests: string[] = [];
-  const failures: string[] = [];
+	const requests: string[] = [];
+	const failures: string[] = [];
 
-  page.on("request", (req) => requests.push(`>> ${req.method()} ${req.url()}`));
-  page.on("requestfinished", (req) => {
-    const resp = req.response();
-    requests.push(`<< ${resp?.status()} ${req.url()}`);
-  });
-  page.on("requestfailed", (req) => {
-    failures.push(`FAILED: ${req.url()} - ${req.failure()?.errorText}`);
-  });
+	page.on("request", (req) => requests.push(`>> ${req.method()} ${req.url()}`));
+	page.on("requestfinished", (req) => {
+		const resp = req.response();
+		requests.push(`<< ${resp?.status()} ${req.url()}`);
+	});
+	page.on("requestfailed", (req) => {
+		failures.push(`FAILED: ${req.url()} - ${req.failure()?.errorText}`);
+	});
 
-  await page.goto("/dashboard");
+	await page.goto("/dashboard");
 
-  // Log summary
-  console.log("Requests:", requests.length);
-  if (failures.length) console.log("Failures:", failures);
+	// Log summary
+	console.log("Requests:", requests.length);
+	if (failures.length) console.log("Failures:", failures);
 });
 ```
 
@@ -179,7 +179,7 @@ timeouts.
 ```typescript
 // Start waiting BEFORE triggering the request
 const responsePromise = page.waitForResponse(
-  (resp) => resp.url().includes("/api/data") && resp.status() === 200,
+	(resp) => resp.url().includes("/api/data") && resp.status() === 200,
 );
 await page.getByRole("button", { name: "Load" }).click();
 const response = await responsePromise;
@@ -193,15 +193,15 @@ console.log("Status:", response.status());
 
 ```typescript
 test("find slow requests", async ({ page }) => {
-  page.on("requestfinished", (request) => {
-    const timing = request.timing();
-    const total = timing.responseEnd - timing.requestStart;
-    if (total > 1000) {
-      console.log(`SLOW (${total}ms): ${request.url()}`);
-    }
-  });
+	page.on("requestfinished", (request) => {
+		const timing = request.timing();
+		const total = timing.responseEnd - timing.requestStart;
+		if (total > 1000) {
+			console.log(`SLOW (${total}ms): ${request.url()}`);
+		}
+	});
 
-  await page.goto("/");
+	await page.goto("/");
 });
 ```
 
@@ -227,15 +227,15 @@ docker run --rm -v $(pwd):/work -w /work \
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  // More artifacts in CI for debugging
-  use: {
-    trace: process.env.CI ? "on-first-retry" : "off",
-    video: process.env.CI ? "retain-on-failure" : "off",
-    screenshot: process.env.CI ? "only-on-failure" : "off",
-  },
+	// More artifacts in CI for debugging
+	use: {
+		trace: process.env.CI ? "on-first-retry" : "off",
+		video: process.env.CI ? "retain-on-failure" : "off",
+		screenshot: process.env.CI ? "only-on-failure" : "off",
+	},
 
-  // More retries in CI (but investigate failures!)
-  retries: process.env.CI ? 2 : 0,
+	// More retries in CI (but investigate failures!)
+	retries: process.env.CI ? 2 : 0,
 });
 ```
 
@@ -243,15 +243,15 @@ export default defineConfig({
 
 ```typescript
 test("CI environment check", async ({ page }, testInfo) => {
-  console.log("CI:", process.env.CI);
-  console.log("Project:", testInfo.project.name);
-  console.log("Worker:", testInfo.workerIndex);
-  console.log("Retry:", testInfo.retry);
-  console.log("Base URL:", testInfo.project.use.baseURL);
+	console.log("CI:", process.env.CI);
+	console.log("Project:", testInfo.project.name);
+	console.log("Worker:", testInfo.workerIndex);
+	console.log("Retry:", testInfo.retry);
+	console.log("Base URL:", testInfo.project.use.baseURL);
 
-  // Check viewport
-  const viewport = page.viewportSize();
-  console.log("Viewport:", viewport);
+	// Check viewport
+	const viewport = page.viewportSize();
+	console.log("Viewport:", viewport);
 });
 ```
 
@@ -259,26 +259,26 @@ test("CI environment check", async ({ page }, testInfo) => {
 
 ```typescript
 test("debug auth", async ({ page, context }) => {
-  // Inspect current storage state
-  const storage = await context.storageState();
-  console.log(
-    "Cookies:",
-    storage.cookies.map((c) => c.name),
-  );
+	// Inspect current storage state
+	const storage = await context.storageState();
+	console.log(
+		"Cookies:",
+		storage.cookies.map((c) => c.name),
+	);
 
-  // Check if auth cookies are present
-  const cookies = await context.cookies();
-  const authCookie = cookies.find((c) => c.name.includes("session"));
-  console.log("Auth cookie:", authCookie ? "present" : "MISSING");
+	// Check if auth cookies are present
+	const cookies = await context.cookies();
+	const authCookie = cookies.find((c) => c.name.includes("session"));
+	console.log("Auth cookie:", authCookie ? "present" : "MISSING");
 
-  await page.goto("/protected");
+	await page.goto("/protected");
 
-  // Check if redirected to login (auth failed)
-  if (page.url().includes("/login")) {
-    console.error("Auth failed - redirected to login");
-    // Save state for inspection
-    await context.storageState({ path: "debug-auth.json" });
-  }
+	// Check if redirected to login (auth failed)
+	if (page.url().includes("/login")) {
+		console.error("Auth failed - redirected to login");
+		// Save state for inspection
+		await context.storageState({ path: "debug-auth.json" });
+	}
 });
 ```
 
@@ -288,27 +288,27 @@ test("debug auth", async ({ page, context }) => {
 
 ```typescript
 test("visual debug", async ({ page }, testInfo) => {
-  await page.goto("/");
+	await page.goto("/");
 
-  // Screenshot before action
-  await page.screenshot({
-    path: testInfo.outputPath("before.png"),
-    fullPage: true,
-  });
+	// Screenshot before action
+	await page.screenshot({
+		path: testInfo.outputPath("before.png"),
+		fullPage: true,
+	});
 
-  await page.getByRole("button", { name: "Open Menu" }).click();
+	await page.getByRole("button", { name: "Open Menu" }).click();
 
-  // Screenshot after action
-  await page.screenshot({
-    path: testInfo.outputPath("after.png"),
-    fullPage: true,
-  });
+	// Screenshot after action
+	await page.screenshot({
+		path: testInfo.outputPath("after.png"),
+		fullPage: true,
+	});
 
-  // Attach to report
-  await testInfo.attach("before", {
-    path: testInfo.outputPath("before.png"),
-    contentType: "image/png",
-  });
+	// Attach to report
+	await testInfo.attach("before", {
+		path: testInfo.outputPath("before.png"),
+		contentType: "image/png",
+	});
 });
 ```
 
@@ -316,16 +316,16 @@ test("visual debug", async ({ page }, testInfo) => {
 
 ```typescript
 test("element screenshot", async ({ page }) => {
-  await page.goto("/");
+	await page.goto("/");
 
-  const element = page.getByTestId("problem-area");
+	const element = page.getByTestId("problem-area");
 
-  // Screenshot just the element
-  await element.screenshot({ path: "element-debug.png" });
+	// Screenshot just the element
+	await element.screenshot({ path: "element-debug.png" });
 
-  // Highlight element in full page screenshot
-  await element.evaluate((el) => (el.style.border = "3px solid red"));
-  await page.screenshot({ path: "highlighted.png" });
+	// Highlight element in full page screenshot
+	await element.evaluate((el) => (el.style.border = "3px solid red"));
+	await page.screenshot({ path: "highlighted.png" });
 });
 ```
 
@@ -340,7 +340,7 @@ console.log(await page.getByRole("button").count());
 // Debug: Log all buttons
 const buttons = await page.getByRole("button").all();
 for (const button of buttons) {
-  console.log(await button.textContent());
+	console.log(await button.textContent());
 }
 
 // Debug: Screenshot before action
@@ -359,13 +359,11 @@ test.setTimeout(60000);
 
 // Check what's blocking
 test("debug timeout", async ({ page }) => {
-  await page.goto("/slow-page");
+	await page.goto("/slow-page");
 
-  // Log network activity
-  page.on("request", (request) => console.log(">>", request.url()));
-  page.on("response", (response) =>
-    console.log("<<", response.url(), response.status()),
-  );
+	// Log network activity
+	page.on("request", (request) => console.log(">>", request.url()));
+	page.on("response", (response) => console.log("<<", response.url(), response.status()));
 });
 ```
 
@@ -391,7 +389,7 @@ console.log("Enabled:", await element.isEnabled());
 ```typescript
 // Debug: List all frames
 for (const frame of page.frames()) {
-  console.log("Frame:", frame.url());
+	console.log("Frame:", frame.url());
 }
 
 // Debug: Check if element is in iframe
@@ -424,9 +422,9 @@ the version (see [docker.md](../infrastructure-ci-cd/docker.md)).
 
 ```typescript
 test("with logging", async ({ page }) => {
-  page.on("console", (msg) => console.log("Browser:", msg.text()));
-  page.on("pageerror", (error) => console.log("Page error:", error.message));
-  await page.goto("/");
+	page.on("console", (msg) => console.log("Browser:", msg.text()));
+	page.on("pageerror", (error) => console.log("Page error:", error.message));
+	await page.goto("/");
 });
 ```
 
@@ -437,21 +435,21 @@ test("with logging", async ({ page }) => {
 
 ```typescript
 test("with attachments", async ({ page }, testInfo) => {
-  // Attach screenshot to report
-  const screenshot = await page.screenshot();
-  await testInfo.attach("screenshot", {
-    body: screenshot,
-    contentType: "image/png",
-  });
+	// Attach screenshot to report
+	const screenshot = await page.screenshot();
+	await testInfo.attach("screenshot", {
+		body: screenshot,
+		contentType: "image/png",
+	});
 
-  // Attach logs or data
-  await testInfo.attach("logs", {
-    body: "Custom log data",
-    contentType: "text/plain",
-  });
+	// Attach logs or data
+	await testInfo.attach("logs", {
+		body: "Custom log data",
+		contentType: "text/plain",
+	});
 
-  // Use testInfo for output paths
-  const outputPath = testInfo.outputPath("debug-file.json");
+	// Use testInfo for output paths
+	const outputPath = testInfo.outputPath("debug-file.json");
 });
 ```
 
@@ -460,7 +458,7 @@ test("with attachments", async ({ page }, testInfo) => {
 ### By Symptom
 
 | Symptom                                       | Common Causes                                                | Quick Fixes                                                         | Reference                                                                                  |
-|-----------------------------------------------|--------------------------------------------------------------|---------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| --------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | **Element not found**                         | Wrong selector, element not visible, in iframe, timing issue | Check locator with Inspector, wait for visibility, use frameLocator | [locators.md](../core/locators.md), [assertions-waiting.md](../core/assertions-waiting.md) |
 | **Timeout errors**                            | Slow network, heavy page load, waiting for wrong condition   | Increase timeout, wait for specific response, check network tab     | [assertions-waiting.md](../core/assertions-waiting.md)                                     |
 | **Flaky tests**                               | Race conditions, shared state, timing dependencies           | See comprehensive flaky test guide                                  | [flaky-tests.md](flaky-tests.md)                                                           |
@@ -509,16 +507,16 @@ test("with attachments", async ({ page }, testInfo) => {
    ```
 
 4. **Check related areas**
-    - Network requests: Are API calls completing?
-      (see [Debugging Network Issues](#debugging-network-issues))
-    - Timing: Is auto-waiting working correctly?
-    - State: Is the test isolated? (see [flaky-tests.md](flaky-tests.md))
-    - Environment: Does it work locally but fail in CI? (see [Debugging in CI](#debugging-in-ci))
+   - Network requests: Are API calls completing?
+     (see [Debugging Network Issues](#debugging-network-issues))
+   - Timing: Is auto-waiting working correctly?
+   - State: Is the test isolated? (see [flaky-tests.md](flaky-tests.md))
+   - Environment: Does it work locally but fail in CI? (see [Debugging in CI](#debugging-in-ci))
 
 5. **Apply fix and verify**
-    - Fix the root cause (not just symptoms)
-    - Run multiple times to confirm stability: `--repeat-each=10`
-    - Check related tests aren't affected
+   - Fix the root cause (not just symptoms)
+   - Run multiple times to confirm stability: `--repeat-each=10`
+   - Check related tests aren't affected
 
 ## Related References
 

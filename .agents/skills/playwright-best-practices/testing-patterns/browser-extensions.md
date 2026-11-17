@@ -27,19 +27,19 @@ import { defineConfig } from "@playwright/test";
 import path from "path";
 
 export default defineConfig({
-  testDir: "./tests",
-  use: {
-    // Use headed Chromium, or channel: "chromium" for headless extensions.
-    headless: false,
-  },
-  projects: [
-    {
-      name: "chromium-extension",
-      use: {
-        browserName: "chromium",
-      },
-    },
-  ],
+	testDir: "./tests",
+	use: {
+		// Use headed Chromium, or channel: "chromium" for headless extensions.
+		headless: false,
+	},
+	projects: [
+		{
+			name: "chromium-extension",
+			use: {
+				browserName: "chromium",
+			},
+		},
+	],
 });
 ```
 
@@ -51,49 +51,47 @@ import { test as base, chromium, BrowserContext, Page } from "@playwright/test";
 import path from "path";
 
 type ExtensionFixtures = {
-  context: BrowserContext;
-  extensionId: string;
-  backgroundPage: Page;
+	context: BrowserContext;
+	extensionId: string;
+	backgroundPage: Page;
 };
 
 export const test = base.extend<ExtensionFixtures>({
-  context: async ({}, use) => {
-    const pathToExtension = path.join(__dirname, "../extension");
+	context: async ({}, use) => {
+		const pathToExtension = path.join(__dirname, "../extension");
 
-    const context = await chromium.launchPersistentContext("", {
-      headless: false,
-      args: [
-        `--disable-extensions-except=${pathToExtension}`,
-        `--load-extension=${pathToExtension}`,
-      ],
-    });
+		const context = await chromium.launchPersistentContext("", {
+			headless: false,
+			args: [
+				`--disable-extensions-except=${pathToExtension}`,
+				`--load-extension=${pathToExtension}`,
+			],
+		});
 
-    await use(context);
-    await context.close();
-  },
+		await use(context);
+		await context.close();
+	},
 
-  extensionId: async ({ context }, use) => {
-    // Get extension ID from service worker URL
-    let extensionId = "";
+	extensionId: async ({ context }, use) => {
+		// Get extension ID from service worker URL
+		let extensionId = "";
 
-    // Wait for service worker to be registered
-    const serviceWorker =
-      context.serviceWorkers()[0] ||
-      (await context.waitForEvent("serviceworker"));
+		// Wait for service worker to be registered
+		const serviceWorker =
+			context.serviceWorkers()[0] || (await context.waitForEvent("serviceworker"));
 
-    extensionId = serviceWorker.url().split("/")[2];
+		extensionId = serviceWorker.url().split("/")[2];
 
-    await use(extensionId);
-  },
+		await use(extensionId);
+	},
 
-  backgroundPage: async ({ context }, use) => {
-    // For Manifest V2 extensions
-    const backgroundPage =
-      context.backgroundPages()[0] ||
-      (await context.waitForEvent("backgroundpage"));
+	backgroundPage: async ({ context }, use) => {
+		// For Manifest V2 extensions
+		const backgroundPage =
+			context.backgroundPages()[0] || (await context.waitForEvent("backgroundpage"));
 
-    await use(backgroundPage);
-  },
+		await use(backgroundPage);
+	},
 });
 
 export { expect } from "@playwright/test";
@@ -105,22 +103,19 @@ export { expect } from "@playwright/test";
 
 ```typescript
 test("load MV3 extension", async () => {
-  const pathToExtension = path.join(__dirname, "../my-extension");
+	const pathToExtension = path.join(__dirname, "../my-extension");
 
-  const context = await chromium.launchPersistentContext("", {
-    headless: false,
-    args: [
-      `--disable-extensions-except=${pathToExtension}`,
-      `--load-extension=${pathToExtension}`,
-    ],
-  });
+	const context = await chromium.launchPersistentContext("", {
+		headless: false,
+		args: [`--disable-extensions-except=${pathToExtension}`, `--load-extension=${pathToExtension}`],
+	});
 
-  // The worker may already exist when launchPersistentContext returns.
-  const serviceWorker = context.serviceWorkers()[0] ||
-    (await context.waitForEvent("serviceworker"));
-  expect(serviceWorker.url()).toContain("chrome-extension://");
+	// The worker may already exist when launchPersistentContext returns.
+	const serviceWorker =
+		context.serviceWorkers()[0] || (await context.waitForEvent("serviceworker"));
+	expect(serviceWorker.url()).toContain("chrome-extension://");
 
-  await context.close();
+	await context.close();
 });
 ```
 
@@ -131,22 +126,19 @@ an older compatible browser; use Manifest V3 with current Playwright.
 
 ```typescript
 test("load MV2 extension", async () => {
-  const pathToExtension = path.join(__dirname, "../my-extension-v2");
+	const pathToExtension = path.join(__dirname, "../my-extension-v2");
 
-  const context = await chromium.launchPersistentContext("", {
-    headless: false,
-    args: [
-      `--disable-extensions-except=${pathToExtension}`,
-      `--load-extension=${pathToExtension}`,
-    ],
-  });
+	const context = await chromium.launchPersistentContext("", {
+		headless: false,
+		args: [`--disable-extensions-except=${pathToExtension}`, `--load-extension=${pathToExtension}`],
+	});
 
-  // The background page may already exist when launch returns.
-  const backgroundPage = context.backgroundPages()[0] ||
-    (await context.waitForEvent("backgroundpage"));
-  expect(backgroundPage.url()).toContain("chrome-extension://");
+	// The background page may already exist when launch returns.
+	const backgroundPage =
+		context.backgroundPages()[0] || (await context.waitForEvent("backgroundpage"));
+	expect(backgroundPage.url()).toContain("chrome-extension://");
 
-  await context.close();
+	await context.close();
 });
 ```
 
@@ -154,21 +146,21 @@ test("load MV2 extension", async () => {
 
 ```typescript
 test("load multiple extensions", async () => {
-  const extension1 = path.join(__dirname, "../extension1");
-  const extension2 = path.join(__dirname, "../extension2");
+	const extension1 = path.join(__dirname, "../extension1");
+	const extension2 = path.join(__dirname, "../extension2");
 
-  const context = await chromium.launchPersistentContext("", {
-    headless: false,
-    args: [
-      `--disable-extensions-except=${extension1},${extension2}`,
-      `--load-extension=${extension1},${extension2}`,
-    ],
-  });
+	const context = await chromium.launchPersistentContext("", {
+		headless: false,
+		args: [
+			`--disable-extensions-except=${extension1},${extension2}`,
+			`--load-extension=${extension1},${extension2}`,
+		],
+	});
 
-  // Count existing workers too; waiting for two new events can miss startup.
-  await expect.poll(() => context.serviceWorkers().length).toBe(2);
+	// Count existing workers too; waiting for two new events can miss startup.
+	await expect.poll(() => context.serviceWorkers().length).toBe(2);
 
-  await context.close();
+	await context.close();
 });
 ```
 
@@ -178,14 +170,14 @@ test("load multiple extensions", async () => {
 
 ```typescript
 test("test popup UI", async ({ context, extensionId }) => {
-  // Open popup directly by URL
-  const popupPage = await context.newPage();
-  await popupPage.goto(`chrome-extension://${extensionId}/popup.html`);
+	// Open popup directly by URL
+	const popupPage = await context.newPage();
+	await popupPage.goto(`chrome-extension://${extensionId}/popup.html`);
 
-  // Test popup interactions
-  await expect(popupPage.getByRole("heading")).toHaveText("My Extension");
-  await popupPage.getByRole("button", { name: "Enable" }).click();
-  await expect(popupPage.getByText("Enabled")).toBeVisible();
+	// Test popup interactions
+	await expect(popupPage.getByRole("heading")).toHaveText("My Extension");
+	await popupPage.getByRole("button", { name: "Enable" }).click();
+	await expect(popupPage.getByText("Enabled")).toBeVisible();
 });
 ```
 
@@ -193,20 +185,18 @@ test("test popup UI", async ({ context, extensionId }) => {
 
 ```typescript
 test("popup remembers state", async ({ context, extensionId }) => {
-  // First interaction
-  const popup1 = await context.newPage();
-  await popup1.goto(`chrome-extension://${extensionId}/popup.html`);
-  await popup1.getByRole("checkbox", { name: "Dark Mode" }).check();
-  await popup1.close();
+	// First interaction
+	const popup1 = await context.newPage();
+	await popup1.goto(`chrome-extension://${extensionId}/popup.html`);
+	await popup1.getByRole("checkbox", { name: "Dark Mode" }).check();
+	await popup1.close();
 
-  // Reopen popup
-  const popup2 = await context.newPage();
-  await popup2.goto(`chrome-extension://${extensionId}/popup.html`);
+	// Reopen popup
+	const popup2 = await context.newPage();
+	await popup2.goto(`chrome-extension://${extensionId}/popup.html`);
 
-  // State should persist
-  await expect(
-    popup2.getByRole("checkbox", { name: "Dark Mode" }),
-  ).toBeChecked();
+	// State should persist
+	await expect(popup2.getByRole("checkbox", { name: "Dark Mode" })).toBeChecked();
 });
 ```
 
@@ -214,24 +204,24 @@ test("popup remembers state", async ({ context, extensionId }) => {
 
 ```typescript
 test("popup sends message to background", async ({ context, extensionId }) => {
-  const popup = await context.newPage();
-  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+	const popup = await context.newPage();
+	await popup.goto(`chrome-extension://${extensionId}/popup.html`);
 
-  // Set up listener for response
-  const responsePromise = popup.evaluate(() => {
-    return new Promise((resolve) => {
-      chrome.runtime.onMessage.addListener((message) => {
-        if (message.type === "RESPONSE") resolve(message.data);
-      });
-    });
-  });
+	// Set up listener for response
+	const responsePromise = popup.evaluate(() => {
+		return new Promise((resolve) => {
+			chrome.runtime.onMessage.addListener((message) => {
+				if (message.type === "RESPONSE") resolve(message.data);
+			});
+		});
+	});
 
-  // Click button that sends message
-  await popup.getByRole("button", { name: "Fetch Data" }).click();
+	// Click button that sends message
+	await popup.getByRole("button", { name: "Fetch Data" }).click();
 
-  // Verify response
-  const response = await responsePromise;
-  expect(response).toBeDefined();
+	// Verify response
+	const response = await responsePromise;
+	expect(response).toBeDefined();
 });
 ```
 
@@ -241,17 +231,17 @@ test("popup sends message to background", async ({ context, extensionId }) => {
 
 ```typescript
 test("service worker handles messages", async ({ context, extensionId }) => {
-  const page = await context.newPage();
-  await page.goto("https://example.com");
+	const page = await context.newPage();
+	await page.goto("https://example.com");
 
-  // Send message to service worker from page
-  const response = await page.evaluate(async (extId) => {
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage(extId, { type: "GET_STATUS" }, resolve);
-    });
-  }, extensionId);
+	// Send message to service worker from page
+	const response = await page.evaluate(async (extId) => {
+		return new Promise((resolve) => {
+			chrome.runtime.sendMessage(extId, { type: "GET_STATUS" }, resolve);
+		});
+	}, extensionId);
 
-  expect(response).toEqual({ status: "active" });
+	expect(response).toEqual({ status: "active" });
 });
 ```
 
@@ -259,18 +249,17 @@ test("service worker handles messages", async ({ context, extensionId }) => {
 
 ```typescript
 test("background script logic", async ({ context }) => {
-  const serviceWorker =
-    context.serviceWorkers()[0] ||
-    (await context.waitForEvent("serviceworker"));
+	const serviceWorker =
+		context.serviceWorkers()[0] || (await context.waitForEvent("serviceworker"));
 
-  // Evaluate in service worker context
-  const result = await serviceWorker.evaluate(async () => {
-    // Access extension APIs
-    const storage = await chrome.storage.local.get("settings");
-    return storage;
-  });
+	// Evaluate in service worker context
+	const result = await serviceWorker.evaluate(async () => {
+		// Access extension APIs
+		const storage = await chrome.storage.local.get("settings");
+		return storage;
+	});
 
-  expect(result.settings).toBeDefined();
+	expect(result.settings).toBeDefined();
 });
 ```
 
@@ -278,30 +267,30 @@ test("background script logic", async ({ context }) => {
 
 ```typescript
 test("alarm triggers correctly", async ({ context }) => {
-  const serviceWorker = context.serviceWorkers()[0] ||
-    (await context.waitForEvent("serviceworker"));
+	const serviceWorker =
+		context.serviceWorkers()[0] || (await context.waitForEvent("serviceworker"));
 
-  // Create alarm
-  await serviceWorker.evaluate(async () => {
-    await chrome.alarms.create("test-alarm", { delayInMinutes: 0.01 });
-  });
+	// Create alarm
+	await serviceWorker.evaluate(async () => {
+		await chrome.alarms.create("test-alarm", { delayInMinutes: 0.01 });
+	});
 
-  // Wait for alarm handler
-  await serviceWorker.evaluate(() => {
-    return new Promise<void>((resolve) => {
-      chrome.alarms.onAlarm.addListener((alarm) => {
-        if (alarm.name === "test-alarm") resolve();
-      });
-    });
-  });
+	// Wait for alarm handler
+	await serviceWorker.evaluate(() => {
+		return new Promise<void>((resolve) => {
+			chrome.alarms.onAlarm.addListener((alarm) => {
+				if (alarm.name === "test-alarm") resolve();
+			});
+		});
+	});
 
-  // Verify alarm was handled (check side effects)
-  const wasHandled = await serviceWorker.evaluate(async () => {
-    const { alarmTriggered } = await chrome.storage.local.get("alarmTriggered");
-    return alarmTriggered;
-  });
+	// Verify alarm was handled (check side effects)
+	const wasHandled = await serviceWorker.evaluate(async () => {
+		const { alarmTriggered } = await chrome.storage.local.get("alarmTriggered");
+		return alarmTriggered;
+	});
 
-  expect(wasHandled).toBe(true);
+	expect(wasHandled).toBe(true);
 });
 ```
 
@@ -311,35 +300,30 @@ test("alarm triggers correctly", async ({ context }) => {
 
 ```typescript
 test("content script injects UI", async ({ context }) => {
-  const page = await context.newPage();
-  await page.goto("https://example.com");
+	const page = await context.newPage();
+	await page.goto("https://example.com");
 
-  // Wait for content script to inject elements
-  await expect(page.locator("#my-extension-widget")).toBeVisible();
+	// Wait for content script to inject elements
+	await expect(page.locator("#my-extension-widget")).toBeVisible();
 
-  // Interact with injected UI
-  await page.locator("#my-extension-widget button").click();
-  await expect(page.locator("#my-extension-widget .result")).toHaveText(
-    "Success",
-  );
+	// Interact with injected UI
+	await page.locator("#my-extension-widget button").click();
+	await expect(page.locator("#my-extension-widget .result")).toHaveText("Success");
 });
 ```
 
 ### Content Script Communication
 
 ```typescript
-test("content script communicates with background", async ({
-  context,
-  extensionId,
-}) => {
-  const page = await context.newPage();
-  await page.goto("https://example.com");
+test("content script communicates with background", async ({ context, extensionId }) => {
+	const page = await context.newPage();
+	await page.goto("https://example.com");
 
-  // Trigger content script action
-  await page.locator("#my-extension-button").click();
+	// Trigger content script action
+	await page.locator("#my-extension-button").click();
 
-  // Wait for background response reflected in UI
-  await expect(page.locator("#my-extension-status")).toHaveText("Connected");
+	// Wait for background response reflected in UI
+	await expect(page.locator("#my-extension-status")).toHaveText("Connected");
 });
 ```
 
@@ -347,23 +331,21 @@ test("content script communicates with background", async ({
 
 ```typescript
 test("content script modifies page", async ({ context }) => {
-  const page = await context.newPage();
-  await page.goto("https://example.com");
+	const page = await context.newPage();
+	await page.goto("https://example.com");
 
-  // Verify content script modifications
-  const hasModification = await page.evaluate(() => {
-    // Check for injected styles
-    const styles = document.querySelectorAll('style[data-extension="my-ext"]');
-    return styles.length > 0;
-  });
+	// Verify content script modifications
+	const hasModification = await page.evaluate(() => {
+		// Check for injected styles
+		const styles = document.querySelectorAll('style[data-extension="my-ext"]');
+		return styles.length > 0;
+	});
 
-  expect(hasModification).toBe(true);
+	expect(hasModification).toBe(true);
 
-  // Check DOM modifications
-  const modifiedElements = await page
-    .locator("[data-modified-by-extension]")
-    .count();
-  expect(modifiedElements).toBeGreaterThan(0);
+	// Check DOM modifications
+	const modifiedElements = await page.locator("[data-modified-by-extension]").count();
+	expect(modifiedElements).toBeGreaterThan(0);
 });
 ```
 
@@ -373,31 +355,31 @@ test("content script modifies page", async ({ context }) => {
 
 ```typescript
 test("chrome.storage operations", async ({ context }) => {
-  const serviceWorker = context.serviceWorkers()[0] ||
-    (await context.waitForEvent("serviceworker"));
+	const serviceWorker =
+		context.serviceWorkers()[0] || (await context.waitForEvent("serviceworker"));
 
-  // Set storage
-  await serviceWorker.evaluate(async () => {
-    await chrome.storage.local.set({ key: "value", count: 42 });
-  });
+	// Set storage
+	await serviceWorker.evaluate(async () => {
+		await chrome.storage.local.set({ key: "value", count: 42 });
+	});
 
-  // Get storage
-  const data = await serviceWorker.evaluate(async () => {
-    return await chrome.storage.local.get(["key", "count"]);
-  });
+	// Get storage
+	const data = await serviceWorker.evaluate(async () => {
+		return await chrome.storage.local.get(["key", "count"]);
+	});
 
-  expect(data).toEqual({ key: "value", count: 42 });
+	expect(data).toEqual({ key: "value", count: 42 });
 
-  // Test storage.sync
-  await serviceWorker.evaluate(async () => {
-    await chrome.storage.sync.set({ synced: true });
-  });
+	// Test storage.sync
+	await serviceWorker.evaluate(async () => {
+		await chrome.storage.sync.set({ synced: true });
+	});
 
-  const syncData = await serviceWorker.evaluate(async () => {
-    return await chrome.storage.sync.get("synced");
-  });
+	const syncData = await serviceWorker.evaluate(async () => {
+		return await chrome.storage.sync.get("synced");
+	});
 
-  expect(syncData.synced).toBe(true);
+	expect(syncData.synced).toBe(true);
 });
 ```
 
@@ -405,25 +387,25 @@ test("chrome.storage operations", async ({ context }) => {
 
 ```typescript
 test("chrome.tabs operations", async ({ context }) => {
-  const serviceWorker = context.serviceWorkers()[0] ||
-    (await context.waitForEvent("serviceworker"));
+	const serviceWorker =
+		context.serviceWorkers()[0] || (await context.waitForEvent("serviceworker"));
 
-  // Create a tab
-  const page = await context.newPage();
-  await page.goto("https://example.com");
+	// Create a tab
+	const page = await context.newPage();
+	await page.goto("https://example.com");
 
-  // Query tabs from service worker
-  const tabs = await serviceWorker.evaluate(async () => {
-    return await chrome.tabs.query({ url: "*://example.com/*" });
-  });
+	// Query tabs from service worker
+	const tabs = await serviceWorker.evaluate(async () => {
+		return await chrome.tabs.query({ url: "*://example.com/*" });
+	});
 
-  expect(tabs.length).toBeGreaterThan(0);
-  expect(tabs[0].url).toContain("example.com");
+	expect(tabs.length).toBeGreaterThan(0);
+	expect(tabs[0].url).toContain("example.com");
 
-  // Send message to tab
-  await serviceWorker.evaluate(async (tabId) => {
-    await chrome.tabs.sendMessage(tabId, { type: "PING" });
-  }, tabs[0].id);
+	// Send message to tab
+	await serviceWorker.evaluate(async (tabId) => {
+		await chrome.tabs.sendMessage(tabId, { type: "PING" });
+	}, tabs[0].id);
 });
 ```
 
@@ -437,17 +419,26 @@ import { test, expect } from "@playwright/test";
 import { onContextMenuClick } from "../src/background/contextMenu";
 
 test("context menu action saves the selection", async () => {
-  const saved: Record<string, unknown>[] = [];
-  globalThis.chrome = {
-    storage: { local: { set: async (items: Record<string, unknown>) => { saved.push(items); } } },
-  } as unknown as typeof chrome;
+	const saved: Record<string, unknown>[] = [];
+	globalThis.chrome = {
+		storage: {
+			local: {
+				set: async (items: Record<string, unknown>) => {
+					saved.push(items);
+				},
+			},
+		},
+	} as unknown as typeof chrome;
 
-  await onContextMenuClick(
-    { menuItemId: "save-selection", selectionText: "selected text" } as chrome.contextMenus.OnClickData,
-    { id: 1, url: "https://example.com" } as chrome.tabs.Tab,
-  );
+	await onContextMenuClick(
+		{
+			menuItemId: "save-selection",
+			selectionText: "selected text",
+		} as chrome.contextMenus.OnClickData,
+		{ id: 1, url: "https://example.com" } as chrome.tabs.Tab,
+	);
 
-  expect(saved).toEqual([{ savedSelection: "selected text" }]);
+	expect(saved).toEqual([{ savedSelection: "selected text" }]);
 });
 ```
 
@@ -455,36 +446,36 @@ test("context menu action saves the selection", async () => {
 
 ```typescript
 test("request permissions", async ({ context, extensionId }) => {
-  const popup = await context.newPage();
-  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+	const popup = await context.newPage();
+	await popup.goto(`chrome-extension://${extensionId}/popup.html`);
 
-  // Check current permissions
-  const hasPermission = await popup.evaluate(async () => {
-    return await chrome.permissions.contains({
-      origins: ["https://*.github.com/*"],
-    });
-  });
+	// Check current permissions
+	const hasPermission = await popup.evaluate(async () => {
+		return await chrome.permissions.contains({
+			origins: ["https://*.github.com/*"],
+		});
+	});
 
-  // Request new permission (will show prompt in real scenario)
-  // For testing, we check the request is made correctly
-  const permissionRequest = popup.evaluate(async () => {
-    try {
-      return await chrome.permissions.request({
-        origins: ["https://*.github.com/*"],
-      });
-    } catch (e) {
-      return false;
-    }
-  });
+	// Request new permission (will show prompt in real scenario)
+	// For testing, we check the request is made correctly
+	const permissionRequest = popup.evaluate(async () => {
+		try {
+			return await chrome.permissions.request({
+				origins: ["https://*.github.com/*"],
+			});
+		} catch (e) {
+			return false;
+		}
+	});
 
-  // In automated tests, permission prompts are typically auto-granted or mocked
+	// In automated tests, permission prompts are typically auto-granted or mocked
 });
 ```
 
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern                     | Problem               | Solution                                                         |
-|----------------------------------|-----------------------|------------------------------------------------------------------|
+| -------------------------------- | --------------------- | ---------------------------------------------------------------- |
 | Using the default headless shell | Extensions don't load | Use headed mode or `channel: "chromium"` for headless extensions |
 | Not waiting for service worker   | Race conditions       | Wait for `serviceworker` event                                   |
 | Hardcoding extension ID          | ID changes on reload  | Extract ID from service worker URL                               |

@@ -17,15 +17,15 @@
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  // Run test files in parallel
-  fullyParallel: true,
+	// Run test files in parallel
+	fullyParallel: true,
 
-  // Number of worker processes
-  workers: process.env.CI ? 1 : undefined, // undefined = half CPU cores
+	// Number of worker processes
+	workers: process.env.CI ? 1 : undefined, // undefined = half CPU cores
 
-  // Or explicit count
-  // workers: 4,
-  // workers: '50%', // Percentage of CPU cores
+	// Or explicit count
+	// workers: 4,
+	// workers: '50%', // Percentage of CPU cores
 });
 ```
 
@@ -36,27 +36,28 @@ export default defineConfig({
 test.describe.configure({ mode: "serial" });
 
 test.describe("Sequential Tests", () => {
-  test("first", async ({ page }) => {
-    // Runs first
-  });
+	test("first", async ({ page }) => {
+		// Runs first
+	});
 
-  test("second", async ({ page }) => {
-    // Runs after first
-  });
+	test("second", async ({ page }) => {
+		// Runs after first
+	});
 });
 ```
 
 ```typescript
 // Single describe block serial
 test.describe("Parallel Tests", () => {
-  test("a", async () => {}); // Parallel
-  test("b", async () => {}); // Parallel
+	test("a", async () => {}); // Parallel
+	test("b", async () => {}); // Parallel
 });
 
-test.describe.serial("Serial Tests", () => {
-  test("c", async () => {}); // Serial
-  test("d", async () => {}); // Serial
-});
+test.describe
+	.serial("Serial Tests", () => {
+		test("c", async () => {}); // Serial
+		test("d", async () => {}); // Serial
+	});
 ```
 
 ### Parallel Projects
@@ -64,11 +65,11 @@ test.describe.serial("Serial Tests", () => {
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
-    { name: "webkit", use: { ...devices["Desktop Safari"] } },
-  ],
+	projects: [
+		{ name: "chromium", use: { ...devices["Desktop Chrome"] } },
+		{ name: "firefox", use: { ...devices["Desktop Firefox"] } },
+		{ name: "webkit", use: { ...devices["Desktop Safari"] } },
+	],
 });
 ```
 
@@ -145,27 +146,27 @@ need serial execution and accept no isolation.
 // Prefer test.describe.configure({ mode: 'serial' }) + fresh page per test, or beforeEach + page.goto().
 test.describe.configure({ mode: "serial" });
 test.describe("Dashboard", () => {
-  let page: Page;
+	let page: Page;
 
-  test.beforeAll(async ({ browser }) => {
-    const context = await browser.newContext({
-      storageState: ".auth/user.json",
-    });
-    page = await context.newPage();
-    await page.goto("/dashboard");
-  });
+	test.beforeAll(async ({ browser }) => {
+		const context = await browser.newContext({
+			storageState: ".auth/user.json",
+		});
+		page = await context.newPage();
+		await page.goto("/dashboard");
+	});
 
-  test.afterAll(async () => {
-    await page?.close();
-  });
+	test.afterAll(async () => {
+		await page?.close();
+	});
 
-  test("shows stats", async () => {
-    await expect(page.getByTestId("stats")).toBeVisible();
-  });
+	test("shows stats", async () => {
+		await expect(page.getByTestId("stats")).toBeVisible();
+	});
 
-  test("shows chart", async () => {
-    await expect(page.getByTestId("chart")).toBeVisible();
-  });
+	test("shows chart", async () => {
+		await expect(page.getByTestId("chart")).toBeVisible();
+	});
 });
 ```
 
@@ -174,28 +175,28 @@ test.describe("Dashboard", () => {
 ```typescript
 // Bad: Navigate in every test
 test("check header", async ({ page }) => {
-  await page.goto("/products");
-  await expect(page.getByRole("heading")).toBeVisible();
+	await page.goto("/products");
+	await expect(page.getByRole("heading")).toBeVisible();
 });
 
 test("check footer", async ({ page }) => {
-  await page.goto("/products");
-  await expect(page.getByRole("contentinfo")).toBeVisible();
+	await page.goto("/products");
+	await expect(page.getByRole("contentinfo")).toBeVisible();
 });
 
 // Good: Share navigation
 test.describe("Products Page", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto("/products");
-  });
+	test.beforeEach(async ({ page }) => {
+		await page.goto("/products");
+	});
 
-  test("check header", async ({ page }) => {
-    await expect(page.getByRole("heading")).toBeVisible();
-  });
+	test("check header", async ({ page }) => {
+		await expect(page.getByRole("heading")).toBeVisible();
+	});
 
-  test("check footer", async ({ page }) => {
-    await expect(page.getByRole("contentinfo")).toBeVisible();
-  });
+	test("check footer", async ({ page }) => {
+		await expect(page.getByRole("contentinfo")).toBeVisible();
+	});
 });
 ```
 
@@ -204,13 +205,13 @@ test.describe("Products Page", () => {
 ```typescript
 // Use test.skip for conditional execution
 test("admin feature", async ({ page }) => {
-  test.skip(!process.env.ADMIN_ENABLED, "Admin features disabled");
-  // ...
+	test.skip(!process.env.ADMIN_ENABLED, "Admin features disabled");
+	// ...
 });
 
 // Use test.fixme for known broken tests
 test.fixme("broken feature", async ({ page }) => {
-  // Skipped but tracked
+	// Skipped but tracked
 });
 ```
 
@@ -220,14 +221,10 @@ test.fixme("broken feature", async ({ page }) => {
 
 ```typescript
 test.beforeEach(async ({ page }) => {
-  // Mock slow/heavy endpoints
-  await page.route("**/api/analytics", (route) =>
-    route.fulfill({ json: { views: 1000 } }),
-  );
+	// Mock slow/heavy endpoints
+	await page.route("**/api/analytics", (route) => route.fulfill({ json: { views: 1000 } }));
 
-  await page.route("**/api/recommendations", (route) =>
-    route.fulfill({ json: [] }),
-  );
+	await page.route("**/api/recommendations", (route) => route.fulfill({ json: [] }));
 });
 ```
 
@@ -235,18 +232,14 @@ test.beforeEach(async ({ page }) => {
 
 ```typescript
 test.beforeEach(async ({ page }) => {
-  // Block analytics, ads, tracking
-  await page.route("**/*", (route) => {
-    const url = route.request().url();
-    if (
-      url.includes("google-analytics") ||
-      url.includes("facebook") ||
-      url.includes("hotjar")
-    ) {
-      return route.abort();
-    }
-    return route.continue();
-  });
+	// Block analytics, ads, tracking
+	await page.route("**/*", (route) => {
+		const url = route.request().url();
+		if (url.includes("google-analytics") || url.includes("facebook") || url.includes("hotjar")) {
+			return route.abort();
+		}
+		return route.continue();
+	});
 });
 ```
 
@@ -255,11 +248,11 @@ test.beforeEach(async ({ page }) => {
 ```typescript
 // Block images and fonts for faster tests
 await page.route("**/*", (route) => {
-  const resourceType = route.request().resourceType();
-  if (["image", "font", "stylesheet"].includes(resourceType)) {
-    return route.abort();
-  }
-  return route.continue();
+	const resourceType = route.request().resourceType();
+	if (["image", "font", "stylesheet"].includes(resourceType)) {
+		return route.abort();
+	}
+	return route.continue();
 });
 ```
 
@@ -269,18 +262,18 @@ await page.route("**/*", (route) => {
 const apiCache = new Map<string, object>();
 
 test.beforeEach(async ({ page }) => {
-  await page.route("**/api/**", async (route) => {
-    const url = route.request().url();
+	await page.route("**/api/**", async (route) => {
+		const url = route.request().url();
 
-    if (apiCache.has(url)) {
-      return route.fulfill({ json: apiCache.get(url) });
-    }
+		if (apiCache.has(url)) {
+			return route.fulfill({ json: apiCache.get(url) });
+		}
 
-    const response = await route.fetch();
-    const json = await response.json();
-    apiCache.set(url, json);
-    return route.fulfill({ json });
-  });
+		const response = await route.fetch();
+		const json = await response.json();
+		apiCache.set(url, json);
+		return route.fulfill({ json });
+	});
 });
 ```
 
@@ -326,17 +319,17 @@ environment; fixing isolation still prevents the initial flakiness.
 ```typescript
 // Recommended: One context per test (default) — full isolation
 test("isolated test", async ({ page }) => {
-  // Fresh context automatically
+	// Fresh context automatically
 });
 
 // Manual context for specific needs
 test("multiple tabs", async ({ browser }) => {
-  const context = await browser.newContext();
-  const page1 = await context.newPage();
-  const page2 = await context.newPage();
+	const context = await browser.newContext();
+	const page1 = await context.newPage();
+	const page2 = await context.newPage();
 
-  // Clean up
-  await context.close();
+	// Clean up
+	await context.close();
 });
 ```
 
@@ -345,16 +338,16 @@ test("multiple tabs", async ({ browser }) => {
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  // Limit concurrent workers
-  workers: 2,
+	// Limit concurrent workers
+	workers: 2,
 
-  // Limit parallel tests per worker
-  use: {
-    // Lower memory usage
-    launchOptions: {
-      args: ["--disable-dev-shm-usage"],
-    },
-  },
+	// Limit parallel tests per worker
+	use: {
+		// Lower memory usage
+		launchOptions: {
+			args: ["--disable-dev-shm-usage"],
+		},
+	},
 });
 ```
 
@@ -363,19 +356,19 @@ export default defineConfig({
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  // Global test timeout
-  timeout: 30000,
+	// Global test timeout
+	timeout: 30000,
 
-  // Assertion timeout
-  expect: {
-    timeout: 5000,
-  },
+	// Assertion timeout
+	expect: {
+		timeout: 5000,
+	},
 
-  // Navigation timeout
-  use: {
-    navigationTimeout: 15000,
-    actionTimeout: 10000,
-  },
+	// Navigation timeout
+	use: {
+		navigationTimeout: 15000,
+		actionTimeout: 10000,
+	},
 });
 ```
 
@@ -385,18 +378,18 @@ export default defineConfig({
 
 ```typescript
 test("performance test", async ({ page }, testInfo) => {
-  const startTime = Date.now();
+	const startTime = Date.now();
 
-  await page.goto("/");
+	await page.goto("/");
 
-  const loadTime = Date.now() - startTime;
-  console.log(`Page load: ${loadTime}ms`);
+	const loadTime = Date.now() - startTime;
+	console.log(`Page load: ${loadTime}ms`);
 
-  // Add to test report
-  testInfo.annotations.push({
-    type: "performance",
-    description: `Load time: ${loadTime}ms`,
-  });
+	// Add to test report
+	testInfo.annotations.push({
+		type: "performance",
+		description: `Load time: ${loadTime}ms`,
+	});
 });
 ```
 
@@ -404,26 +397,24 @@ test("performance test", async ({ page }, testInfo) => {
 
 ```typescript
 test("collect metrics", async ({ page }) => {
-  await page.goto("/");
+	await page.goto("/");
 
-  const metrics = await page.evaluate(() => ({
-    // Navigation timing
-    loadTime:
-      performance.timing.loadEventEnd - performance.timing.navigationStart,
-    domContentLoaded:
-      performance.timing.domContentLoadedEventEnd -
-      performance.timing.navigationStart,
+	const metrics = await page.evaluate(() => ({
+		// Navigation timing
+		loadTime: performance.timing.loadEventEnd - performance.timing.navigationStart,
+		domContentLoaded:
+			performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart,
 
-    // Performance entries
-    resources: performance.getEntriesByType("resource").length,
+		// Performance entries
+		resources: performance.getEntriesByType("resource").length,
 
-    // Memory (Chrome only)
-    // @ts-ignore
-    memory: performance.memory?.usedJSHeapSize,
-  }));
+		// Memory (Chrome only)
+		// @ts-ignore
+		memory: performance.memory?.usedJSHeapSize,
+	}));
 
-  console.log("Metrics:", metrics);
-  expect(metrics.loadTime).toBeLessThan(3000);
+	console.log("Metrics:", metrics);
+	expect(metrics.loadTime).toBeLessThan(3000);
 });
 ```
 
@@ -433,29 +424,27 @@ test("collect metrics", async ({ page }) => {
 import { playAudit } from "playwright-lighthouse";
 
 test("lighthouse audit", async ({ page }) => {
-  await page.goto("/");
+	await page.goto("/");
 
-  const audit = await playAudit({
-    page,
-    thresholds: {
-      performance: 80,
-      accessibility: 90,
-      "best-practices": 80,
-      seo: 80,
-    },
-    port: 9222,
-  });
+	const audit = await playAudit({
+		page,
+		thresholds: {
+			performance: 80,
+			accessibility: 90,
+			"best-practices": 80,
+			seo: 80,
+		},
+		port: 9222,
+	});
 
-  expect(audit.lhr.categories.performance.score * 100).toBeGreaterThanOrEqual(
-    80,
-  );
+	expect(audit.lhr.categories.performance.score * 100).toBeGreaterThanOrEqual(80);
 });
 ```
 
 ## Performance Checklist
 
 | Optimization                   | Impact     |
-|--------------------------------|------------|
+| ------------------------------ | ---------- |
 | Enable `fullyParallel`         | High       |
 | Reuse authentication           | High       |
 | Mock heavy APIs                | High       |

@@ -14,16 +14,16 @@
 
 ```typescript
 test("chat connects via websocket", async ({ page }) => {
-  // Listen for WebSocket connection
-  const wsPromise = page.waitForEvent("websocket");
+	// Listen for WebSocket connection
+	const wsPromise = page.waitForEvent("websocket");
 
-  await page.goto("/chat");
+	await page.goto("/chat");
 
-  const ws = await wsPromise;
-  expect(ws.url()).toContain("/ws/chat");
+	const ws = await wsPromise;
+	expect(ws.url()).toContain("/ws/chat");
 
-  // Wait for connection to be established
-  await ws.waitForEvent("framesent");
+	// Wait for connection to be established
+	await ws.waitForEvent("framesent");
 });
 ```
 
@@ -31,23 +31,23 @@ test("chat connects via websocket", async ({ page }) => {
 
 ```typescript
 test("receives real-time updates", async ({ page }) => {
-  const messages: string[] = [];
+	const messages: string[] = [];
 
-  // Set up listener before navigation
-  page.on("websocket", (ws) => {
-    ws.on("framereceived", (frame) => {
-      messages.push(frame.payload as string);
-    });
-  });
+	// Set up listener before navigation
+	page.on("websocket", (ws) => {
+		ws.on("framereceived", (frame) => {
+			messages.push(frame.payload as string);
+		});
+	});
 
-  await page.goto("/dashboard");
+	await page.goto("/dashboard");
 
-  // Wait for some messages
-  await expect.poll(() => messages.length).toBeGreaterThan(0);
+	// Wait for some messages
+	await expect.poll(() => messages.length).toBeGreaterThan(0);
 
-  // Verify message format
-  const data = JSON.parse(messages[0]);
-  expect(data).toHaveProperty("type");
+	// Verify message format
+	const data = JSON.parse(messages[0]);
+	expect(data).toHaveProperty("type");
 });
 ```
 
@@ -55,26 +55,26 @@ test("receives real-time updates", async ({ page }) => {
 
 ```typescript
 test("sends correct message format", async ({ page }) => {
-  const sentMessages: string[] = [];
+	const sentMessages: string[] = [];
 
-  page.on("websocket", (ws) => {
-    ws.on("framesent", (frame) => {
-      sentMessages.push(frame.payload as string);
-    });
-  });
+	page.on("websocket", (ws) => {
+		ws.on("framesent", (frame) => {
+			sentMessages.push(frame.payload as string);
+		});
+	});
 
-  await page.goto("/chat");
-  await page.getByLabel("Message").fill("Hello!");
-  await page.getByRole("button", { name: "Send" }).click();
+	await page.goto("/chat");
+	await page.getByLabel("Message").fill("Hello!");
+	await page.getByRole("button", { name: "Send" }).click();
 
-  // Verify sent message
-  await expect.poll(() => sentMessages.length).toBeGreaterThan(0);
+	// Verify sent message
+	await expect.poll(() => sentMessages.length).toBeGreaterThan(0);
 
-  const sent = JSON.parse(sentMessages[sentMessages.length - 1]);
-  expect(sent).toEqual({
-    type: "message",
-    content: "Hello!",
-  });
+	const sent = JSON.parse(sentMessages[sentMessages.length - 1]);
+	expect(sent).toEqual({
+		type: "message",
+		content: "Hello!",
+	});
 });
 ```
 
@@ -84,26 +84,24 @@ test("sends correct message format", async ({ page }) => {
 
 ```typescript
 test("displays incoming chat message", async ({ page }) => {
-  await page.goto("/chat");
+	await page.goto("/chat");
 
-  // Wait for WebSocket to be ready
-  await page.waitForFunction(
-    () => (window as any).chatSocket?.readyState === 1,
-  );
+	// Wait for WebSocket to be ready
+	await page.waitForFunction(() => (window as any).chatSocket?.readyState === 1);
 
-  // Simulate incoming message
-  await page.evaluate(() => {
-    const event = new MessageEvent("message", {
-      data: JSON.stringify({
-        type: "message",
-        from: "Alice",
-        content: "Hello there!",
-      }),
-    });
-    (window as any).chatSocket.dispatchEvent(event);
-  });
+	// Simulate incoming message
+	await page.evaluate(() => {
+		const event = new MessageEvent("message", {
+			data: JSON.stringify({
+				type: "message",
+				from: "Alice",
+				content: "Hello there!",
+			}),
+		});
+		(window as any).chatSocket.dispatchEvent(event);
+	});
 
-  await expect(page.getByText("Alice: Hello there!")).toBeVisible();
+	await expect(page.getByText("Alice: Hello there!")).toBeVisible();
 });
 ```
 
@@ -111,15 +109,15 @@ test("displays incoming chat message", async ({ page }) => {
 
 ```typescript
 test("mock websocket entirely", async ({ page }) => {
-  // Register before the app creates the socket. HTTP route() does not route
-  // WebSocket frames; routeWebSocket() is available since Playwright 1.48.
-  await page.routeWebSocket("**/ws/**", (ws) => {
-    ws.onMessage((message) => {
-      if (message === "ping") ws.send("pong");
-    });
-  });
+	// Register before the app creates the socket. HTTP route() does not route
+	// WebSocket frames; routeWebSocket() is available since Playwright 1.48.
+	await page.routeWebSocket("**/ws/**", (ws) => {
+		ws.onMessage((message) => {
+			if (message === "ping") ws.send("pong");
+		});
+	});
 
-  await page.goto("/chat");
+	await page.goto("/chat");
 });
 ```
 
@@ -132,58 +130,56 @@ import { test as base, type WebSocketRoute } from "@playwright/test";
 type WsMessage = { type: string; [key: string]: any };
 
 type WebSocketFixtures = {
-  mockWebSocket: {
-    injectMessage: (message: WsMessage) => Promise<void>;
-    getSentMessages: () => Promise<WsMessage[]>;
-  };
+	mockWebSocket: {
+		injectMessage: (message: WsMessage) => Promise<void>;
+		getSentMessages: () => Promise<WsMessage[]>;
+	};
 };
 
 export const test = base.extend<WebSocketFixtures>({
-  mockWebSocket: async ({ page }, use) => {
-    const sentMessages: WsMessage[] = [];
+	mockWebSocket: async ({ page }, use) => {
+		const sentMessages: WsMessage[] = [];
 
-    // This example app opens one JSON chat socket per page.
-    let resolveSocket!: (socket: WebSocketRoute) => void;
-    const connected = new Promise<WebSocketRoute>((resolve) => {
-      resolveSocket = resolve;
-    });
-    await page.routeWebSocket("**/ws/**", (socket) => {
-      socket.onMessage((data) => sentMessages.push(JSON.parse(data.toString())));
-      resolveSocket(socket);
-    });
+		// This example app opens one JSON chat socket per page.
+		let resolveSocket!: (socket: WebSocketRoute) => void;
+		const connected = new Promise<WebSocketRoute>((resolve) => {
+			resolveSocket = resolve;
+		});
+		await page.routeWebSocket("**/ws/**", (socket) => {
+			socket.onMessage((data) => sentMessages.push(JSON.parse(data.toString())));
+			resolveSocket(socket);
+		});
 
-    await use({
-      injectMessage: async (message) => {
-        const socket = await connected;
-        socket.send(JSON.stringify(message));
-      },
-      getSentMessages: async () => sentMessages,
-    });
-  },
+		await use({
+			injectMessage: async (message) => {
+				const socket = await connected;
+				socket.send(JSON.stringify(message));
+			},
+			getSentMessages: async () => sentMessages,
+		});
+	},
 });
 
 // Usage
 test("chat with mocked websocket", async ({ page, mockWebSocket }) => {
-  await page.goto("/chat");
+	await page.goto("/chat");
 
-  // Inject incoming message
-  await mockWebSocket.injectMessage({
-    type: "message",
-    from: "Bob",
-    content: "Hi!",
-  });
+	// Inject incoming message
+	await mockWebSocket.injectMessage({
+		type: "message",
+		from: "Bob",
+		content: "Hi!",
+	});
 
-  await expect(page.getByText("Bob: Hi!")).toBeVisible();
+	await expect(page.getByText("Bob: Hi!")).toBeVisible();
 
-  // Send a reply
-  await page.getByLabel("Message").fill("Hello Bob!");
-  await page.getByRole("button", { name: "Send" }).click();
+	// Send a reply
+	await page.getByLabel("Message").fill("Hello Bob!");
+	await page.getByRole("button", { name: "Send" }).click();
 
-  // Verify sent message
-  const sent = await mockWebSocket.getSentMessages();
-  expect(sent).toContainEqual(
-    expect.objectContaining({ content: "Hello Bob!" }),
-  );
+	// Verify sent message
+	const sent = await mockWebSocket.getSentMessages();
+	expect(sent).toContainEqual(expect.objectContaining({ content: "Hello Bob!" }));
 });
 ```
 
@@ -193,21 +189,21 @@ test("chat with mocked websocket", async ({ page, mockWebSocket }) => {
 
 ```typescript
 test("displays live notification", async ({ page }) => {
-  await page.goto("/dashboard");
+	await page.goto("/dashboard");
 
-  // Simulate notification via WebSocket
-  await page.evaluate(() => {
-    const event = new MessageEvent("message", {
-      data: JSON.stringify({
-        type: "notification",
-        title: "New Order",
-        message: "Order #123 received",
-      }),
-    });
-    (window as any).notificationSocket.dispatchEvent(event);
-  });
+	// Simulate notification via WebSocket
+	await page.evaluate(() => {
+		const event = new MessageEvent("message", {
+			data: JSON.stringify({
+				type: "notification",
+				title: "New Order",
+				message: "Order #123 received",
+			}),
+		});
+		(window as any).notificationSocket.dispatchEvent(event);
+	});
 
-  await expect(page.getByRole("alert")).toContainText("Order #123 received");
+	await expect(page.getByRole("alert")).toContainText("Order #123 received");
 });
 ```
 
@@ -215,25 +211,25 @@ test("displays live notification", async ({ page }) => {
 
 ```typescript
 test("updates stock price in real-time", async ({ page }) => {
-  await page.goto("/stocks/AAPL");
+	await page.goto("/stocks/AAPL");
 
-  const priceElement = page.getByTestId("stock-price");
-  const initialPrice = await priceElement.textContent();
+	const priceElement = page.getByTestId("stock-price");
+	const initialPrice = await priceElement.textContent();
 
-  // Simulate price update
-  await page.evaluate(() => {
-    const event = new MessageEvent("message", {
-      data: JSON.stringify({
-        type: "price_update",
-        symbol: "AAPL",
-        price: 150.25,
-      }),
-    });
-    (window as any).stockSocket.dispatchEvent(event);
-  });
+	// Simulate price update
+	await page.evaluate(() => {
+		const event = new MessageEvent("message", {
+			data: JSON.stringify({
+				type: "price_update",
+				symbol: "AAPL",
+				price: 150.25,
+			}),
+		});
+		(window as any).stockSocket.dispatchEvent(event);
+	});
 
-  await expect(priceElement).not.toHaveText(initialPrice!);
-  await expect(priceElement).toContainText("150.25");
+	await expect(priceElement).not.toHaveText(initialPrice!);
+	await expect(priceElement).toContainText("150.25");
 });
 ```
 
@@ -241,23 +237,23 @@ test("updates stock price in real-time", async ({ page }) => {
 
 ```typescript
 test("shows collaborator cursor", async ({ page }) => {
-  await page.goto("/document/123");
+	await page.goto("/document/123");
 
-  // Simulate another user's cursor position
-  await page.evaluate(() => {
-    const event = new MessageEvent("message", {
-      data: JSON.stringify({
-        type: "cursor",
-        userId: "user-456",
-        userName: "Alice",
-        position: { x: 100, y: 200 },
-      }),
-    });
-    (window as any).docSocket.dispatchEvent(event);
-  });
+	// Simulate another user's cursor position
+	await page.evaluate(() => {
+		const event = new MessageEvent("message", {
+			data: JSON.stringify({
+				type: "cursor",
+				userId: "user-456",
+				userName: "Alice",
+				position: { x: 100, y: 200 },
+			}),
+		});
+		(window as any).docSocket.dispatchEvent(event);
+	});
 
-  await expect(page.getByTestId("cursor-user-456")).toBeVisible();
-  await expect(page.getByText("Alice")).toBeVisible();
+	await expect(page.getByTestId("cursor-user-456")).toBeVisible();
+	await expect(page.getByText("Alice")).toBeVisible();
 });
 ```
 
@@ -267,22 +263,22 @@ test("shows collaborator cursor", async ({ page }) => {
 
 ```typescript
 test("receives SSE updates", async ({ page }) => {
-  // Mock SSE endpoint
-  await page.route("**/api/events", (route) => {
-    route.fulfill({
-      status: 200,
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
-      body: `data: {"type":"update","value":42}\n\n`,
-    });
-  });
+	// Mock SSE endpoint
+	await page.route("**/api/events", (route) => {
+		route.fulfill({
+			status: 200,
+			headers: {
+				"Content-Type": "text/event-stream",
+				"Cache-Control": "no-cache",
+				Connection: "keep-alive",
+			},
+			body: `data: {"type":"update","value":42}\n\n`,
+		});
+	});
 
-  await page.goto("/live-data");
+	await page.goto("/live-data");
 
-  await expect(page.getByTestId("value")).toHaveText("42");
+	await expect(page.getByTestId("value")).toHaveText("42");
 });
 ```
 
@@ -290,25 +286,21 @@ test("receives SSE updates", async ({ page }) => {
 
 ```typescript
 test("handles multiple SSE events", async ({ page }) => {
-  await page.route("**/api/events", async (route) => {
-    const encoder = new TextEncoder();
-    const events = [
-      `data: {"count":1}\n\n`,
-      `data: {"count":2}\n\n`,
-      `data: {"count":3}\n\n`,
-    ];
+	await page.route("**/api/events", async (route) => {
+		const encoder = new TextEncoder();
+		const events = [`data: {"count":1}\n\n`, `data: {"count":2}\n\n`, `data: {"count":3}\n\n`];
 
-    route.fulfill({
-      status: 200,
-      headers: { "Content-Type": "text/event-stream" },
-      body: events.join(""),
-    });
-  });
+		route.fulfill({
+			status: 200,
+			headers: { "Content-Type": "text/event-stream" },
+			body: events.join(""),
+		});
+	});
 
-  await page.goto("/counter");
+	await page.goto("/counter");
 
-  // Should receive all events
-  await expect(page.getByTestId("count")).toHaveText("3");
+	// Should receive all events
+	await expect(page.getByTestId("count")).toHaveText("3");
 });
 ```
 
@@ -318,15 +310,15 @@ test("handles multiple SSE events", async ({ page }) => {
 
 ```typescript
 test("handles connection loss gracefully", async ({ page }) => {
-  await page.goto("/chat");
+	await page.goto("/chat");
 
-  // Simulate connection close
-  await page.evaluate(() => {
-    (window as any).chatSocket.close();
-  });
+	// Simulate connection close
+	await page.evaluate(() => {
+		(window as any).chatSocket.close();
+	});
 
-  // Should show disconnected state
-  await expect(page.getByText("Reconnecting...")).toBeVisible();
+	// Should show disconnected state
+	await expect(page.getByText("Reconnecting...")).toBeVisible();
 });
 ```
 
@@ -334,35 +326,35 @@ test("handles connection loss gracefully", async ({ page }) => {
 
 ```typescript
 test("reconnects after connection loss", async ({ page }) => {
-  await page.goto("/chat");
+	await page.goto("/chat");
 
-  // Simulate disconnect
-  await page.evaluate(() => {
-    (window as any).chatSocket.close();
-  });
+	// Simulate disconnect
+	await page.evaluate(() => {
+		(window as any).chatSocket.close();
+	});
 
-  await expect(page.getByText("Reconnecting...")).toBeVisible();
+	await expect(page.getByText("Reconnecting...")).toBeVisible();
 
-  // Simulate reconnection
-  await page.evaluate(() => {
-    const event = new Event("open");
-    (window as any).chatSocket = { readyState: 1 };
-    (window as any).chatSocket.dispatchEvent?.(event);
-  });
+	// Simulate reconnection
+	await page.evaluate(() => {
+		const event = new Event("open");
+		(window as any).chatSocket = { readyState: 1 };
+		(window as any).chatSocket.dispatchEvent?.(event);
+	});
 
-  // Force component to re-check connection
-  await page.evaluate(() => {
-    window.dispatchEvent(new Event("online"));
-  });
+	// Force component to re-check connection
+	await page.evaluate(() => {
+		window.dispatchEvent(new Event("online"));
+	});
 
-  await expect(page.getByText("Connected")).toBeVisible();
+	await expect(page.getByText("Connected")).toBeVisible();
 });
 ```
 
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern                          | Problem                       | Solution                           |
-|---------------------------------------|-------------------------------|------------------------------------|
+| ------------------------------------- | ----------------------------- | ---------------------------------- |
 | Not waiting for WebSocket ready       | Messages sent too early       | Wait for `readyState === 1`        |
 | Testing against real WebSocket server | Flaky, timing-dependent       | Mock WebSocket messages            |
 | Ignoring connection state             | Tests pass but feature broken | Test connected/disconnected states |

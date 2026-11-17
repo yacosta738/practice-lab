@@ -19,40 +19,32 @@
 ```typescript
 import { test, expect } from "@playwright/test";
 
-test(
-  "test login page",
-  {
-    tag: "@fast",
-  },
-  async ({ page }) => {
-    await page.goto("/login");
-    await expect(page.getByRole("heading")).toBeVisible();
-  }
-);
+test("test login page", {
+	tag: "@fast",
+}, async ({ page }) => {
+	await page.goto("/login");
+	await expect(page.getByRole("heading")).toBeVisible();
+});
 
-test(
-  "test dashboard",
-  {
-    tag: "@slow",
-  },
-  async ({ page }) => {
-    await page.goto("/dashboard");
-    await expect(page.getByTestId("charts")).toBeVisible();
-  }
-);
+test("test dashboard", {
+	tag: "@slow",
+}, async ({ page }) => {
+	await page.goto("/dashboard");
+	await expect(page.getByTestId("charts")).toBeVisible();
+});
 ```
 
 ### Tag via Title (not recommended)
 
 ```typescript
 test("test full report @slow", async ({ page }) => {
-  await page.goto("/reports/full");
-  await expect(page.getByText("Report loaded")).toBeVisible();
+	await page.goto("/reports/full");
+	await expect(page.getByText("Report loaded")).toBeVisible();
 });
 
 test("quick validation @fast @smoke", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.locator("body")).toBeVisible();
+	await page.goto("/");
+	await expect(page.locator("body")).toBeVisible();
 });
 ```
 
@@ -61,47 +53,35 @@ test("quick validation @fast @smoke", async ({ page }) => {
 ### Tag All Tests in Group
 
 ```typescript
-test.describe(
-  "report tests",
-  {
-    tag: "@report",
-  },
-  () => {
-    test("test report header", async ({ page }) => {
-      // Inherits @report tag
-    });
+test.describe("report tests", {
+	tag: "@report",
+}, () => {
+	test("test report header", async ({ page }) => {
+		// Inherits @report tag
+	});
 
-    test("test report footer", async ({ page }) => {
-      // Inherits @report tag
-    });
-  }
-);
+	test("test report footer", async ({ page }) => {
+		// Inherits @report tag
+	});
+});
 ```
 
 ### Combine Group and Test Tags
 
 ```typescript
-test.describe(
-  "admin features",
-  {
-    tag: "@admin",
-  },
-  () => {
-    test("admin dashboard", async ({ page }) => {
-      // Has @admin tag
-    });
+test.describe("admin features", {
+	tag: "@admin",
+}, () => {
+	test("admin dashboard", async ({ page }) => {
+		// Has @admin tag
+	});
 
-    test(
-      "admin settings",
-      {
-        tag: ["@slow", "@critical"],
-      },
-      async ({ page }) => {
-        // Has @admin, @slow, @critical tags
-      }
-    );
-  }
-);
+	test("admin settings", {
+		tag: ["@slow", "@critical"],
+	}, async ({ page }) => {
+		// Has @admin, @slow, @critical tags
+	});
+});
 ```
 
 ## Running Tagged Tests
@@ -154,8 +134,8 @@ npx playwright test --grep "@api" --grep-invert "@slow"
 import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  grep: /@smoke/,
-  grepInvert: /@flaky/,
+	grep: /@smoke/,
+	grepInvert: /@flaky/,
 });
 ```
 
@@ -165,20 +145,20 @@ export default defineConfig({
 import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  projects: [
-    {
-      name: "smoke",
-      grep: /@smoke/,
-    },
-    {
-      name: "regression",
-      grepInvert: /@smoke/,
-    },
-    {
-      name: "critical-only",
-      grep: /@critical/,
-    },
-  ],
+	projects: [
+		{
+			name: "smoke",
+			grep: /@smoke/,
+		},
+		{
+			name: "regression",
+			grepInvert: /@smoke/,
+		},
+		{
+			name: "critical-only",
+			grep: /@critical/,
+		},
+	],
 });
 ```
 
@@ -190,8 +170,8 @@ import { defineConfig } from "@playwright/test";
 const isCI = !!process.env.CI;
 
 export default defineConfig({
-  grep: isCI ? /@smoke|@critical/ : undefined,
-  grepInvert: isCI ? /@flaky/ : undefined,
+	grep: isCI ? /@smoke|@critical/ : undefined,
+	grepInvert: isCI ? /@flaky/ : undefined,
 });
 ```
 
@@ -215,62 +195,42 @@ test("complete user journey", { tag: "@e2e" }, async ({ page }) => {});
 ### By Priority
 
 ```typescript
-test(
-  "payment processing",
-  {
-    tag: ["@critical", "@p0"],
-  },
-  async ({ page }) => {}
-);
+test("payment processing", {
+	tag: ["@critical", "@p0"],
+}, async ({ page }) => {});
 
-test(
-  "user preferences",
-  {
-    tag: ["@p1"],
-  },
-  async ({ page }) => {}
-);
+test("user preferences", {
+	tag: ["@p1"],
+}, async ({ page }) => {});
 
-test(
-  "theme customization",
-  {
-    tag: ["@p2"],
-  },
-  async ({ page }) => {}
-);
+test("theme customization", {
+	tag: ["@p2"],
+}, async ({ page }) => {});
 ```
 
 ### By Feature Area
 
 ```typescript
-test.describe(
-  "authentication",
-  {
-    tag: "@auth",
-  },
-  () => {
-    test("login @smoke", async ({ page }) => {});
-    test("logout", async ({ page }) => {});
-    test("password reset @slow", async ({ page }) => {});
-  }
-);
+test.describe("authentication", {
+	tag: "@auth",
+}, () => {
+	test("login @smoke", async ({ page }) => {});
+	test("logout", async ({ page }) => {});
+	test("password reset @slow", async ({ page }) => {});
+});
 
-test.describe(
-  "payments",
-  {
-    tag: "@payments",
-  },
-  () => {
-    test("credit card @critical", async ({ page }) => {});
-    test("paypal @critical", async ({ page }) => {});
-  }
-);
+test.describe("payments", {
+	tag: "@payments",
+}, () => {
+	test("credit card @critical", async ({ page }) => {});
+	test("paypal @critical", async ({ page }) => {});
+});
 ```
 
 ## Common Tag Categories
 
 | Category        | Tags                                          | Purpose                       |
-|-----------------|-----------------------------------------------|-------------------------------|
+| --------------- | --------------------------------------------- | ----------------------------- |
 | **Speed**       | `@fast`, `@slow`                              | Execution time classification |
 | **Priority**    | `@critical`, `@p0`, `@p1`, `@p2`              | Business importance           |
 | **Type**        | `@smoke`, `@regression`, `@e2e`               | Test suite categorization     |
@@ -283,7 +243,7 @@ test.describe(
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern             | Problem                  | Solution                                       |
-|--------------------------|--------------------------|------------------------------------------------|
+| ------------------------ | ------------------------ | ---------------------------------------------- |
 | Too many tags per test   | Hard to maintain         | Limit to 2-3 relevant tags                     |
 | Inconsistent naming      | Confusing filtering      | Establish naming conventions                   |
 | Missing `@` prefix       | Tags won't match filters | Always prefix with `@`                         |

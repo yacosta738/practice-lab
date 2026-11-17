@@ -1,13 +1,14 @@
 ---
+
 name: pinned-tag
 description: >-
-  Manage pinned tags and commit SHAs for GitHub Actions security, resolving mutable tags
-  to immutable commit references. Use when the task involves `Unpinned tag for a
+Manage pinned tags and commit SHAs for GitHub Actions security, resolving mutable tags
+to immutable commit references. Use when the task involves `Unpinned tag for a
   non-immutable Action`, `pin GitHub Action to commit SHA`, `resolve git tag to SHA`, or
-  `GitHub Actions security hardening`.
+`GitHub Actions security hardening`.
 license: MIT
 metadata:
-  version: "1.0.0"
+version: "1.0.0"
 ---
 
 # Pinned Tag Management Skill
@@ -33,12 +34,12 @@ use of full commit SHAs instead of mutable tags.
 - **Immutability for Actions**: For GitHub Actions, always prefer the full 40-character commit SHA
   over a tag name. Tags are mutable and can be moved, leading to security risks or broken builds.
 - **Annotated vs Lightweight Tags**:
-    - **Annotated Tags**: `git ls-remote` returns two entries. The one ending in `^{}` is the "
-      peeled"
-      reference pointing directly to the commit object. **ALWAYS use this one**.
-    - **Lightweight Tags**: Return only one entry, which is the commit SHA.
-    - **Selection Logic**: When resolving, always sort the results and take the last one to ensure
-      `^{}` is preferred over the tag object SHA.
+  - **Annotated Tags**: `git ls-remote` returns two entries. The one ending in `^{}` is the "
+    peeled"
+    reference pointing directly to the commit object. **ALWAYS use this one**.
+  - **Lightweight Tags**: Return only one entry, which is the commit SHA.
+  - **Selection Logic**: When resolving, always sort the results and take the last one to ensure
+    `^{}` is preferred over the tag object SHA.
 - **Verification**: Always verify the resolved SHA belongs to the expected tag before applying
   changes.
 
@@ -72,8 +73,8 @@ use of full commit SHAs instead of mutable tags.
    tag.
 3. **Apply Patch**: Replace the tag with the SHA and add the tag name as a comment for readability.
 
-- *Before*: `uses: actions/checkout@v3`
-- *After*: `uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3`
+- _Before_: `uses: actions/checkout@v3`
+- _After_: `uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3`
 
 ## Limitations
 

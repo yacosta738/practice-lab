@@ -28,10 +28,8 @@ npm install -D v8-to-istanbul istanbul-lib-coverage nyc tsx
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
-  projects: [
-    { name: "coverage", use: { ...devices["Desktop Chrome"] } },
-  ],
-  use: { baseURL: "http://localhost:3000" },
+	projects: [{ name: "coverage", use: { ...devices["Desktop Chrome"] } }],
+	use: { baseURL: "http://localhost:3000" },
 });
 ```
 
@@ -47,21 +45,21 @@ import { test as base } from "@playwright/test";
 import fs from "node:fs/promises";
 
 export const test = base.extend<{ collectCoverage: void }>({
-  collectCoverage: [
-    async ({ page }, use, testInfo) => {
-      await page.coverage.startJSCoverage({ resetOnNavigation: false });
-      await page.coverage.startCSSCoverage({ resetOnNavigation: false });
-      await use();
-      const [js, css] = await Promise.all([
-        page.coverage.stopJSCoverage(),
-        page.coverage.stopCSSCoverage(),
-      ]);
-      // outputPath creates the test output directory.
-      await fs.writeFile(testInfo.outputPath("js-coverage.json"), JSON.stringify(js));
-      await fs.writeFile(testInfo.outputPath("css-coverage.json"), JSON.stringify(css));
-    },
-    { auto: true },
-  ],
+	collectCoverage: [
+		async ({ page }, use, testInfo) => {
+			await page.coverage.startJSCoverage({ resetOnNavigation: false });
+			await page.coverage.startCSSCoverage({ resetOnNavigation: false });
+			await use();
+			const [js, css] = await Promise.all([
+				page.coverage.stopJSCoverage(),
+				page.coverage.stopCSSCoverage(),
+			]);
+			// outputPath creates the test output directory.
+			await fs.writeFile(testInfo.outputPath("js-coverage.json"), JSON.stringify(js));
+			await fs.writeFile(testInfo.outputPath("css-coverage.json"), JSON.stringify(css));
+		},
+		{ auto: true },
+	],
 });
 
 export { expect } from "@playwright/test";
@@ -77,13 +75,13 @@ For manual collection, do not also enable the automatic fixture on the same page
 import { test, expect } from "@playwright/test";
 
 test("collect JavaScript coverage", async ({ page }) => {
-  await page.coverage.startJSCoverage({ resetOnNavigation: false });
-  await page.goto("/app");
-  await page.getByRole("button", { name: "Submit" }).click();
-  await expect(page.getByText("Success")).toBeVisible();
-  const coverage = await page.coverage.stopJSCoverage();
-  const appCoverage = coverage.filter((entry) => entry.url.includes("/src/"));
-  console.log(`Covered ${appCoverage.length} source files`);
+	await page.coverage.startJSCoverage({ resetOnNavigation: false });
+	await page.goto("/app");
+	await page.getByRole("button", { name: "Submit" }).click();
+	await expect(page.getByText("Success")).toBeVisible();
+	const coverage = await page.coverage.stopJSCoverage();
+	const appCoverage = coverage.filter((entry) => entry.url.includes("/src/"));
+	console.log(`Covered ${appCoverage.length} source files`);
 });
 ```
 
@@ -98,15 +96,15 @@ CSS ranges can be used directly for a stylesheet's used-byte estimate:
 
 ```typescript
 test("collect CSS coverage", async ({ page }) => {
-  await page.coverage.startCSSCoverage();
-  await page.goto("/app");
-  await page.getByRole("button").hover();
-  const cssCoverage = await page.coverage.stopCSSCoverage();
-  for (const entry of cssCoverage) {
-    const usedBytes = entry.ranges.reduce((sum, r) => sum + r.end - r.start, 0);
-    const percentage = entry.text.length === 0 ? 0 : usedBytes / entry.text.length * 100;
-    console.log(`${entry.url}: ${percentage.toFixed(1)}% CSS used`);
-  }
+	await page.coverage.startCSSCoverage();
+	await page.goto("/app");
+	await page.getByRole("button").hover();
+	const cssCoverage = await page.coverage.stopCSSCoverage();
+	for (const entry of cssCoverage) {
+		const usedBytes = entry.ranges.reduce((sum, r) => sum + r.end - r.start, 0);
+		const percentage = entry.text.length === 0 ? 0 : (usedBytes / entry.text.length) * 100;
+		console.log(`${entry.url}: ${percentage.toFixed(1)}% CSS used`);
+	}
 });
 ```
 
@@ -137,17 +135,17 @@ const map = istanbulCoverage.createCoverageMap({});
 const roots = process.argv.slice(2);
 if (roots.length === 0) roots.push("test-results");
 for (const root of roots) {
-  const files = await fs.readdir(root, { recursive: true });
-  for (const file of files.filter((f) => f.endsWith("js-coverage.json"))) {
-    const entries: JSCoverage = JSON.parse(await fs.readFile(path.join(root, file), "utf8"));
-    for (const entry of entries) {
-      if (!entry.url.includes("/src/") || entry.source === undefined) continue;
-      const converter = v8ToIstanbul(entry.url, 0, { source: entry.source });
-      await converter.load();
-      converter.applyCoverage(entry.functions);
-      map.merge(converter.toIstanbul());
-    }
-  }
+	const files = await fs.readdir(root, { recursive: true });
+	for (const file of files.filter((f) => f.endsWith("js-coverage.json"))) {
+		const entries: JSCoverage = JSON.parse(await fs.readFile(path.join(root, file), "utf8"));
+		for (const entry of entries) {
+			if (!entry.url.includes("/src/") || entry.source === undefined) continue;
+			const converter = v8ToIstanbul(entry.url, 0, { source: entry.source });
+			await converter.load();
+			converter.applyCoverage(entry.functions);
+			map.merge(converter.toIstanbul());
+		}
+	}
 }
 await fs.mkdir(".nyc_output", { recursive: true });
 await fs.writeFile(".nyc_output/coverage.json", JSON.stringify(map.toJSON()));
@@ -236,7 +234,7 @@ the full report as the baseline; an unloaded changed file must not silently coun
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern                       | Problem                         | Solution                       |
-|------------------------------------|---------------------------------|--------------------------------|
+| ---------------------------------- | ------------------------------- | ------------------------------ |
 | Coverage for coverage's sake       | Gaming metrics                  | Focus on critical paths        |
 | 100% coverage target               | Diminishing returns             | Set realistic thresholds       |
 | Ignoring coverage drops            | Technical debt                  | Enforce thresholds in CI       |

@@ -78,11 +78,11 @@
 navigator.geolocation.getCurrentPosition(success, error);
 
 // ✅ Request in context, after user action
-findNearbyButton.addEventListener('click', async () => {
-  // Explain why you need it
-  if (await showPermissionExplanation()) {
-    navigator.geolocation.getCurrentPosition(success, error);
-  }
+findNearbyButton.addEventListener("click", async () => {
+	// Explain why you need it
+	if (await showPermissionExplanation()) {
+		navigator.geolocation.getCurrentPosition(success, error);
+	}
 });
 ```
 
@@ -102,11 +102,8 @@ add_header Permissions-Policy "geolocation=(self \"https://maps.example.com\")" 
 ```javascript
 // Express / Node example
 app.use((_req, res, next) => {
-  res.setHeader(
-    "Permissions-Policy",
-    'geolocation=(), camera=(), microphone=()'
-  );
-  next();
+	res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=()");
+	next();
 });
 ```
 
@@ -148,7 +145,7 @@ app.use((_req, res, next) => {
 ## Tools
 
 | Tool                                               | Purpose                    |
-|----------------------------------------------------|----------------------------|
+| -------------------------------------------------- | -------------------------- |
 | `npm audit`                                        | Dependency vulnerabilities |
 | [SecurityHeaders.com](https://securityheaders.com) | Header analysis            |
 | [W3C Validator](https://validator.w3.org)          | HTML validation            |

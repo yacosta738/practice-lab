@@ -11,7 +11,7 @@
 ## 2. BUTTONS
 
 | Variant     | Background              | Border                       | Text               | Radius       |
-|-------------|-------------------------|------------------------------|--------------------|--------------|
+| ----------- | ----------------------- | ---------------------------- | ------------------ | ------------ |
 | Primary     | `--text-display` (#FFF) | none                         | `--black`          | 999px (pill) |
 | Secondary   | transparent             | `1px solid --border-visible` | `--text-primary`   | 999px        |
 | Ghost       | transparent             | none                         | `--text-secondary` | 0            |
@@ -106,7 +106,7 @@ below.
 `--border` (dark) / `#E0E0E0` (light).
 
 | State      | Fill             | When                |
-|------------|------------------|---------------------|
+| ---------- | ---------------- | ------------------- |
 | Neutral    | `--text-display` | Within normal range |
 | Over limit | `--accent`       | Exceeds target      |
 | Good       | `--success`      | Healthy range       |

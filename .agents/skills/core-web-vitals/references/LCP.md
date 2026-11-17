@@ -38,11 +38,11 @@ Target: < 800ms
 ```javascript
 // Use edge functions for dynamic content
 // Vercel example
-export const config = { runtime: 'edge' };
+export const config = { runtime: "edge" };
 
 // Use stale-while-revalidate caching
 // Cache-Control header
-res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=300");
 ```
 
 ### 2. Resource load time
@@ -69,9 +69,9 @@ res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
 
 ```css
 @font-face {
-  font-family: 'Heading';
-  src: url('/fonts/heading.woff2') format('woff2');
-  font-display: swap; /* Show fallback immediately */
+	font-family: "Heading";
+	src: url("/fonts/heading.woff2") format("woff2");
+	font-display: swap; /* Show fallback immediately */
 }
 ```
 
@@ -118,8 +118,8 @@ res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
 ```javascript
 // Next.js
 export async function getServerSideProps() {
-  const data = await fetchHeroContent();
-  return { props: { hero: data } };
+	const data = await fetchHeroContent();
+	return { props: { hero: data } };
 }
 ```
 
@@ -128,8 +128,8 @@ export async function getServerSideProps() {
 ```javascript
 // Next.js
 export async function getStaticProps() {
-  const data = await fetchHeroContent();
-  return { props: { hero: data }, revalidate: 3600 };
+	const data = await fetchHeroContent();
+	return { props: { hero: data }, revalidate: 3600 };
 }
 ```
 
@@ -137,14 +137,14 @@ export async function getStaticProps() {
 
 ```jsx
 // React 18+
-import { Suspense } from 'react';
+import { Suspense } from "react";
 
 function Page() {
-  return (
-    <Suspense fallback={<HeroSkeleton />}>
-      <Hero />
-    </Suspense>
-  );
+	return (
+		<Suspense fallback={<HeroSkeleton />}>
+			<Hero />
+		</Suspense>
+	);
 }
 ```
 
@@ -153,16 +153,10 @@ function Page() {
 ### Next.js
 
 ```jsx
-import Image from 'next/image';
+import Image from "next/image";
 
 // LCP image with priority
-<Image 
-  src="/hero.jpg"
-  priority
-  fill
-  sizes="100vw"
-  alt="Hero"
-/>
+<Image src="/hero.jpg" priority fill sizes="100vw" alt="Hero" />;
 ```
 
 ### Nuxt
@@ -196,24 +190,24 @@ import hero from '../assets/hero.jpg';
 ```javascript
 // Identify LCP element
 new PerformanceObserver((entryList) => {
-  const entries = entryList.getEntries();
-  const lastEntry = entries[entries.length - 1];
-  
-  console.log('LCP:', {
-    element: lastEntry.element,
-    time: lastEntry.startTime,
-    size: lastEntry.size,
-    url: lastEntry.url,
-    renderTime: lastEntry.renderTime,
-    loadTime: lastEntry.loadTime
-  });
-}).observe({ type: 'largest-contentful-paint', buffered: true });
+	const entries = entryList.getEntries();
+	const lastEntry = entries[entries.length - 1];
+
+	console.log("LCP:", {
+		element: lastEntry.element,
+		time: lastEntry.startTime,
+		size: lastEntry.size,
+		url: lastEntry.url,
+		renderTime: lastEntry.renderTime,
+		loadTime: lastEntry.loadTime,
+	});
+}).observe({ type: "largest-contentful-paint", buffered: true });
 ```
 
 ## Common issues
 
 | Issue                    | Impact      | Fix                        |
-|--------------------------|-------------|----------------------------|
+| ------------------------ | ----------- | -------------------------- |
 | No preload for LCP image | +500-1000ms | Add `<link rel="preload">` |
 | Large unoptimized image  | +300-800ms  | Compress, use WebP/AVIF    |
 | Render-blocking CSS      | +200-500ms  | Inline critical CSS        |

@@ -1,12 +1,13 @@
 ---
+
 name: performance
 description: >-
-  Optimize web performance for faster loading and better user experience. Use when the
-  task involves `speed up my site`, `optimize performance`, `reduce load time`, `fix slow
+Optimize web performance for faster loading and better user experience. Use when the
+task involves `speed up my site`, `optimize performance`, `reduce load time`, `fix slow
   loading`, `improve page speed`, or `performance audit`.
 license: MIT
 metadata:
-  version: "1.0.0"
+version: "1.0.0"
 ---
 
 # Performance optimization
@@ -24,7 +25,7 @@ runtime efficiency, and resource optimization.
 ## Performance budget
 
 | Resource                | Budget   | Rationale                |
-|-------------------------|----------|--------------------------|
+| ----------------------- | -------- | ------------------------ |
 | Total page weight       | < 1.5 MB | 3G loads in ~4s          |
 | JavaScript (compressed) | < 300 KB | Parsing + execution time |
 | CSS (compressed)        | < 100 KB | Render blocking          |
@@ -36,10 +37,10 @@ runtime efficiency, and resource optimization.
 
 ### Server response
 
-* **TTFB < 800ms.** Time to First Byte should be fast. Use CDN, caching, and efficient backends.
-* **Enable compression.** Gzip or Brotli for text assets. Brotli preferred (15-20% smaller).
-* **HTTP/2 or HTTP/3.** Multiplexing reduces connection overhead.
-* **Edge caching.** Cache HTML at CDN edge when possible.
+- **TTFB < 800ms.** Time to First Byte should be fast. Use CDN, caching, and efficient backends.
+- **Enable compression.** Gzip or Brotli for text assets. Brotli preferred (15-20% smaller).
+- **HTTP/2 or HTTP/3.** Multiplexing reduces connection overhead.
+- **Edge caching.** Cache HTML at CDN edge when possible.
 
 ### Resource loading
 
@@ -93,14 +94,14 @@ runtime efficiency, and resource optimization.
 
 ```javascript
 // Route-based splitting
-const Dashboard = lazy(() => import('./Dashboard'));
+const Dashboard = lazy(() => import("./Dashboard"));
 
 // Component-based splitting
-const HeavyChart = lazy(() => import('./HeavyChart'));
+const HeavyChart = lazy(() => import("./HeavyChart"));
 
 // Feature-based splitting
 if (user.isPremium) {
-  const PremiumFeatures = await import('./PremiumFeatures');
+	const PremiumFeatures = await import("./PremiumFeatures");
 }
 ```
 
@@ -108,11 +109,11 @@ if (user.isPremium) {
 
 ```javascript
 // ❌ Imports entire library
-import _ from 'lodash';
+import _ from "lodash";
 _.debounce(fn, 300);
 
 // ✅ Imports only what's needed
-import debounce from 'lodash/debounce';
+import debounce from "lodash/debounce";
 debounce(fn, 300);
 ```
 
@@ -121,7 +122,7 @@ debounce(fn, 300);
 ### Format selection
 
 | Format | Use case                    | Browser support |
-|--------|-----------------------------|-----------------|
+| ------ | --------------------------- | --------------- |
 | AVIF   | Photos, best compression    | 92%+            |
 | WebP   | Photos, good fallback       | 97%+            |
 | PNG    | Graphics with transparency  | Universal       |
@@ -188,18 +189,17 @@ debounce(fn, 300);
 ```css
 /* System font stack as fallback */
 body {
-  font-family: 'Custom Font', -apple-system, BlinkMacSystemFont, 
-               'Segoe UI', Roboto, sans-serif;
+	font-family: "Custom Font", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 /* Prevent invisible text */
 @font-face {
-  font-family: 'Custom Font';
-  src: url('/fonts/custom.woff2') format('woff2');
-  font-display: swap; /* or optional for non-critical */
-  font-weight: 400;
-  font-style: normal;
-  unicode-range: U+0000-00FF; /* Subset to Latin */
+	font-family: "Custom Font";
+	src: url("/fonts/custom.woff2") format("woff2");
+	font-display: swap; /* or optional for non-critical */
+	font-weight: 400;
+	font-style: normal;
+	unicode-range: U+0000-00FF; /* Subset to Latin */
 }
 ```
 
@@ -214,10 +214,10 @@ body {
 ```css
 /* One file instead of multiple weights */
 @font-face {
-  font-family: 'Inter';
-  src: url('/fonts/Inter-Variable.woff2') format('woff2-variations');
-  font-weight: 100 900;
-  font-display: swap;
+	font-family: "Inter";
+	src: url("/fonts/Inter-Variable.woff2") format("woff2-variations");
+	font-weight: 100 900;
+	font-display: swap;
 }
 ```
 
@@ -243,20 +243,25 @@ Cache-Control: private, max-age=0, must-revalidate
 
 ```javascript
 // Cache-first for static assets
-self.addEventListener('fetch', (event) => {
-  if (event.request.destination === 'image' ||
-      event.request.destination === 'style' ||
-      event.request.destination === 'script') {
-    event.respondWith(
-      caches.match(event.request).then((cached) => {
-        return cached || fetch(event.request).then((response) => {
-          const clone = response.clone();
-          caches.open('static-v1').then((cache) => cache.put(event.request, clone));
-          return response;
-        });
-      })
-    );
-  }
+self.addEventListener("fetch", (event) => {
+	if (
+		event.request.destination === "image" ||
+		event.request.destination === "style" ||
+		event.request.destination === "script"
+	) {
+		event.respondWith(
+			caches.match(event.request).then((cached) => {
+				return (
+					cached ||
+					fetch(event.request).then((response) => {
+						const clone = response.clone();
+						caches.open("static-v1").then((cache) => cache.put(event.request, clone));
+						return response;
+					})
+				);
+			}),
+		);
+	}
 });
 ```
 
@@ -266,15 +271,15 @@ self.addEventListener('fetch', (event) => {
 
 ```javascript
 // ❌ Forces multiple reflows
-elements.forEach(el => {
-  const height = el.offsetHeight; // Read
-  el.style.height = height + 10 + 'px'; // Write
+elements.forEach((el) => {
+	const height = el.offsetHeight; // Read
+	el.style.height = height + 10 + "px"; // Write
 });
 
 // ✅ Batch reads, then batch writes
-const heights = elements.map(el => el.offsetHeight); // All reads
+const heights = elements.map((el) => el.offsetHeight); // All reads
 elements.forEach((el, i) => {
-  el.style.height = heights[i] + 10 + 'px'; // All writes
+	el.style.height = heights[i] + 10 + "px"; // All writes
 });
 ```
 
@@ -282,15 +287,15 @@ elements.forEach((el, i) => {
 
 ```javascript
 function debounce(fn, delay) {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => fn(...args), delay);
-  };
+	let timeout;
+	return (...args) => {
+		clearTimeout(timeout);
+		timeout = setTimeout(() => fn(...args), delay);
+	};
 }
 
 // Debounce scroll/resize handlers
-window.addEventListener('scroll', debounce(handleScroll, 100));
+window.addEventListener("scroll", debounce(handleScroll, 100));
 ```
 
 ### Use requestAnimationFrame
@@ -301,8 +306,8 @@ setInterval(animate, 16);
 
 // ✅ Synced with display refresh
 function animate() {
-  // Animation logic
-  requestAnimationFrame(animate);
+	// Animation logic
+	requestAnimationFrame(animate);
 }
 requestAnimationFrame(animate);
 ```
@@ -362,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
 ### Key metrics
 
 | Metric      | Target  | Tool             |
-|-------------|---------|------------------|
+| ----------- | ------- | ---------------- |
 | LCP         | < 2.5s  | Lighthouse, CrUX |
 | FCP         | < 1.8s  | Lighthouse       |
 | Speed Index | < 3.4s  | Lighthouse       |

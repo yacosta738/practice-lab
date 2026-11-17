@@ -35,25 +35,25 @@ npm init playwright@latest -- --ct
 import { defineConfig, devices } from "@playwright/experimental-ct-react";
 
 export default defineConfig({
-  testDir: "./tests/components",
-  snapshotDir: "./tests/components/__snapshots__",
+	testDir: "./tests/components",
+	snapshotDir: "./tests/components/__snapshots__",
 
-  use: {
-    ctPort: 3100,
-    ctViteConfig: {
-      resolve: {
-        alias: {
-          "@": "/src",
-        },
-      },
-    },
-  },
+	use: {
+		ctPort: 3100,
+		ctViteConfig: {
+			resolve: {
+				alias: {
+					"@": "/src",
+				},
+			},
+		},
+	},
 
-  projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
-    { name: "webkit", use: { ...devices["Desktop Safari"] } },
-  ],
+	projects: [
+		{ name: "chromium", use: { ...devices["Desktop Chrome"] } },
+		{ name: "firefox", use: { ...devices["Desktop Firefox"] } },
+		{ name: "webkit", use: { ...devices["Desktop Safari"] } },
+	],
 });
 ```
 
@@ -83,10 +83,10 @@ import { test, expect } from "@playwright/experimental-ct-react";
 import { Button } from "@/components/Button";
 
 test("renders button with text", async ({ mount }) => {
-  const component = await mount(<Button>Click me</Button>);
+	const component = await mount(<Button>Click me</Button>);
 
-  await expect(component).toContainText("Click me");
-  await expect(component).toBeVisible();
+	await expect(component).toContainText("Click me");
+	await expect(component).toBeVisible();
 });
 ```
 
@@ -94,15 +94,15 @@ test("renders button with text", async ({ mount }) => {
 
 ```tsx
 test("renders with all props", async ({ mount }) => {
-  const component = await mount(
-    <Button variant="primary" size="large" disabled={false} icon="check">
-      Submit
-    </Button>,
-  );
+	const component = await mount(
+		<Button variant="primary" size="large" disabled={false} icon="check">
+			Submit
+		</Button>,
+	);
 
-  await expect(component).toHaveClass(/primary/);
-  await expect(component).toHaveClass(/large/);
-  await expect(component.locator("svg")).toBeVisible(); // icon
+	await expect(component).toHaveClass(/primary/);
+	await expect(component).toHaveClass(/large/);
+	await expect(component.locator("svg")).toBeVisible(); // icon
 });
 ```
 
@@ -115,24 +115,24 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import "@/styles/globals.css";
 
 export default function PlaywrightWrapper({ children }) {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>{children}</ThemeProvider>
-    </QueryClientProvider>
-  );
+	return (
+		<QueryClientProvider client={queryClient}>
+			<ThemeProvider>{children}</ThemeProvider>
+		</QueryClientProvider>
+	);
 }
 ```
 
 ```tsx
 // Or per-test wrapper
 test("with custom provider", async ({ mount }) => {
-  const component = await mount(
-    <AuthProvider initialUser={{ name: "Test" }}>
-      <UserProfile />
-    </AuthProvider>,
-  );
+	const component = await mount(
+		<AuthProvider initialUser={{ name: "Test" }}>
+			<UserProfile />
+		</AuthProvider>,
+	);
 
-  await expect(component.getByText("Test")).toBeVisible();
+	await expect(component.getByText("Test")).toBeVisible();
 });
 ```
 
@@ -142,14 +142,14 @@ test("with custom provider", async ({ mount }) => {
 
 ```tsx
 test.describe("Button variants", () => {
-  const variants = ["primary", "secondary", "danger", "ghost"] as const;
+	const variants = ["primary", "secondary", "danger", "ghost"] as const;
 
-  for (const variant of variants) {
-    test(`renders ${variant} variant`, async ({ mount }) => {
-      const component = await mount(<Button variant={variant}>Button</Button>);
-      await expect(component).toHaveClass(new RegExp(variant));
-    });
-  }
+	for (const variant of variants) {
+		test(`renders ${variant} variant`, async ({ mount }) => {
+			const component = await mount(<Button variant={variant}>Button</Button>);
+			await expect(component).toHaveClass(new RegExp(variant));
+		});
+	}
 });
 ```
 
@@ -157,13 +157,13 @@ test.describe("Button variants", () => {
 
 ```tsx
 test("responds to prop changes", async ({ mount }) => {
-  const component = await mount(<Counter initialCount={0} />);
+	const component = await mount(<Counter initialCount={0} />);
 
-  await expect(component.getByTestId("count")).toHaveText("0");
+	await expect(component.getByTestId("count")).toHaveText("0");
 
-  // Update props
-  await component.update(<Counter initialCount={10} />);
-  await expect(component.getByTestId("count")).toHaveText("10");
+	// Update props
+	await component.update(<Counter initialCount={10} />);
+	await expect(component.getByTestId("count")).toHaveText("10");
 });
 ```
 
@@ -171,25 +171,25 @@ test("responds to prop changes", async ({ mount }) => {
 
 ```tsx
 test("controlled input", async ({ mount }) => {
-  let externalValue = "";
+	let externalValue = "";
 
-  const component = await mount(
-    <Input
-      value={externalValue}
-      onChange={(e) => {
-        externalValue = e.target.value;
-      }}
-    />,
-  );
+	const component = await mount(
+		<Input
+			value={externalValue}
+			onChange={(e) => {
+				externalValue = e.target.value;
+			}}
+		/>,
+	);
 
-  await component.locator("input").fill("hello");
+	await component.locator("input").fill("hello");
 
-  // For controlled components, update with new value
-  await component.update(
-    <Input value="hello" onChange={(e) => (externalValue = e.target.value)} />,
-  );
+	// For controlled components, update with new value
+	await component.update(
+		<Input value="hello" onChange={(e) => (externalValue = e.target.value)} />,
+	);
 
-  await expect(component.locator("input")).toHaveValue("hello");
+	await expect(component.locator("input")).toHaveValue("hello");
 });
 ```
 
@@ -197,22 +197,16 @@ test("controlled input", async ({ mount }) => {
 
 ```tsx
 test("internal state updates", async ({ mount }) => {
-  const component = await mount(<Toggle defaultChecked={false} />);
+	const component = await mount(<Toggle defaultChecked={false} />);
 
-  // Initial state
-  await expect(component.locator('[role="switch"]')).toHaveAttribute(
-    "aria-checked",
-    "false",
-  );
+	// Initial state
+	await expect(component.locator('[role="switch"]')).toHaveAttribute("aria-checked", "false");
 
-  // Trigger state change
-  await component.click();
+	// Trigger state change
+	await component.click();
 
-  // Verify state updated
-  await expect(component.locator('[role="switch"]')).toHaveAttribute(
-    "aria-checked",
-    "true",
-  );
+	// Verify state updated
+	await expect(component.locator('[role="switch"]')).toHaveAttribute("aria-checked", "true");
 });
 ```
 
@@ -222,15 +216,13 @@ test("internal state updates", async ({ mount }) => {
 
 ```tsx
 test("click event fires", async ({ mount }) => {
-  let clicked = false;
+	let clicked = false;
 
-  const component = await mount(
-    <Button onClick={() => (clicked = true)}>Click</Button>,
-  );
+	const component = await mount(<Button onClick={() => (clicked = true)}>Click</Button>);
 
-  await component.click();
+	await component.click();
 
-  await expect.poll(() => clicked).toBe(true);
+	await expect.poll(() => clicked).toBe(true);
 });
 ```
 
@@ -238,19 +230,16 @@ test("click event fires", async ({ mount }) => {
 
 ```tsx
 test("onChange provides correct value", async ({ mount }) => {
-  const values: string[] = [];
+	const values: string[] = [];
 
-  const component = await mount(
-    <Select
-      options={["a", "b", "c"]}
-      onChange={(value) => values.push(value)}
-    />,
-  );
+	const component = await mount(
+		<Select options={["a", "b", "c"]} onChange={(value) => values.push(value)} />,
+	);
 
-  await component.getByRole("combobox").click();
-  await component.getByRole("option", { name: "b" }).click();
+	await component.getByRole("combobox").click();
+	await component.getByRole("option", { name: "b" }).click();
 
-  await expect.poll(() => values).toEqual(["b"]);
+	await expect.poll(() => values).toEqual(["b"]);
 });
 ```
 
@@ -258,24 +247,26 @@ test("onChange provides correct value", async ({ mount }) => {
 
 ```tsx
 test("form submission", async ({ mount }) => {
-  let submittedData: FormData | null = null;
+	let submittedData: FormData | null = null;
 
-  const component = await mount(
-    <LoginForm
-      onSubmit={(data) => {
-        submittedData = data;
-      }}
-    />,
-  );
+	const component = await mount(
+		<LoginForm
+			onSubmit={(data) => {
+				submittedData = data;
+			}}
+		/>,
+	);
 
-  await component.getByLabel("Email").fill("test@example.com");
-  await component.getByLabel("Password").fill("secret123");
-  await component.getByRole("button", { name: "Sign in" }).click();
+	await component.getByLabel("Email").fill("test@example.com");
+	await component.getByLabel("Password").fill("secret123");
+	await component.getByRole("button", { name: "Sign in" }).click();
 
-  await expect.poll(() => submittedData).toEqual({
-    email: "test@example.com",
-    password: "secret123",
-  });
+	await expect
+		.poll(() => submittedData)
+		.toEqual({
+			email: "test@example.com",
+			password: "secret123",
+		});
 });
 ```
 
@@ -283,19 +274,17 @@ test("form submission", async ({ mount }) => {
 
 ```tsx
 test("keyboard navigation", async ({ mount }) => {
-  const component = await mount(
-    <Dropdown options={["Apple", "Banana", "Cherry"]} />,
-  );
+	const component = await mount(<Dropdown options={["Apple", "Banana", "Cherry"]} />);
 
-  // Open dropdown
-  await component.getByRole("button").click();
+	// Open dropdown
+	await component.getByRole("button").click();
 
-  // Navigate with keyboard
-  await component.press("ArrowDown");
-  await component.press("ArrowDown");
-  await component.press("Enter");
+	// Navigate with keyboard
+	await component.press("ArrowDown");
+	await component.press("ArrowDown");
+	await component.press("Enter");
 
-  await expect(component.getByRole("button")).toHaveText("Banana");
+	await expect(component.getByRole("button")).toHaveText("Banana");
 });
 ```
 
@@ -305,15 +294,15 @@ test("keyboard navigation", async ({ mount }) => {
 
 ```tsx
 test("renders children", async ({ mount }) => {
-  const component = await mount(
-    <Card>
-      <h2>Title</h2>
-      <p>Description</p>
-    </Card>,
-  );
+	const component = await mount(
+		<Card>
+			<h2>Title</h2>
+			<p>Description</p>
+		</Card>,
+	);
 
-  await expect(component.getByRole("heading")).toHaveText("Title");
-  await expect(component.getByText("Description")).toBeVisible();
+	await expect(component.getByRole("heading")).toHaveText("Title");
+	await expect(component.getByText("Description")).toBeVisible();
 });
 ```
 
@@ -322,16 +311,16 @@ test("renders children", async ({ mount }) => {
 ```tsx
 // Vue component with slots
 test("renders named slots", async ({ mount }) => {
-  const component = await mount(Modal, {
-    slots: {
-      header: "<h2>Modal Title</h2>",
-      default: "<p>Modal content</p>",
-      footer: "<button>Close</button>",
-    },
-  });
+	const component = await mount(Modal, {
+		slots: {
+			header: "<h2>Modal Title</h2>",
+			default: "<p>Modal content</p>",
+			footer: "<button>Close</button>",
+		},
+	});
 
-  await expect(component.getByRole("heading")).toHaveText("Modal Title");
-  await expect(component.getByRole("button")).toHaveText("Close");
+	await expect(component.getByRole("heading")).toHaveText("Modal Title");
+	await expect(component.getByRole("button")).toHaveText("Close");
 });
 ```
 
@@ -340,13 +329,11 @@ test("renders named slots", async ({ mount }) => {
 ```tsx
 // DataFetcherStory.tsx — browser-side wrapper, next to the component.
 export function DataFetcherStory() {
-  return (
-    <DataFetcher url="/api/users">
-      {({ data, loading }) =>
-        loading ? <span>Loading...</span> : <span>{data.name}</span>
-      }
-    </DataFetcher>
-  );
+	return (
+		<DataFetcher url="/api/users">
+			{({ data, loading }) => (loading ? <span>Loading...</span> : <span>{data.name}</span>)}
+		</DataFetcher>
+	);
 }
 ```
 
@@ -357,13 +344,13 @@ import { DataFetcherStory } from "./DataFetcherStory";
 // Render props execute synchronously in the browser; a Node-side callback
 // passed directly through mount cannot return JSX to the browser.
 test("render prop pattern", async ({ mount }) => {
-  const component = await mount(<DataFetcherStory />);
+	const component = await mount(<DataFetcherStory />);
 
-  // Initially loading
-  await expect(component.getByText("Loading...")).toBeVisible();
+	// Initially loading
+	await expect(component.getByText("Loading...")).toBeVisible();
 
-  // After data loads
-  await expect(component.getByText(/User/)).toBeVisible();
+	// After data loads
+	await expect(component.getByText(/User/)).toBeVisible();
 });
 ```
 
@@ -376,29 +363,29 @@ test("render prop pattern", async ({ mount }) => {
 import { beforeMount } from "@playwright/experimental-ct-react/hooks";
 
 beforeMount(async ({ hooksConfig }) => {
-  // Mock analytics
-  window.analytics = {
-    track: () => {},
-    identify: () => {},
-  };
+	// Mock analytics
+	window.analytics = {
+		track: () => {},
+		identify: () => {},
+	};
 
-  // Mock feature flags
-  if (hooksConfig?.featureFlags) {
-    window.__FEATURE_FLAGS__ = hooksConfig.featureFlags;
-  }
+	// Mock feature flags
+	if (hooksConfig?.featureFlags) {
+		window.__FEATURE_FLAGS__ = hooksConfig.featureFlags;
+	}
 });
 ```
 
 ```tsx
 // Test with mocked config
 test("with feature flag", async ({ mount }) => {
-  const component = await mount(<FeatureComponent />, {
-    hooksConfig: {
-      featureFlags: { newFeature: true },
-    },
-  });
+	const component = await mount(<FeatureComponent />, {
+		hooksConfig: {
+			featureFlags: { newFeature: true },
+		},
+	});
 
-  await expect(component.getByText("New Feature")).toBeVisible();
+	await expect(component.getByText("New Feature")).toBeVisible();
 });
 ```
 
@@ -406,16 +393,16 @@ test("with feature flag", async ({ mount }) => {
 
 ```tsx
 test("component with API", async ({ mount, page }) => {
-  // Mock API before mounting
-  await page.route("**/api/user", (route) => {
-    route.fulfill({
-      json: { id: 1, name: "Test User" },
-    });
-  });
+	// Mock API before mounting
+	await page.route("**/api/user", (route) => {
+		route.fulfill({
+			json: { id: 1, name: "Test User" },
+		});
+	});
 
-  const component = await mount(<UserProfile userId={1} />);
+	const component = await mount(<UserProfile userId={1} />);
 
-  await expect(component.getByText("Test User")).toBeVisible();
+	await expect(component.getByText("Test User")).toBeVisible();
 });
 ```
 
@@ -424,13 +411,13 @@ test("component with API", async ({ mount, page }) => {
 ```tsx
 // Mock custom hook via module mock
 test("with mocked hook", async ({ mount }) => {
-  const component = await mount(<Dashboard />, {
-    hooksConfig: {
-      mockAuth: { user: { name: "Admin" }, isAdmin: true },
-    },
-  });
+	const component = await mount(<Dashboard />, {
+		hooksConfig: {
+			mockAuth: { user: { name: "Admin" }, isAdmin: true },
+		},
+	});
 
-  await expect(component.getByText("Admin Panel")).toBeVisible();
+	await expect(component.getByText("Admin Panel")).toBeVisible();
 });
 ```
 
@@ -442,20 +429,20 @@ test("with mocked hook", async ({ mount }) => {
 // DOM nodes cannot be passed from the browser to a Node-side ref callback.
 // Assert rendered input state through a locator instead.
 test("input value", async ({ mount }) => {
-  const component = await mount(<Input />);
-  await component.locator("input").fill("test");
-  await expect(component.locator("input")).toHaveValue("test");
+	const component = await mount(<Input />);
+	await component.locator("input").fill("test");
+	await expect(component.locator("input")).toHaveValue("test");
 });
 
 // React with context
 test("uses context", async ({ mount }) => {
-  const component = await mount(
-    <UserContext.Provider value={{ name: "Test" }}>
-      <UserGreeting />
-    </UserContext.Provider>,
-  );
+	const component = await mount(
+		<UserContext.Provider value={{ name: "Test" }}>
+			<UserGreeting />
+		</UserContext.Provider>,
+	);
 
-  await expect(component).toContainText("Hello, Test");
+	await expect(component).toContainText("Hello, Test");
 });
 ```
 
@@ -467,16 +454,16 @@ import MyInput from "@/components/MyInput.vue";
 
 // With v-model
 test("v-model binding", async ({ mount }) => {
-  let modelValue = "";
-  const component = await mount(MyInput, {
-    props: {
-      modelValue,
-      "onUpdate:modelValue": (v: string) => (modelValue = v),
-    },
-  });
+	let modelValue = "";
+	const component = await mount(MyInput, {
+		props: {
+			modelValue,
+			"onUpdate:modelValue": (v: string) => (modelValue = v),
+		},
+	});
 
-  await component.locator("input").fill("test");
-  await expect.poll(() => modelValue).toBe("test");
+	await component.locator("input").fill("test");
+	await expect.poll(() => modelValue).toBe("test");
 });
 ```
 
@@ -487,17 +474,17 @@ import { test, expect } from "@playwright/experimental-ct-svelte";
 import Counter from "./Counter.svelte";
 
 test("Svelte component", async ({ mount }) => {
-  const component = await mount(Counter, { props: { initialCount: 5 } });
-  await expect(component.getByTestId("count")).toHaveText("5");
-  await component.getByRole("button", { name: "+" }).click();
-  await expect(component.getByTestId("count")).toHaveText("6");
+	const component = await mount(Counter, { props: { initialCount: 5 } });
+	await expect(component.getByTestId("count")).toHaveText("5");
+	await component.getByRole("button", { name: "+" }).click();
+	await expect(component.getByTestId("count")).toHaveText("6");
 });
 ```
 
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern                   | Problem             | Solution                          |
-|--------------------------------|---------------------|-----------------------------------|
+| ------------------------------ | ------------------- | --------------------------------- |
 | Testing implementation details | Brittle tests       | Test behavior, not internal state |
 | Snapshot testing everything    | Maintenance burden  | Use for visual regression only    |
 | Not isolating components       | Hidden dependencies | Mock all external dependencies    |

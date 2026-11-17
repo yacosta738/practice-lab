@@ -39,14 +39,14 @@ await frameLocator.getByRole("button").click();
 // frame() - for Frame object operations (navigation, evaluation)
 const frame = page.frame({ name: "my-frame" });
 if (frame) {
-  await frame.goto("https://example.com");
-  const title = await frame.title();
+	await frame.goto("https://example.com");
+	const title = await frame.title();
 }
 
 // Get all frames
 const frames = page.frames();
 for (const f of frames) {
-  console.log("Frame URL:", f.url());
+	console.log("Frame URL:", f.url());
 }
 ```
 
@@ -61,8 +61,8 @@ await expect(frame.getByRole("heading")).toBeVisible({ timeout: 10000 });
 
 // Wait for iframe src to change
 await page.waitForFunction(() => {
-  const iframe = document.querySelector("iframe#my-frame") as HTMLIFrameElement;
-  return iframe?.src.includes("loaded");
+	const iframe = document.querySelector("iframe#my-frame") as HTMLIFrameElement;
+	return iframe?.src.includes("loaded");
 });
 ```
 
@@ -86,24 +86,20 @@ await expect(thirdPartyFrame.locator("body")).toBeVisible();
 
 ```typescript
 test("Stripe payment iframe", async ({ page }) => {
-  await page.goto("/checkout");
+	await page.goto("/checkout");
 
-  // Stripe uses multiple iframes for each field
-  const cardFrame = page
-    .frameLocator('iframe[name*="__privateStripeFrame"]')
-    .first();
+	// Stripe uses multiple iframes for each field
+	const cardFrame = page.frameLocator('iframe[name*="__privateStripeFrame"]').first();
 
-  // Wait for Stripe to initialize
-  await expect(cardFrame.locator('[placeholder="Card number"]')).toBeVisible({
-    timeout: 15000,
-  });
+	// Wait for Stripe to initialize
+	await expect(cardFrame.locator('[placeholder="Card number"]')).toBeVisible({
+		timeout: 15000,
+	});
 
-  // Fill card details
-  await cardFrame
-    .locator('[placeholder="Card number"]')
-    .fill("4242424242424242");
-  await cardFrame.locator('[placeholder="MM / YY"]').fill("12/30");
-  await cardFrame.locator('[placeholder="CVC"]').fill("123");
+	// Fill card details
+	await cardFrame.locator('[placeholder="Card number"]').fill("4242424242424242");
+	await cardFrame.locator('[placeholder="MM / YY"]').fill("12/30");
+	await cardFrame.locator('[placeholder="CVC"]').fill("123");
 });
 ```
 
@@ -111,15 +107,15 @@ test("Stripe payment iframe", async ({ page }) => {
 
 ```typescript
 test("OAuth iframe flow", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByRole("button", { name: "Sign in with Google" }).click();
+	await page.goto("/login");
+	await page.getByRole("button", { name: "Sign in with Google" }).click();
 
-  // If OAuth opens in iframe instead of popup
-  const oauthFrame = page.frameLocator('iframe[src*="accounts.google.com"]');
+	// If OAuth opens in iframe instead of popup
+	const oauthFrame = page.frameLocator('iframe[src*="accounts.google.com"]');
 
-  // Wait for OAuth form
-  await expect(oauthFrame.getByLabel("Email")).toBeVisible({ timeout: 10000 });
-  await oauthFrame.getByLabel("Email").fill("test@gmail.com");
+	// Wait for OAuth form
+	await expect(oauthFrame.getByLabel("Email")).toBeVisible({ timeout: 10000 });
+	await oauthFrame.getByLabel("Email").fill("test@gmail.com");
 });
 ```
 
@@ -146,28 +142,25 @@ await level3.getByText("Deep content").click();
 
 ```typescript
 // Helper to search all frames for an element
-async function findInAnyFrame(
-  page: Page,
-  selector: string,
-): Promise<Locator | null> {
-  // Check main page first
-  const mainCount = await page.locator(selector).count();
-  if (mainCount > 0) return page.locator(selector);
+async function findInAnyFrame(page: Page, selector: string): Promise<Locator | null> {
+	// Check main page first
+	const mainCount = await page.locator(selector).count();
+	if (mainCount > 0) return page.locator(selector);
 
-  // Check all frames
-  for (const frame of page.frames()) {
-    const count = await frame.locator(selector).count();
-    if (count > 0) {
-      return frame.locator(selector);
-    }
-  }
-  return null;
+	// Check all frames
+	for (const frame of page.frames()) {
+		const count = await frame.locator(selector).count();
+		if (count > 0) {
+			return frame.locator(selector);
+		}
+	}
+	return null;
 }
 
 test("find element in any frame", async ({ page }) => {
-  await page.goto("/complex-page");
-  const element = await findInAnyFrame(page, '[data-testid="submit-btn"]');
-  if (element) await element.click();
+	await page.goto("/complex-page");
+	const element = await findInAnyFrame(page, '[data-testid="submit-btn"]');
+	if (element) await element.click();
 });
 ```
 
@@ -177,17 +170,17 @@ test("find element in any frame", async ({ page }) => {
 
 ```typescript
 test("handle dynamically created iframe", async ({ page }) => {
-  await page.goto("/dashboard");
+	await page.goto("/dashboard");
 
-  // Click button that creates iframe
-  await page.getByRole("button", { name: "Open Widget" }).click();
+	// Click button that creates iframe
+	await page.getByRole("button", { name: "Open Widget" }).click();
 
-  // Wait for iframe to appear in DOM
-  await page.waitForSelector("iframe#widget-frame");
+	// Wait for iframe to appear in DOM
+	await page.waitForSelector("iframe#widget-frame");
 
-  // Now access the frame
-  const widgetFrame = page.frameLocator("#widget-frame");
-  await expect(widgetFrame.getByText("Widget Loaded")).toBeVisible();
+	// Now access the frame
+	const widgetFrame = page.frameLocator("#widget-frame");
+	await expect(widgetFrame.getByText("Widget Loaded")).toBeVisible();
 });
 ```
 
@@ -195,20 +188,20 @@ test("handle dynamically created iframe", async ({ page }) => {
 
 ```typescript
 test("iframe src changes", async ({ page }) => {
-  await page.goto("/multi-step");
+	await page.goto("/multi-step");
 
-  const frame = page.frameLocator("#step-frame");
+	const frame = page.frameLocator("#step-frame");
 
-  // Step 1
-  await expect(frame.getByText("Step 1")).toBeVisible();
-  await frame.getByRole("button", { name: "Next" }).click();
+	// Step 1
+	await expect(frame.getByText("Step 1")).toBeVisible();
+	await frame.getByRole("button", { name: "Next" }).click();
 
-  // Wait for iframe to reload with new content
-  await expect(frame.getByText("Step 2")).toBeVisible({ timeout: 10000 });
-  await frame.getByRole("button", { name: "Next" }).click();
+	// Wait for iframe to reload with new content
+	await expect(frame.getByText("Step 2")).toBeVisible({ timeout: 10000 });
+	await frame.getByRole("button", { name: "Next" }).click();
 
-  // Step 3
-  await expect(frame.getByText("Step 3")).toBeVisible({ timeout: 10000 });
+	// Step 3
+	await expect(frame.getByText("Step 3")).toBeVisible({ timeout: 10000 });
 });
 ```
 
@@ -216,17 +209,17 @@ test("iframe src changes", async ({ page }) => {
 
 ```typescript
 test("lazy loaded iframe", async ({ page }) => {
-  await page.goto("/page-with-lazy-iframe");
+	await page.goto("/page-with-lazy-iframe");
 
-  // Scroll to trigger lazy load
-  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+	// Scroll to trigger lazy load
+	await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 
-  // Wait for iframe to load
-  const lazyFrame = page.frameLocator("#lazy-iframe");
-  await expect(lazyFrame.locator("body")).not.toBeEmpty({ timeout: 15000 });
+	// Wait for iframe to load
+	const lazyFrame = page.frameLocator("#lazy-iframe");
+	await expect(lazyFrame.locator("body")).not.toBeEmpty({ timeout: 15000 });
 
-  // Interact with content
-  await lazyFrame.getByRole("button").click();
+	// Interact with content
+	await lazyFrame.getByRole("button").click();
 });
 ```
 
@@ -236,20 +229,20 @@ test("lazy loaded iframe", async ({ page }) => {
 
 ```typescript
 test("iframe internal navigation", async ({ page }) => {
-  await page.goto("/app");
+	await page.goto("/app");
 
-  // Get frame object for navigation control
-  const frame = page.frame({ name: "content-frame" });
-  if (!frame) throw new Error("Frame not found");
+	// Get frame object for navigation control
+	const frame = page.frame({ name: "content-frame" });
+	if (!frame) throw new Error("Frame not found");
 
-  // Navigate within iframe
-  await frame.goto("https://embedded-app.com/page2");
+	// Navigate within iframe
+	await frame.goto("https://embedded-app.com/page2");
 
-  // Wait for navigation
-  await frame.waitForURL("**/page2");
+	// Wait for navigation
+	await frame.waitForURL("**/page2");
 
-  // Verify content
-  await expect(frame.getByRole("heading")).toHaveText("Page 2");
+	// Verify content
+	await expect(frame.getByRole("heading")).toHaveText("Page 2");
 });
 ```
 
@@ -257,24 +250,21 @@ test("iframe internal navigation", async ({ page }) => {
 
 ```typescript
 test("track iframe navigation", async ({ page }) => {
-  const navigations: string[] = [];
+	const navigations: string[] = [];
 
-  // Listen to frame navigation
-  page.on("framenavigated", (frame) => {
-    if (frame.parentFrame()) {
-      // This is an iframe navigation
-      navigations.push(frame.url());
-    }
-  });
+	// Listen to frame navigation
+	page.on("framenavigated", (frame) => {
+		if (frame.parentFrame()) {
+			// This is an iframe navigation
+			navigations.push(frame.url());
+		}
+	});
 
-  await page.goto("/with-iframe");
-  await page
-    .frameLocator("#nav-frame")
-    .getByRole("link", { name: "Page 2" })
-    .click();
+	await page.goto("/with-iframe");
+	await page.frameLocator("#nav-frame").getByRole("link", { name: "Page 2" }).click();
 
-  // Verify navigation occurred
-  expect(navigations.some((url) => url.includes("page2"))).toBe(true);
+	// Verify navigation occurred
+	expect(navigations.some((url) => url.includes("page2"))).toBe(true);
 });
 ```
 
@@ -287,21 +277,21 @@ test("track iframe navigation", async ({ page }) => {
 import { test as base, FrameLocator } from "@playwright/test";
 
 export const test = base.extend<{ paymentFrame: FrameLocator }>({
-  paymentFrame: async ({ page }, use) => {
-    await page.goto("/checkout");
+	paymentFrame: async ({ page }, use) => {
+		await page.goto("/checkout");
 
-    // Wait for payment iframe to be ready
-    const frame = page.frameLocator('iframe[src*="payment"]');
-    await expect(frame.locator("body")).toBeVisible({ timeout: 15000 });
+		// Wait for payment iframe to be ready
+		const frame = page.frameLocator('iframe[src*="payment"]');
+		await expect(frame.locator("body")).toBeVisible({ timeout: 15000 });
 
-    await use(frame);
-  },
+		await use(frame);
+	},
 });
 
 // test file
 test("complete payment", async ({ paymentFrame }) => {
-  await paymentFrame.getByLabel("Card").fill("4242424242424242");
-  await paymentFrame.getByRole("button", { name: "Pay" }).click();
+	await paymentFrame.getByLabel("Card").fill("4242424242424242");
+	await paymentFrame.getByRole("button", { name: "Pay" }).click();
 });
 ```
 
@@ -309,25 +299,25 @@ test("complete payment", async ({ paymentFrame }) => {
 
 ```typescript
 test("debug iframe content", async ({ page }) => {
-  await page.goto("/page-with-iframes");
+	await page.goto("/page-with-iframes");
 
-  // List all frames
-  console.log("All frames:");
-  for (const frame of page.frames()) {
-    console.log(`  - ${frame.name() || "(unnamed)"}: ${frame.url()}`);
-  }
+	// List all frames
+	console.log("All frames:");
+	for (const frame of page.frames()) {
+		console.log(`  - ${frame.name() || "(unnamed)"}: ${frame.url()}`);
+	}
 
-  // Screenshot specific iframe content
-  const frame = page.frame({ name: "target-frame" });
-  if (frame) {
-    const body = frame.locator("body");
-    await body.screenshot({ path: "iframe-content.png" });
-  }
+	// Screenshot specific iframe content
+	const frame = page.frame({ name: "target-frame" });
+	if (frame) {
+		const body = frame.locator("body");
+		await body.screenshot({ path: "iframe-content.png" });
+	}
 
-  // Get iframe HTML for debugging
-  const frameContent = page.frameLocator("#my-frame");
-  const html = await frameContent.locator("body").innerHTML();
-  console.log("iFrame HTML:", html.substring(0, 500));
+	// Get iframe HTML for debugging
+	const frameContent = page.frameLocator("#my-frame");
+	const html = await frameContent.locator("body").innerHTML();
+	console.log("iFrame HTML:", html.substring(0, 500));
 });
 ```
 
@@ -335,27 +325,25 @@ test("debug iframe content", async ({ page }) => {
 
 ```typescript
 test("handle iframe load failure", async ({ page }) => {
-  await page.goto("/page-with-unreliable-iframe");
+	await page.goto("/page-with-unreliable-iframe");
 
-  const frame = page.frameLocator("#unreliable-frame");
+	const frame = page.frameLocator("#unreliable-frame");
 
-  try {
-    // Try to interact with iframe content
-    await expect(frame.getByRole("button")).toBeVisible({ timeout: 5000 });
-    await frame.getByRole("button").click();
-  } catch (error) {
-    // Fallback: refresh iframe
-    await page.evaluate(() => {
-      const iframe = document.querySelector(
-        "#unreliable-frame",
-      ) as HTMLIFrameElement;
-      if (iframe) iframe.src = iframe.src;
-    });
+	try {
+		// Try to interact with iframe content
+		await expect(frame.getByRole("button")).toBeVisible({ timeout: 5000 });
+		await frame.getByRole("button").click();
+	} catch (error) {
+		// Fallback: refresh iframe
+		await page.evaluate(() => {
+			const iframe = document.querySelector("#unreliable-frame") as HTMLIFrameElement;
+			if (iframe) iframe.src = iframe.src;
+		});
 
-    // Retry
-    await expect(frame.getByRole("button")).toBeVisible({ timeout: 10000 });
-    await frame.getByRole("button").click();
-  }
+		// Retry
+		await expect(frame.getByRole("button")).toBeVisible({ timeout: 10000 });
+		await frame.getByRole("button").click();
+	}
 });
 ```
 
@@ -363,11 +351,11 @@ test("handle iframe load failure", async ({ page }) => {
 
 ```typescript
 test("mock iframe response", async ({ page }) => {
-  // Intercept iframe src request
-  await page.route("**/embedded-widget**", (route) => {
-    route.fulfill({
-      contentType: "text/html",
-      body: `
+	// Intercept iframe src request
+	await page.route("**/embedded-widget**", (route) => {
+		route.fulfill({
+			contentType: "text/html",
+			body: `
         <!DOCTYPE html>
         <html>
           <body>
@@ -376,20 +364,20 @@ test("mock iframe response", async ({ page }) => {
           </body>
         </html>
       `,
-    });
-  });
+		});
+	});
 
-  await page.goto("/page-with-widget");
+	await page.goto("/page-with-widget");
 
-  const frame = page.frameLocator("#widget-frame");
-  await expect(frame.getByRole("heading")).toHaveText("Mocked Widget");
+	const frame = page.frameLocator("#widget-frame");
+	await expect(frame.getByRole("heading")).toHaveText("Mocked Widget");
 });
 ```
 
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern                          | Problem                           | Solution                                           |
-|---------------------------------------|-----------------------------------|----------------------------------------------------|
+| ------------------------------------- | --------------------------------- | -------------------------------------------------- |
 | Using `page.frame()` for interactions | Less reliable than frameLocator   | Use `page.frameLocator()` for element interactions |
 | Hardcoding iframe index               | Fragile if DOM order changes      | Use name, id, or src attribute selectors           |
 | Not waiting for iframe load           | Race conditions                   | Wait for element inside iframe to be visible       |

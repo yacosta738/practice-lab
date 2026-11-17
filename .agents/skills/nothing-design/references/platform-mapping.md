@@ -7,29 +7,29 @@ for spacing/borders. Dark/light via `prefers-color-scheme` or class toggle.
 
 ```css
 :root {
-  --black: #000000;
-  --surface: #111111;
-  --surface-raised: #1A1A1A;
-  --border: #222222;
-  --border-visible: #333333;
-  --text-disabled: #666666;
-  --text-secondary: #999999;
-  --text-primary: #E8E8E8;
-  --text-display: #FFFFFF;
-  --accent: #D71921;
-  --accent-subtle: rgba(215,25,33,0.15);
-  --success: #4A9E5C;
-  --warning: #D4A843;
-  --interactive: #5B9BF6;
-  --space-2xs: 2px;
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-  --space-2xl: 48px;
-  --space-3xl: 64px;
-  --space-4xl: 96px;
+	--black: #000000;
+	--surface: #111111;
+	--surface-raised: #1a1a1a;
+	--border: #222222;
+	--border-visible: #333333;
+	--text-disabled: #666666;
+	--text-secondary: #999999;
+	--text-primary: #e8e8e8;
+	--text-display: #ffffff;
+	--accent: #d71921;
+	--accent-subtle: rgba(215, 25, 33, 0.15);
+	--success: #4a9e5c;
+	--warning: #d4a843;
+	--interactive: #5b9bf6;
+	--space-2xs: 2px;
+	--space-xs: 4px;
+	--space-sm: 8px;
+	--space-md: 16px;
+	--space-lg: 24px;
+	--space-xl: 32px;
+	--space-2xl: 48px;
+	--space-3xl: 64px;
+	--space-4xl: 96px;
 }
 ```
 
@@ -85,20 +85,20 @@ Load fonts through `next/font`, a Google Fonts `<link>`, or CSS `@import`. Map d
 variables for color + typography consistency.
 
 ```tsx
-import { Space_Grotesk, Space_Mono } from 'next/font/google'
+import { Space_Grotesk, Space_Mono } from "next/font/google";
 
 const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-space-grotesk',
-})
+	subsets: ["latin"],
+	variable: "--font-space-grotesk",
+});
 
 const spaceMono = Space_Mono({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-space-mono',
-})
+	subsets: ["latin"],
+	weight: ["400", "700"],
+	variable: "--font-space-mono",
+});
 
-export const nothingFonts = `${spaceGrotesk.variable} ${spaceMono.variable}`
+export const nothingFonts = `${spaceGrotesk.variable} ${spaceMono.variable}`;
 ```
 
 For Doto, declare the font source explicitly before implementation; if Google Fonts is unavailable

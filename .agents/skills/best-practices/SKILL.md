@@ -1,12 +1,13 @@
 ---
+
 name: best-practices
 description: >-
-  Apply modern web development best practices for security, compatibility, and code
-  quality. Use when the task involves `apply best practices`, `security audit`, `modernize
+Apply modern web development best practices for security, compatibility, and code
+quality. Use when the task involves `apply best practices`, `security audit`, `modernize
   code`, `code quality review`, or `check for vulnerabilities`.
 license: MIT
 metadata:
-  version: "1.0.0"
+version: "1.0.0"
 ---
 
 # Best practices
@@ -143,7 +144,7 @@ document.write(userInput);
 element.textContent = userInput;
 
 // ✅ If HTML needed, sanitize
-import DOMPurify from 'dompurify';
+import DOMPurify from "dompurify";
 
 element.innerHTML = DOMPurify.sanitize(userInput);
 ```
@@ -305,15 +306,15 @@ if ('serviceWorker' in navigator) {
 
 ```javascript
 // ❌ Non-passive touch/wheel (may block scrolling)
-element.addEventListener('touchstart', handler);
-element.addEventListener('wheel', handler);
+element.addEventListener("touchstart", handler);
+element.addEventListener("wheel", handler);
 
 // ✅ Passive listeners (allows smooth scrolling)
-element.addEventListener('touchstart', handler, {passive: true});
-element.addEventListener('wheel', handler, {passive: true});
+element.addEventListener("touchstart", handler, { passive: true });
+element.addEventListener("wheel", handler, { passive: true });
 
 // ✅ If you need preventDefault, be explicit
-element.addEventListener('touchstart', handler, {passive: false});
+element.addEventListener("touchstart", handler, { passive: false });
 ```
 
 ---
@@ -324,17 +325,17 @@ element.addEventListener('touchstart', handler, {passive: false});
 
 ```javascript
 // ❌ Errors in production
-console.log('Debug info'); // Remove in production
-throw new Error('Unhandled'); // Catch all errors
+console.log("Debug info"); // Remove in production
+throw new Error("Unhandled"); // Catch all errors
 
 // ✅ Proper error handling
 try {
-  riskyOperation();
+	riskyOperation();
 } catch (error) {
-  // Log to error tracking service
-  errorTracker.captureException(error);
-  // Show user-friendly message
-  showErrorMessage('Something went wrong. Please try again.');
+	// Log to error tracking service
+	errorTracker.captureException(error);
+	// Show user-friendly message
+	showErrorMessage("Something went wrong. Please try again.");
 }
 ```
 
@@ -342,41 +343,41 @@ try {
 
 ```jsx
 class ErrorBoundary extends React.Component {
-  state = {hasError: false};
+	state = { hasError: false };
 
-  static getDerivedStateFromError(error) {
-    return {hasError: true};
-  }
+	static getDerivedStateFromError(error) {
+		return { hasError: true };
+	}
 
-  componentDidCatch(error, info) {
-    errorTracker.captureException(error, {extra: info});
-  }
+	componentDidCatch(error, info) {
+		errorTracker.captureException(error, { extra: info });
+	}
 
-  render() {
-    if (this.state.hasError) {
-      return <FallbackUI/>;
-    }
-    return this.props.children;
-  }
+	render() {
+		if (this.state.hasError) {
+			return <FallbackUI />;
+		}
+		return this.props.children;
+	}
 }
 
 // Usage
 <ErrorBoundary>
-  <App/>
-</ErrorBoundary>
+	<App />
+</ErrorBoundary>;
 ```
 
 ### Global error handler
 
 ```javascript
 // Catch unhandled errors
-window.addEventListener('error', (event) => {
-  errorTracker.captureException(event.error);
+window.addEventListener("error", (event) => {
+	errorTracker.captureException(event.error);
 });
 
 // Catch unhandled promise rejections
-window.addEventListener('unhandledrejection', (event) => {
-  errorTracker.captureException(event.reason);
+window.addEventListener("unhandledrejection", (event) => {
+	errorTracker.captureException(event.reason);
 });
 ```
 
@@ -390,17 +391,17 @@ window.addEventListener('unhandledrejection', (event) => {
 // ❌ Source maps exposed in production
 // webpack.config.js
 module.exports = {
-  devtool: 'source-map', // Exposes source code
+	devtool: "source-map", // Exposes source code
 };
 
 // ✅ Hidden source maps (uploaded to error tracker)
 module.exports = {
-  devtool: 'hidden-source-map',
+	devtool: "hidden-source-map",
 };
 
 // ✅ Or no source maps in production
 module.exports = {
-  devtool: process.env.NODE_ENV === 'production' ? false : 'source-map',
+	devtool: process.env.NODE_ENV === "production" ? false : "source-map",
 };
 ```
 
@@ -432,15 +433,15 @@ import url
 
 ```javascript
 // ❌ Handler on every element
-items.forEach(item => {
-  item.addEventListener('click', handleClick);
+items.forEach((item) => {
+	item.addEventListener("click", handleClick);
 });
 
 // ✅ Event delegation
-container.addEventListener('click', (e) => {
-  if (e.target.matches('.item')) {
-    handleClick(e);
-  }
+container.addEventListener("click", (e) => {
+	if (e.target.matches(".item")) {
+		handleClick(e);
+	}
 });
 ```
 
@@ -448,21 +449,23 @@ container.addEventListener('click', (e) => {
 
 ```javascript
 // ❌ Memory leak (never removed)
-const handler = () => { /* ... */
+const handler = () => {
+	/* ... */
 };
-window.addEventListener('resize', handler);
+window.addEventListener("resize", handler);
 
 // ✅ Cleanup when done
-const handler = () => { /* ... */
+const handler = () => {
+	/* ... */
 };
-window.addEventListener('resize', handler);
+window.addEventListener("resize", handler);
 
 // Later, when component unmounts:
-window.removeEventListener('resize', handler);
+window.removeEventListener("resize", handler);
 
 // ✅ Using AbortController
 const controller = new AbortController();
-window.addEventListener('resize', handler, {signal: controller.signal});
+window.addEventListener("resize", handler, { signal: controller.signal });
 
 // Cleanup:
 controller.abort();
