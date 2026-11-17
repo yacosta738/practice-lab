@@ -1,5 +1,6 @@
 ---
 import { getCollection } from "astro:content";
+import { getCertificationList, loadCertification } from "../certifications/index";
 import Layout from "../layouts/Layout.astro";
 import { base } from "../lib/base";
 import { groupNotes, toNoteMeta } from "../lib/study-groups";
@@ -16,6 +17,19 @@ const studySections = studyCerts.reduce(
 			cert.certification.domains,
 		).length,
 	0,
+);
+
+// Load all certifications with their question counts
+const certConfigs = await getCertificationList();
+const certDetails = await Promise.all(
+	certConfigs.map(async (cfg) => {
+		const entry = await loadCertification(cfg.slug);
+		return {
+			config: cfg,
+			questionCount: entry?.questions.length ?? 0,
+			domainCount: Object.keys(cfg.domains).length,
+		};
+	}),
 );
 ---
 
@@ -51,7 +65,7 @@ const studySections = studyCerts.reduce(
 			</p>
 			<div class="ctaRow">
 				<a class="primary" href={`${base}certifications/ccdv-f`}>Start practicing</a>
-				<a class="ghost ghostOnDark" href="#certifications">See the certification</a>
+				<a class="ghost ghostOnDark" href="#certifications">See the certifications</a>
 				<a class="ghost ghostOnDark" href={`${base}study/`}>Study the notes</a>
 			</div>
 			<div class="pills">
@@ -65,33 +79,35 @@ const studySections = studyCerts.reduce(
 		<section class="section" id="certifications">
 			<div class="sectionHead">
 				<h2>Available certifications</h2>
-				<span class="muted small">1 available</span>
+				<span class="muted small">{certDetails.length} available</span>
 			</div>
-			<a class="certCard" href={`${base}certifications/ccdv-f`}>
-				<div>
-					<span class="num">CCDV-F</span>
-					<strong>Claude Developer Foundations</strong>
-					<p>
-						122 questions across 8 domains. Timed mock exam with 53 questions. Built for the
-						Anthropic CCDV-F certification.
-					</p>
-					<span class="certCta">Open the practice lab →</span>
-				</div>
-				<dl class="certFacts">
+			{certDetails.map((detail) => (
+				<a class="certCard" href={`${base}certifications/${detail.config.slug}`}>
 					<div>
-						<dt>Question bank</dt>
-						<dd>122</dd>
+						<span class="num">{detail.config.subtitle}</span>
+						<strong>{detail.config.title}</strong>
+						<p>
+							{detail.questionCount} questions across {detail.domainCount} domains. Timed mock exam
+							with {detail.config.totalQuestions} questions.
+						</p>
+						<span class="certCta">Open the practice lab →</span>
 					</div>
-					<div>
-						<dt>Exam domains</dt>
-						<dd>8</dd>
-					</div>
-					<div>
-						<dt>Mock exam</dt>
-						<dd>53 questions</dd>
-					</div>
-				</dl>
-			</a>
+					<dl class="certFacts">
+						<div>
+							<dt>Question bank</dt>
+							<dd>{detail.questionCount}</dd>
+						</div>
+						<div>
+							<dt>Exam domains</dt>
+							<dd>{detail.domainCount}</dd>
+						</div>
+						<div>
+							<dt>Mock exam</dt>
+							<dd>{detail.config.totalQuestions} questions</dd>
+						</div>
+					</dl>
+				</a>
+			))}
 		</section>
 
 		<section class="section" id="study">
