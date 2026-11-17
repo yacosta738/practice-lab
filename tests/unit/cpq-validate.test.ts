@@ -79,4 +79,23 @@ describe("validateExamQuestions", () => {
 		});
 		expect(errors.join(" ")).toMatch(/missing selectCount/i);
 	});
+	it.each([
+		{ answer: ["A"], selectCount: 2 },
+		{ answer: ["A", "B"], selectCount: 1 },
+	])("rejects an answer count mismatch: %o", (change) => {
+		expect(
+			validateExamQuestions({ ...baseExam, questions: [{ ...baseExam.questions[0], ...change }] }),
+		).toEqual([
+			`CCAR-P[0]: answer length ${change.answer.length} differs from selectCount ${change.selectCount}`,
+		]);
+	});
+
+	it("accepts matching multi-select counts", () => {
+		expect(
+			validateExamQuestions({
+				...baseExam,
+				questions: [{ ...baseExam.questions[0], answer: ["A", "B"], selectCount: 2 }],
+			}),
+		).toEqual([]);
+	});
 });

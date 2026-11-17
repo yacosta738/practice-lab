@@ -59,6 +59,10 @@ export function validateExamQuestions(exam) {
 		if (!q.rationale) errors.push(`${prefix}: missing rationale`);
 		if (!q.whyNot) errors.push(`${prefix}: missing whyNot`);
 		if (!q.selectCount) errors.push(`${prefix}: missing selectCount`);
+		else if (Array.isArray(q.answer) && q.answer.length !== q.selectCount)
+			errors.push(
+				`${prefix}: answer length ${q.answer.length} differs from selectCount ${q.selectCount}`,
+			);
 
 		for (const letter of Array.isArray(q.answer) ? q.answer : []) {
 			if (!OPTION_LETTER_PATTERN.test(letter)) {

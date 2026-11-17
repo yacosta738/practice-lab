@@ -81,6 +81,79 @@ function children(node) {
 	return values;
 }
 
+// Track lexical scopes so writes to a shadowing local do not invalidate data.
+function reassignedBindings(ast) {
+	const scopes = new Map();
+	const writes = [];
+	const root = { parent: null, names: new Map(), functionScope: true };
+	function targets(node) {
+		if (!node) return [];
+		if (node.type === "Identifier") return [node.name];
+		if (node.type === "RestElement") return targets(node.argument);
+		if (node.type === "AssignmentPattern") return targets(node.left);
+		if (node.type === "ArrayPattern") return node.elements.flatMap(targets);
+		if (node.type === "ObjectPattern")
+			return node.properties.flatMap((p) => targets(p.value ?? p.argument));
+		return [];
+	}
+	function visit(node, parentScope) {
+		let scope = parentScope;
+		const isFunction = /^(FunctionDeclaration|FunctionExpression|ArrowFunctionExpression)$/.test(
+			node.type,
+		);
+		if (node.type === "FunctionDeclaration" && node.id) scope.names.set(node.id.name, node.id);
+		if (node.type === "ClassDeclaration" && node.id) scope.names.set(node.id.name, node.id);
+		if (
+			isFunction ||
+			[
+				"BlockStatement",
+				"ForStatement",
+				"ForInStatement",
+				"ForOfStatement",
+				"CatchClause",
+				"SwitchStatement",
+			].includes(node.type)
+		) {
+			scope = { parent: scope, names: new Map(), functionScope: isFunction };
+			if (isFunction) {
+				if (node.id) scope.names.set(node.id.name, node.id);
+				for (const param of node.params)
+					for (const name of targets(param)) scope.names.set(name, param);
+			}
+			if (node.param) for (const name of targets(node.param)) scope.names.set(name, node.param);
+		}
+		scopes.set(node, scope);
+		if (node.type === "VariableDeclaration") {
+			let owner = scope;
+			if (node.kind === "var") while (!owner.functionScope) owner = owner.parent;
+			for (const declaration of node.declarations) {
+				for (const name of targets(declaration.id)) {
+					if (owner.names.has(name) && declaration.init) writes.push([declaration.id, node]);
+					owner.names.set(name, declaration);
+				}
+			}
+		}
+		if (node.type === "AssignmentExpression") writes.push([node.left, node]);
+		if (node.type === "UpdateExpression") writes.push([node.argument, node]);
+		if (["ForInStatement", "ForOfStatement"].includes(node.type)) {
+			if (node.left.type !== "VariableDeclaration") writes.push([node.left, node]);
+			else if (node.left.kind === "var")
+				for (const declaration of node.left.declarations) writes.push([declaration.id, node]);
+		}
+		for (const child of children(node)) visit(child, scope);
+	}
+	visit(ast, root);
+	const reassigned = new Set();
+	for (const [target, write] of writes) {
+		for (const name of targets(target)) {
+			let scope = scopes.get(write);
+			while (scope && !scope.names.has(name)) scope = scope.parent;
+			if (scope === root) reassigned.add(name);
+		}
+	}
+	return reassigned;
+}
+
 export function extractExamCatalog(source) {
 	let ast;
 	try {
@@ -89,6 +162,7 @@ export function extractExamCatalog(source) {
 		throw new Error(`Unsupported or malformed catalog bundle: ${error.message}`);
 	}
 	const bindings = new Map();
+	const reassigned = reassignedBindings(ast);
 	for (const statement of ast.body) {
 		if (statement.type !== "VariableDeclaration") continue;
 		for (const declaration of statement.declarations) {
@@ -99,6 +173,13 @@ export function extractExamCatalog(source) {
 			}
 		}
 	}
+	// Keep duplicate detection intact, but make changed bindings unresolvable.
+	const changedInitializers = new Set();
+	for (const name of reassigned) {
+		if (!bindings.has(name)) continue;
+		changedInitializers.add(bindings.get(name));
+		bindings.set(name, { type: "ReassignedBinding" });
+	}
 	const candidates = [];
 	const visit = (node) => {
 		if (
@@ -107,6 +188,7 @@ export function extractExamCatalog(source) {
 			node.elements.every((element) => element?.type === "ObjectExpression")
 		) {
 			try {
+				if (changedInitializers.has(node)) throw new Error("Reassigned catalog binding");
 				const value = literal(node, bindings);
 				if (
 					value.every(
