@@ -171,13 +171,13 @@ importers:
         version: 7.4.12(@types/node@26.6.6)(yaml@2.9.1)
     devDependencies:
       '@astrojs/check':
-        specifier: ^0.9.12
+        specifier: 0.9.12
         version: 0.9.12(prettier@3.10.1)(typescript@6.0.3)
       '@axe-core/playwright':
         specifier: ^4.14.0
         version: 4.14.0(playwright-core@1.65.1)
       '@biomejs/biome':
-        specifier: ^2.6.8
+        specifier: 2.6.8
         version: 2.6.8
       '@playwright/test':
         specifier: ^1.65.1

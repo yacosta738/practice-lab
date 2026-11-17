@@ -23,9 +23,9 @@
 		"astro": "^7.4.12"
 	},
 	"devDependencies": {
-		"@astrojs/check": "^0.9.12",
+		"@astrojs/check": "0.9.12",
 		"@axe-core/playwright": "^4.14.0",
-		"@biomejs/biome": "^2.6.8",
+		"@biomejs/biome": "2.6.8",
 		"@playwright/test": "^1.65.1",
 		"@types/node": "^26.6.6",
 		"typescript": "^6.0.3",
