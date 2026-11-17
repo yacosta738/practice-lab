@@ -6,6 +6,9 @@ import { expect, test } from "@playwright/test";
 const ROUTES = [
 	"/practice-lab/",
 	"/practice-lab/certifications/ccdv-f",
+	"/practice-lab/certifications/ccao-f",
+	"/practice-lab/certifications/ccar-p",
+	"/practice-lab/certifications/ccar-f",
 	"/practice-lab/study/",
 	"/practice-lab/study/ccdv-f/",
 	"/practice-lab/study/ccdv-f/workflows-versus-agents/",
