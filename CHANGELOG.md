@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/yacosta738/practice-lab/compare/v0.1.1...v0.1.2) (2026-11-17)
+
+
+### Bug Fixes
+
+* **ci:** disable pnpm minimum release age in CI workflows ([54a07ea](https://github.com/yacosta738/practice-lab/commit/54a07eaf94fccce7760a902862a968d4bf647926))
+
 ## [0.1.1](https://github.com/yacosta738/practice-lab/compare/v0.1.0...v0.1.1) (2026-11-17)
 
 ### Bug Fixes
