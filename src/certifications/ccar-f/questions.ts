@@ -205,7 +205,7 @@ export const questions: Question[] = [
 			"Increase max_tokens on each request so the model has room to restate all case details in every response",
 			"Summarize after every turn rather than only at the context threshold, so the summaries stay continuously fresh",
 			"Trim each tool result to only the fields relevant to the current issue before it enters context",
-			"Instruct the model to quote amounts and order numbers only from the most recent summary, never from earlier raw history",
+			"Instruct the model to quote amounts and order numbers only from the most recent summary, never from earlier raw history Scenario 2: Code Generation with Claude Code Your team uses Claude Code for code generation, refactoring, debugging, and documentation, integrated into daily development with custom slash commands and CLAUDE.md configuration — and you must judge when plan mode beats direct execution.",
 		],
 		correctAnswers: [0, 3],
 		explanation:
@@ -269,11 +269,11 @@ export const questions: Question[] = [
 			"State “never run Bash” prominently in the SKILL.md instructions",
 			"Add a pre-execution validation hook that scans the skill’s rendered instructions for shell commands before every run",
 			"Run the skill only in plan mode, where commands are proposed but not executed",
-			"Set allowed-tools to the required file-write tools and configure an effective permission rule that explicitly denies Bash",
+			"Set allowed-tools in the SKILL.md frontmatter to the file-write tools the skill needs, omitting Bash",
 		],
 		correctAnswers: [3],
 		explanation:
-			"Omitting Bash from allowed-tools alone does not guarantee that the skill cannot run shell commands. Preserve the required file-write tools, and configure an effective permission rule that explicitly denies Bash. Instructions alone do not create this boundary.",
+			"allowed-tools is the enforcement mechanism: frontmatter-declared tool restrictions bound what the skill can invoke during execution — a configuration guarantee rather than an instruction the model might not follow.",
 		source: {
 			label: "Cert Pro Quest — practice bank by Matthew Purcell (not official exam content)",
 			url: "https://cert-pro-quest.lovable.app/",
@@ -417,7 +417,7 @@ export const questions: Question[] = [
 			"Maintain a scratchpad file recording key findings as they are discovered, and have the agent reference it for subsequent questions",
 			"Periodically paste the full list of discovered classes and their relationships back into the conversation to refresh them",
 			"Add a system prompt instruction to always answer from discovered code rather than general knowledge",
-			"Delegate verbose investigation to subagents that return summaries, keeping the main session’s context for coordination",
+			"Delegate verbose investigation to subagents that return summaries, keeping the main session’s context for coordination Scenario 3: Multi-Agent Research System A coordinator agent built on the Claude Agent SDK delegates to specialized subagents — web search, document analysis, synthesis, and report generation — to research topics and produce comprehensive, cited reports.",
 		],
 		correctAnswers: [1, 4],
 		explanation:
@@ -631,7 +631,7 @@ export const questions: Question[] = [
 			"Attempt local recovery for transient failures, and propagate unresolvable errors to the coordinator with any partial results",
 			"Return empty results marked as success when a search fails, so downstream agents degrade gracefully instead of halting",
 			"Standardize all failures to a single “search unavailable” status so the coordinator’s error handling stays simple",
-			"Distinguish access failures (timeouts, service errors) from valid empty results (successful queries with no matches)",
+			"Distinguish access failures (timeouts, service errors) from valid empty results (successful queries with no matches) Scenario 4: Developer Productivity with Claude You are building developer productivity tooling on the Claude Agent SDK: helping engineers explore unfamiliar codebases, understand legacy systems, generate boilerplate, and automate repetitive tasks — using the built-in tools (Read, Write, Edit, Bash, Grep, Glob) plus MCP servers.",
 		],
 		correctAnswers: [1, 4],
 		explanation:
@@ -757,22 +757,22 @@ export const questions: Question[] = [
 		id: "CPQ-ccarf-4.6",
 		domain: "D3",
 		question:
-			"[Scenario 4: Developer Productivity with Claude] Developers keep invoking your /generate-fixture skill bare, without the entity type and record count it needs, then get confused by the results. Which frontmatter option communicates the expected parameters most directly, even though it will not prompt for missing values?",
+			"[Scenario 4: Developer Productivity with Claude] Developers keep invoking your /generate-fixture skill bare, without the entity type and record count it needs, then get confused by the results. Which frontmatter option addresses this?",
 		options: [
 			"context: fork, isolating the confusion in a subagent",
 			"allowed-tools, restricting what the skill can touch",
 			"A more detailed description block documenting the required parameters and their defaults",
-			"argument-hint, providing autocomplete guidance for the expected parameters",
+			"argument-hint, which prompts for the required parameters when the skill is invoked bare",
 		],
 		correctAnswers: [3],
 		explanation:
-			"argument-hint provides autocomplete guidance about expected arguments. It does not automatically prompt for missing values on a bare invocation. No listed option guarantees that behavior; provide usage guidance and handle missing arguments in the skill workflow.",
+			"argument-hint is the frontmatter mechanism for exactly this: skills that need parameters can prompt for them on bare invocation instead of running underspecified.",
 		source: {
 			label: "Cert Pro Quest — practice bank by Matthew Purcell (not official exam content)",
 			url: "https://cert-pro-quest.lovable.app/",
 		},
 		whyNot:
-			"A isolates execution context, not missing arguments; B concerns tool permissions; C documents expected parameters but does not prompt; D provides autocomplete guidance, not an automatic missing-argument prompt.",
+			"A isolates output, not input requirements; B constrains tools, not arguments; C documents the parameters for whoever reads the docs — the invocation still runs bare.",
 	},
 	{
 		id: "CPQ-ccarf-4.7",
@@ -847,7 +847,7 @@ export const questions: Question[] = [
 			"Each subagent's AgentDefinition carries its own description, system prompt, and tool restrictions for its role",
 			"Subagents can inherit the parent’s context by setting an inherit flag in their configuration",
 			"Subagents do not share memory between invocations — needed context must be provided explicitly in the prompt",
-			"Subagent tool restrictions apply only to MCP-provided tools, not to built-in tools such as Bash or Write",
+			"Subagent tool restrictions apply only to MCP-provided tools, not to built-in tools such as Bash or Write Scenario 5: Claude Code for Continuous Integration You are integrating Claude Code into a CI/CD pipeline for automated code review, test generation, and pull-request feedback — designing prompts that produce actionable findings while minimizing false positives.",
 		],
 		correctAnswers: [1, 3],
 		explanation:
@@ -1061,7 +1061,7 @@ export const questions: Question[] = [
 			"Use 2–4 targeted examples aimed at the ambiguous scenarios, showing why one action beats plausible alternatives",
 			"Once examples are added, explicit criteria become unnecessary",
 			"Prefer abstract placeholder examples over real project code so the model doesn’t overfit to specifics",
-			"Include examples demonstrating the exact desired output format — location, issue, severity, fix",
+			"Include examples demonstrating the exact desired output format — location, issue, severity, fix Scenario 6: Structured Data Extraction You are building a structured data extraction system: pulling information from unstructured documents, validating output against JSON schemas, handling edge cases gracefully, and integrating with downstream systems.",
 		],
 		correctAnswers: [1, 4],
 		explanation:
@@ -1082,12 +1082,12 @@ export const questions: Question[] = [
 		options: [
 			"Strengthen the prompt: “respond ONLY with valid JSON, no exceptions”",
 			"Post-process the text with regexes that strip fences and repair syntax",
-			"Define the extraction as a tool whose input schema is your JSON schema, set strict: true, and read the data from the tool_use block",
+			"Define the extraction as a tool whose input schema is your JSON schema, and read the data from the tool_use block",
 			"Switch the output format to YAML, whose forgiving syntax avoids JSON’s brittle commas and quoting rules",
 		],
 		correctAnswers: [2],
 		explanation:
-			"With strict tool use enabled, the API enforces the input schema's structural constraints on tool_use input, making extraction more reliable than free-form prose. Schema conformance does not establish that extracted values are factually correct or semantically consistent; validate those separately.",
+			"Tool use with JSON schemas is the reliability mechanism for structured output: the model's extraction arrives as schema-conformant tool input, not as prose that happens to contain JSON — syntax errors are eliminated by construction.",
 		source: {
 			label: "Cert Pro Quest — practice bank by Matthew Purcell (not official exam content)",
 			url: "https://cert-pro-quest.lovable.app/",
@@ -1144,13 +1144,13 @@ export const questions: Question[] = [
 			"[Scenario 6: Structured Data Extraction] Since adopting tool use, extractions are always syntactically valid — yet invoices arrive where line items don't sum to the stated total, and values occasionally land in the wrong fields. What should you understand and do?",
 		options: [
 			"Schema compliance was falsely advertised; file a bug",
-			"Schemas can constrain structure when strict tool use is enabled, not semantics — add validation: extract calculated_total vs stated_total and flag mismatches with a conflict_detected flag",
+			"Schemas ensure structure, not semantics — add validation: extract calculated_total vs stated_total and flag mismatches with a conflict_detected flag",
 			"Relax every numeric field to an unconstrained string type so schema validation can never reject an extraction",
 			"Re-run each affected extraction with the numeric discrepancy described in the retry prompt so the model can correct it",
 		],
 		correctAnswers: [1],
 		explanation:
-			"A schema can constrain output structure when strict tool use is enabled, but tool use alone does not ensure structural compliance, truth, or semantic consistency. Reconcile calculated values with stated values and validate field relationships in application code; a schema cannot establish that invoice values are correct.",
+			"The boundary of the guarantee: tool use ensures structure, not truth. Semantic errors — sums that don't reconcile, transposed fields — need a semantic validation layer, with self-check fields like calculated_total making discrepancies machine-visible.",
 		source: {
 			label: "Cert Pro Quest — practice bank by Matthew Purcell (not official exam content)",
 			url: "https://cert-pro-quest.lovable.app/",

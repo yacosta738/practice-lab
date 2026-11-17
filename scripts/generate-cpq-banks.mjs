@@ -14,20 +14,19 @@
  *   node scripts/generate-cpq-banks.mjs
  */
 
-import { execFileSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { applyCpqCorrections } from "./lib/cpq-corrections.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const projectRoot = resolve(__dirname, "..");
-const SNAPSHOT_PATH = resolve(projectRoot, "tmp", "cpq-raw-snapshot.json");
-const SRC_DIR = resolve(projectRoot, "src", "certifications");
+const SNAPSHOT_PATH = resolve("tmp", "cpq-raw-snapshot.json");
+const SRC_DIR = resolve("src", "certifications");
 
 // Resolve Biome binary relative to the project (no dependency on shell PATH)
+const projectRoot = resolve(__dirname, "..");
 const biomeBin = resolve(projectRoot, "node_modules", ".bin", "biome");
 
 /**
@@ -46,7 +45,7 @@ function formatWithBiome(paths) {
 		return;
 	}
 	try {
-		execFileSync(biomeBin, ["format", "--write", ...paths], {
+		execSync(`${biomeBin} format --write ${paths.join(" ")}`, {
 			cwd: projectRoot,
 			stdio: "inherit",
 		});
@@ -62,15 +61,7 @@ function formatWithBiome(paths) {
 // Read snapshot
 console.log("Reading snapshot…");
 const snapshot = JSON.parse(readFileSync(SNAPSHOT_PATH, "utf-8"));
-const banks = Object.fromEntries(
-	Object.entries(snapshot.banks).map(([certId, bank]) => [
-		certId,
-		applyCpqCorrections(
-			bank,
-			certId.replace(/^(ccar|ccdv)f$/, (id) => (id === "ccarf" ? "ccar-f" : "ccdv-f")),
-		),
-	]),
-);
+const banks = snapshot.banks;
 
 // Certification metadata — slugs match the existing ccdv-f convention
 const certMeta = {
@@ -187,7 +178,7 @@ function generateQuestionsFile(_certId, bank, importPath) {
 			}
 			lines.push(`\t\twhyNot: ${JSON.stringify(q.whyNot)},`);
 		}
-		if (q.selectCount) {
+		if (q.selectCount && q.selectCount > 1) {
 			lines.push(`\t\tselectCount: ${q.selectCount},`);
 		}
 		lines.push("\t},");
