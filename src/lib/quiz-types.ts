@@ -3,7 +3,7 @@
 export interface Question {
 	id: string;
 	domain: string;
-	topic: string;
+	topic?: string;
 	question: string;
 	options: string[];
 	correctAnswers: number[]; // 0-based indices
@@ -12,6 +12,10 @@ export interface Question {
 		label: string;
 		url: string;
 	};
+	/** Explanation of why the other options are incorrect. */
+	whyNot?: string;
+	/** Number of options the user must select (for multi-select questions). */
+	selectCount?: number;
 }
 
 export interface DomainInfo {
@@ -34,6 +38,12 @@ export interface CertificationConfig {
 	examBlueprint: Record<string, number>; // domain -> question count in mock exam
 	passingScore?: number;
 	totalQuestions: number;
+	/** Exam duration in minutes (default 120). */
+	examMinutes?: number;
+	/** Optional note about the official exam guide, e.g. for CCDV-F. */
+	examGuideNote?: string;
+	/** Source of the exam blueprint: "official" (published by the vendor) or "derived" (computed from the imported bank). */
+	blueprintSource?: "official" | "derived";
 }
 
 export interface QuestionStats {

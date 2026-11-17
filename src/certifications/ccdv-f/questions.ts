@@ -1,8 +1,10 @@
-// CCDV-F question bank — auto-extracted from reference HTML
+// CCDV-F question bank — 122 hand-authored + 53 from Cert Pro Quest
+// Source (CPQ additions): Cert Pro Quest — practice bank by Matthew Purcell (not official exam content)
 
 import type { Question } from "../../lib/quiz-types";
+import { questions as cpqQuestions } from "./cpq/questions";
 
-export const questions: Question[] = [
+const handAuthored: Question[] = [
 	{
 		id: "D1-001",
 		domain: "D1",
@@ -2389,3 +2391,9 @@ export const questions: Question[] = [
 		},
 	},
 ];
+
+/**
+ * Combined CCDV-F question bank: 122 hand-authored + 53 CPQ additions = 175 total.
+ * CPQ questions are prefixed with "CPQ-" to avoid ID collisions.
+ */
+export const questions: Question[] = [...handAuthored, ...cpqQuestions];
