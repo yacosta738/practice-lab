@@ -55,6 +55,10 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
+        # The lockfile is committed with integrity hashes, so the deploy builds
+        # exactly the reviewed dependency tree. The pnpm age-based supply-chain
+        # policy is disabled in pnpm-workspace.yaml, otherwise a cold runner
+        # fails with ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION.
         run: pnpm install --frozen-lockfile
 
       - name: Build site

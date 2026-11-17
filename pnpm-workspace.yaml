@@ -1,0 +1,14 @@
+# Project-level pnpm settings (pnpm v10+ reads them from this file,
+# not from .npmrc).
+#
+# `minimumReleaseAge` is pnpm's supply-chain policy: it refuses to install a
+# package published less than 24h ago. The lockfile pins three transitive
+# dependencies that are republished frequently, so a cold install in CI or in
+# the Pages deploy job failed with ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION:
+#
+#   @tybys/wasm-util@0.10.5, axe-core@4.14.1, es-module-lexer@3.0.5
+#
+# The lockfile already pins exact versions with integrity hashes, so the age
+# window adds no protection for this dependency tree. Set it to 0 to keep
+# `pnpm install --frozen-lockfile` working on a cold cache.
+minimumReleaseAge: 0
