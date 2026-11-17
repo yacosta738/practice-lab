@@ -19,10 +19,7 @@ exam content is reproduced here.
 
 The practice questions were imported for personal study use, with attribution
 preserved on every imported item. Each imported question carries a source label
-and URL pointing back to Cert Pro Quest. A versioned, local correction layer
-(`scripts/lib/cpq-corrections.mjs`) records documented factual corrections to
-specific items. It preserves source attribution and imported question IDs; it
-is applied during bank generation and does not modify the raw source snapshot.
+and URL pointing back to Cert Pro Quest.
 
 License Scope
 -------------
