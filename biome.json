@@ -24,6 +24,7 @@
 			"!**/test-results",
 			"!**/.agents",
 			"!**/src/content/study",
+			"!**/CHANGELOG.md",
 			"!pnpm-lock.yaml",
 			"!quiz-reference.html"
 		]
