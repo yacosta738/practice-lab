@@ -28,6 +28,18 @@ describe("mapAnswerLettersToIndices", () => {
 		expect(() => mapAnswerLettersToIndices(["F"])).toThrow();
 		expect(() => mapAnswerLettersToIndices(["Z"])).toThrow();
 	});
+
+	it("rejects an empty answer token instead of producing NaN", () => {
+		// "".charCodeAt(0) is NaN and every NaN comparison is false, so an
+		// unguarded implementation returned [NaN], which serialized to [null]
+		// in the generated bank.
+		expect(() => mapAnswerLettersToIndices([""])).toThrow(/Invalid answer letter/);
+	});
+
+	it("rejects multi-character answer tokens", () => {
+		expect(() => mapAnswerLettersToIndices(["AB"])).toThrow(/Invalid answer letter/);
+		expect(() => mapAnswerLettersToIndices([" A"])).toThrow(/Invalid answer letter/);
+	});
 });
 
 // ---------------------------------------------------------------------------

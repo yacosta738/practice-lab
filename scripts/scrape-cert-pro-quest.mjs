@@ -19,6 +19,7 @@ import { mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { buildDomainMap, deriveBlueprint, normalizeQuestion } from "./lib/cpq-normalize.mjs";
+import { validateExamQuestions } from "./lib/cpq-validate.mjs";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -148,33 +149,8 @@ try {
 			`  ${exam.code}: ${exam.questions.length} questions, ${exam.domains.length} domains`,
 		);
 
-		for (let i = 0; i < exam.questions.length; i++) {
-			const q = exam.questions[i];
-			const prefix = `${exam.code}[${i}]`;
-
-			if (!q.id) validationErrors.push(`${prefix}: missing id`);
-			if (!q.domain) validationErrors.push(`${prefix}: missing domain`);
-			if (!q.text) validationErrors.push(`${prefix}: missing text`);
-			if (!Array.isArray(q.options) || q.options.length < 2)
-				validationErrors.push(`${prefix}: invalid options`);
-			if (!Array.isArray(q.answer) || q.answer.length === 0)
-				validationErrors.push(`${prefix}: missing answer`);
-			if (!q.rationale) validationErrors.push(`${prefix}: missing rationale`);
-			if (!q.whyNot) validationErrors.push(`${prefix}: missing whyNot`);
-			if (!q.selectCount) validationErrors.push(`${prefix}: missing selectCount`);
-
-			// Validate answer letters are valid
-			for (const letter of q.answer) {
-				const idx = letter.charCodeAt(0) - 65;
-				if (idx < 0 || idx >= q.options.length) {
-					validationErrors.push(
-						`${prefix}: answer letter "${letter}" out of range for ${q.options.length} options`,
-					);
-				}
-			}
-		}
+		validationErrors.push(...validateExamQuestions(exam));
 	}
-
 	if (validationErrors.length > 0) {
 		console.error("\nValidation errors:");
 		for (const e of validationErrors.slice(0, 20)) {

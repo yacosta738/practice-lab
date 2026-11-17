@@ -40,11 +40,12 @@ const CCDVF_DOMAIN_MAP = {
  */
 export function mapAnswerLettersToIndices(letters) {
 	return letters.map((letter) => {
-		const idx = letter.charCodeAt(0) - 65; // 'A' = 65
-		if (idx < 0 || idx > 4) {
+		// Validate the whole token: "" and "AB" both pass a charCodeAt(0)
+		// check (NaN or the first character) and would corrupt the bank.
+		if (!/^[A-E]$/.test(letter)) {
 			throw new Error(`Invalid answer letter: "${letter}" (expected A–E)`);
 		}
-		return idx;
+		return letter.charCodeAt(0) - 65; // 'A' = 65
 	});
 }
 
