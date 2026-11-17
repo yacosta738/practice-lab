@@ -269,11 +269,11 @@ export const questions: Question[] = [
 			"State “never run Bash” prominently in the SKILL.md instructions",
 			"Add a pre-execution validation hook that scans the skill’s rendered instructions for shell commands before every run",
 			"Run the skill only in plan mode, where commands are proposed but not executed",
-			"Set allowed-tools in the SKILL.md frontmatter to the file-write tools the skill needs, omitting Bash",
+			"Set allowed-tools to the required file-write tools and configure an effective permission rule that explicitly denies Bash",
 		],
 		correctAnswers: [3],
 		explanation:
-			"allowed-tools is the enforcement mechanism: frontmatter-declared tool restrictions bound what the skill can invoke during execution — a configuration guarantee rather than an instruction the model might not follow.",
+			"Omitting Bash from allowed-tools alone does not guarantee that the skill cannot run shell commands. Preserve the required file-write tools, and configure an effective permission rule that explicitly denies Bash. Instructions alone do not create this boundary.",
 		source: {
 			label: "Cert Pro Quest — practice bank by Matthew Purcell (not official exam content)",
 			url: "https://cert-pro-quest.lovable.app/",
@@ -757,22 +757,22 @@ export const questions: Question[] = [
 		id: "CPQ-ccarf-4.6",
 		domain: "D3",
 		question:
-			"[Scenario 4: Developer Productivity with Claude] Developers keep invoking your /generate-fixture skill bare, without the entity type and record count it needs, then get confused by the results. Which frontmatter option addresses this?",
+			"[Scenario 4: Developer Productivity with Claude] Developers keep invoking your /generate-fixture skill bare, without the entity type and record count it needs, then get confused by the results. Which frontmatter option communicates the expected parameters most directly, even though it will not prompt for missing values?",
 		options: [
 			"context: fork, isolating the confusion in a subagent",
 			"allowed-tools, restricting what the skill can touch",
 			"A more detailed description block documenting the required parameters and their defaults",
-			"argument-hint, which prompts for the required parameters when the skill is invoked bare",
+			"argument-hint, providing autocomplete guidance for the expected parameters",
 		],
 		correctAnswers: [3],
 		explanation:
-			"argument-hint is the frontmatter mechanism for exactly this: skills that need parameters can prompt for them on bare invocation instead of running underspecified.",
+			"argument-hint provides autocomplete guidance about expected arguments. It does not automatically prompt for missing values on a bare invocation. No listed option guarantees that behavior; provide usage guidance and handle missing arguments in the skill workflow.",
 		source: {
 			label: "Cert Pro Quest — practice bank by Matthew Purcell (not official exam content)",
 			url: "https://cert-pro-quest.lovable.app/",
 		},
 		whyNot:
-			"A isolates output, not input requirements; B constrains tools, not arguments; C documents the parameters for whoever reads the docs — the invocation still runs bare.",
+			"A isolates execution context, not missing arguments; B concerns tool permissions; C documents expected parameters but does not prompt; D provides autocomplete guidance, not an automatic missing-argument prompt.",
 	},
 	{
 		id: "CPQ-ccarf-4.7",
@@ -1082,12 +1082,12 @@ export const questions: Question[] = [
 		options: [
 			"Strengthen the prompt: “respond ONLY with valid JSON, no exceptions”",
 			"Post-process the text with regexes that strip fences and repair syntax",
-			"Define the extraction as a tool whose input schema is your JSON schema, and read the data from the tool_use block",
+			"Define the extraction as a tool whose input schema is your JSON schema, set strict: true, and read the data from the tool_use block",
 			"Switch the output format to YAML, whose forgiving syntax avoids JSON’s brittle commas and quoting rules",
 		],
 		correctAnswers: [2],
 		explanation:
-			"Tool use with JSON schemas is the reliability mechanism for structured output: the model's extraction arrives as schema-conformant tool input, not as prose that happens to contain JSON — syntax errors are eliminated by construction.",
+			"With strict tool use enabled, the API enforces the input schema's structural constraints on tool_use input, making extraction more reliable than free-form prose. Schema conformance does not establish that extracted values are factually correct or semantically consistent; validate those separately.",
 		source: {
 			label: "Cert Pro Quest — practice bank by Matthew Purcell (not official exam content)",
 			url: "https://cert-pro-quest.lovable.app/",
@@ -1144,13 +1144,13 @@ export const questions: Question[] = [
 			"[Scenario 6: Structured Data Extraction] Since adopting tool use, extractions are always syntactically valid — yet invoices arrive where line items don't sum to the stated total, and values occasionally land in the wrong fields. What should you understand and do?",
 		options: [
 			"Schema compliance was falsely advertised; file a bug",
-			"Schemas ensure structure, not semantics — add validation: extract calculated_total vs stated_total and flag mismatches with a conflict_detected flag",
+			"Schemas can constrain structure when strict tool use is enabled, not semantics — add validation: extract calculated_total vs stated_total and flag mismatches with a conflict_detected flag",
 			"Relax every numeric field to an unconstrained string type so schema validation can never reject an extraction",
 			"Re-run each affected extraction with the numeric discrepancy described in the retry prompt so the model can correct it",
 		],
 		correctAnswers: [1],
 		explanation:
-			"The boundary of the guarantee: tool use ensures structure, not truth. Semantic errors — sums that don't reconcile, transposed fields — need a semantic validation layer, with self-check fields like calculated_total making discrepancies machine-visible.",
+			"A schema can constrain output structure when strict tool use is enabled, but tool use alone does not ensure structural compliance, truth, or semantic consistency. Reconcile calculated values with stated values and validate field relationships in application code; a schema cannot establish that invoice values are correct.",
 		source: {
 			label: "Cert Pro Quest — practice bank by Matthew Purcell (not official exam content)",
 			url: "https://cert-pro-quest.lovable.app/",

@@ -18,6 +18,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { applyCpqCorrections } from "./lib/cpq-corrections.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -61,7 +62,15 @@ function formatWithBiome(paths) {
 // Read snapshot
 console.log("Reading snapshot…");
 const snapshot = JSON.parse(readFileSync(SNAPSHOT_PATH, "utf-8"));
-const banks = snapshot.banks;
+const banks = Object.fromEntries(
+	Object.entries(snapshot.banks).map(([certId, bank]) => [
+		certId,
+		applyCpqCorrections(
+			bank,
+			certId.replace(/^(ccar|ccdv)f$/, (id) => (id === "ccarf" ? "ccar-f" : "ccdv-f")),
+		),
+	]),
+);
 
 // Certification metadata — slugs match the existing ccdv-f convention
 const certMeta = {
@@ -178,7 +187,7 @@ function generateQuestionsFile(_certId, bank, importPath) {
 			}
 			lines.push(`\t\twhyNot: ${JSON.stringify(q.whyNot)},`);
 		}
-		if (q.selectCount && q.selectCount > 1) {
+		if (q.selectCount) {
 			lines.push(`\t\tselectCount: ${q.selectCount},`);
 		}
 		lines.push("\t},");

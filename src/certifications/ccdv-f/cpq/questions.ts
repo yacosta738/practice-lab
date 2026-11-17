@@ -779,7 +779,7 @@ export const questions: Question[] = [
 			'Enable fast mode by opting in with the speed: "fast" parameter, which serves the same Opus model with faster output token generation at premium per-token pricing',
 			"Downgrade to the smallest model tier, since all Claude models produce equivalent output for debugging tasks",
 		],
-		correctAnswers: [0, 3],
+		correctAnswers: [2],
 		explanation:
 			'Fast mode delivers up to 2.5x higher output tokens per second at premium pricing, opted into with speed: "fast" and the fast-mode beta header — it is not a different model, so reasoning quality is preserved while interactive latency improves, matching a workload where speed outweighs cost.',
 		source: {
@@ -788,7 +788,7 @@ export const questions: Question[] = [
 		},
 		whyNot:
 			"A, the Batch API targets latency-tolerant workloads with results returned asynchronously; it is the opposite of what an interactive session needs (and fast mode is not available with it); B, extended thinking adds reasoning tokens before the answer, increasing time-to-answer rather than reducing it; D, model tiers trade capability for speed and cost; the scenario explicitly rules out sacrificing reasoning quality, and cost is stated as secondary",
-		selectCount: 2,
+		selectCount: 1,
 	},
 	{
 		id: "CPQ-ccdvf-6.1",
