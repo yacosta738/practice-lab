@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/yacosta738/practice-lab/compare/v0.1.0...v0.1.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* **ci:** disable pnpm age policy at project level and pin installs ([#11](https://github.com/yacosta738/practice-lab/issues/11)) ([2f77605](https://github.com/yacosta738/practice-lab/commit/2f77605ef4737888f22a64bcaaa93856fdc6f0cd))
+
 ## [0.1.0](https://github.com/yacosta738/practice-lab/compare/v0.0.1...v0.1.0) (2026-11-17)
 
 
