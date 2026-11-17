@@ -205,7 +205,7 @@ export const questions: Question[] = [
 			"Increase max_tokens on each request so the model has room to restate all case details in every response",
 			"Summarize after every turn rather than only at the context threshold, so the summaries stay continuously fresh",
 			"Trim each tool result to only the fields relevant to the current issue before it enters context",
-			"Instruct the model to quote amounts and order numbers only from the most recent summary, never from earlier raw history Scenario 2: Code Generation with Claude Code Your team uses Claude Code for code generation, refactoring, debugging, and documentation, integrated into daily development with custom slash commands and CLAUDE.md configuration — and you must judge when plan mode beats direct execution.",
+			"Instruct the model to quote amounts and order numbers only from the most recent summary, never from earlier raw history",
 		],
 		correctAnswers: [0, 3],
 		explanation:
@@ -417,7 +417,7 @@ export const questions: Question[] = [
 			"Maintain a scratchpad file recording key findings as they are discovered, and have the agent reference it for subsequent questions",
 			"Periodically paste the full list of discovered classes and their relationships back into the conversation to refresh them",
 			"Add a system prompt instruction to always answer from discovered code rather than general knowledge",
-			"Delegate verbose investigation to subagents that return summaries, keeping the main session’s context for coordination Scenario 3: Multi-Agent Research System A coordinator agent built on the Claude Agent SDK delegates to specialized subagents — web search, document analysis, synthesis, and report generation — to research topics and produce comprehensive, cited reports.",
+			"Delegate verbose investigation to subagents that return summaries, keeping the main session’s context for coordination",
 		],
 		correctAnswers: [1, 4],
 		explanation:
@@ -631,7 +631,7 @@ export const questions: Question[] = [
 			"Attempt local recovery for transient failures, and propagate unresolvable errors to the coordinator with any partial results",
 			"Return empty results marked as success when a search fails, so downstream agents degrade gracefully instead of halting",
 			"Standardize all failures to a single “search unavailable” status so the coordinator’s error handling stays simple",
-			"Distinguish access failures (timeouts, service errors) from valid empty results (successful queries with no matches) Scenario 4: Developer Productivity with Claude You are building developer productivity tooling on the Claude Agent SDK: helping engineers explore unfamiliar codebases, understand legacy systems, generate boilerplate, and automate repetitive tasks — using the built-in tools (Read, Write, Edit, Bash, Grep, Glob) plus MCP servers.",
+			"Distinguish access failures (timeouts, service errors) from valid empty results (successful queries with no matches)",
 		],
 		correctAnswers: [1, 4],
 		explanation:
@@ -847,7 +847,7 @@ export const questions: Question[] = [
 			"Each subagent's AgentDefinition carries its own description, system prompt, and tool restrictions for its role",
 			"Subagents can inherit the parent’s context by setting an inherit flag in their configuration",
 			"Subagents do not share memory between invocations — needed context must be provided explicitly in the prompt",
-			"Subagent tool restrictions apply only to MCP-provided tools, not to built-in tools such as Bash or Write Scenario 5: Claude Code for Continuous Integration You are integrating Claude Code into a CI/CD pipeline for automated code review, test generation, and pull-request feedback — designing prompts that produce actionable findings while minimizing false positives.",
+			"Subagent tool restrictions apply only to MCP-provided tools, not to built-in tools such as Bash or Write",
 		],
 		correctAnswers: [1, 3],
 		explanation:
@@ -1061,7 +1061,7 @@ export const questions: Question[] = [
 			"Use 2–4 targeted examples aimed at the ambiguous scenarios, showing why one action beats plausible alternatives",
 			"Once examples are added, explicit criteria become unnecessary",
 			"Prefer abstract placeholder examples over real project code so the model doesn’t overfit to specifics",
-			"Include examples demonstrating the exact desired output format — location, issue, severity, fix Scenario 6: Structured Data Extraction You are building a structured data extraction system: pulling information from unstructured documents, validating output against JSON schemas, handling edge cases gracefully, and integrating with downstream systems.",
+			"Include examples demonstrating the exact desired output format — location, issue, severity, fix",
 		],
 		correctAnswers: [1, 4],
 		explanation:

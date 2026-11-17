@@ -5,6 +5,8 @@
  * @module cpq-normalize
  */
 
+import { sanitizeOptionText, sanitizeWhyNot } from "./cpq-sanitize.mjs";
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -138,7 +140,7 @@ export function normalizeQuestion(certId, cpqQ, domainMap = {}) {
 	const correctAnswers = mapAnswerLettersToIndices(cpqQ.answer);
 
 	// Options as plain text array
-	const options = cpqQ.options.map((o) => o.text);
+	const options = cpqQ.options.map((o) => sanitizeOptionText(o.text));
 
 	// Build the question object (omit topic — CPQ source has no topic field)
 	const question = {
@@ -156,7 +158,7 @@ export function normalizeQuestion(certId, cpqQ, domainMap = {}) {
 
 	// Preserve whyNot as an optional extension
 	if (cpqQ.whyNot) {
-		question.whyNot = cpqQ.whyNot;
+		question.whyNot = sanitizeWhyNot(cpqQ.whyNot);
 	}
 
 	// Preserve selectCount for multi-select questions
