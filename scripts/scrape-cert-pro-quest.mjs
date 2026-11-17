@@ -15,16 +15,20 @@
  *   node scripts/scrape-cert-pro-quest.mjs [--output tmp/cpq-raw-snapshot.json]
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { buildDomainMap, deriveBlueprint, normalizeQuestion } from "./lib/cpq-normalize.mjs";
+
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
 
 const PORTAL_URL = "https://cert-pro-quest.lovable.app/";
-const DEFAULT_OUTPUT = resolve("tmp", "cpq-raw-snapshot.json");
+const REQUEST_TIMEOUT_MS = 30_000;
+const DEFAULT_OUTPUT = resolve(projectRoot, "tmp", "cpq-raw-snapshot.json");
 
 // Parse CLI args
 const args = process.argv.slice(2);
@@ -36,7 +40,9 @@ const OUTPUT = outputFlagIdx >= 0 ? args[outputFlagIdx + 1] : DEFAULT_OUTPUT;
 // ---------------------------------------------------------------------------
 
 console.log("Fetching portal HTML…");
-const htmlRes = await fetch(PORTAL_URL);
+const htmlRes = await fetch(PORTAL_URL, {
+	signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+});
 if (!htmlRes.ok) {
 	throw new Error(`Portal returned ${htmlRes.status}: ${htmlRes.statusText}`);
 }
@@ -64,7 +70,9 @@ console.log(`Discovered exams asset: ${examsAsset}`);
 
 console.log("Fetching exams bundle…");
 const bundleUrl = `${PORTAL_URL}assets/${examsAsset}`;
-const bundleRes = await fetch(bundleUrl);
+const bundleRes = await fetch(bundleUrl, {
+	signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+});
 if (!bundleRes.ok) {
 	throw new Error(`Bundle returned ${bundleRes.status}: ${bundleRes.statusText}`);
 }
@@ -72,13 +80,13 @@ const bundleText = await bundleRes.text();
 console.log(`Bundle size: ${bundleText.length} bytes`);
 
 // Write bundle to a temp file for dynamic import
-const tmpBundle = resolve("tmp", `.cpq-bundle-${Date.now()}.js`);
+const tmpBundle = resolve(projectRoot, "tmp", `.cpq-bundle-${Date.now()}.js`);
 mkdirSync(dirname(tmpBundle), { recursive: true });
 writeFileSync(tmpBundle, bundleText, "utf-8");
 
 try {
 	// Dynamic import the bundle
-	const mod = await import(`file://${tmpBundle}`);
+	const mod = await import(pathToFileURL(tmpBundle).href);
 
 	// ---------------------------------------------------------------------------
 	// Step 3: Extract exam catalog by object shape
@@ -95,7 +103,7 @@ try {
 	for (const [key, value] of Object.entries(exports)) {
 		if (
 			Array.isArray(value) &&
-			value.length === 4 &&
+			value.length >= 1 &&
 			value.every(
 				(item) =>
 					item &&
@@ -267,12 +275,12 @@ try {
 		`\nTotal questions: ${Object.values(normalizedBanks).reduce((s, b) => s + b.totalQuestions, 0)}`,
 	);
 } finally {
-	// Clean up temp bundle
-	import("node:fs").then(({ unlinkSync }) => {
-		try {
-			unlinkSync(tmpBundle);
-		} catch {
-			// ignore
+	// Clean up temp bundle synchronously so the process cannot exit first.
+	try {
+		unlinkSync(tmpBundle);
+	} catch (error) {
+		if (error.code !== "ENOENT") {
+			console.warn(`Could not remove temporary bundle ${tmpBundle}:`, error);
 		}
-	});
+	}
 }

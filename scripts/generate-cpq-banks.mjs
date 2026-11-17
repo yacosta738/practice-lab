@@ -14,7 +14,7 @@
  *   node scripts/generate-cpq-banks.mjs
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,11 +22,11 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const SNAPSHOT_PATH = resolve("tmp", "cpq-raw-snapshot.json");
-const SRC_DIR = resolve("src", "certifications");
+const projectRoot = resolve(__dirname, "..");
+const SNAPSHOT_PATH = resolve(projectRoot, "tmp", "cpq-raw-snapshot.json");
+const SRC_DIR = resolve(projectRoot, "src", "certifications");
 
 // Resolve Biome binary relative to the project (no dependency on shell PATH)
-const projectRoot = resolve(__dirname, "..");
 const biomeBin = resolve(projectRoot, "node_modules", ".bin", "biome");
 
 /**
@@ -45,7 +45,7 @@ function formatWithBiome(paths) {
 		return;
 	}
 	try {
-		execSync(`${biomeBin} format --write ${paths.join(" ")}`, {
+		execFileSync(biomeBin, ["format", "--write", ...paths], {
 			cwd: projectRoot,
 			stdio: "inherit",
 		});
