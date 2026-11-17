@@ -29,6 +29,7 @@ coverage/
 # jetbrains setting folder
 .idea/
 /.agents/rpi/
+/.junie/plans/
 # START AI Agent Symlinks
 .agents/skills/*.bak
 .claude/commands

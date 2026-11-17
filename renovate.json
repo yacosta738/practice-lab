@@ -1,19 +1,18 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:best-practices"
   ],
-  "dependencyDashboard": true,
-  "prHourlyLimit": 2,
-  "prConcurrentLimit": 3,
+  "timezone": "Europe/Madrid",
+  "schedule": [
+    "* * * * 1-5"
+  ],
   "semanticCommits": "enabled",
-  "semanticCommitType": "chore",
   "labels": [
     "dependencies"
   ],
-  "schedule": [
-    "at any time"
-  ],
+  "minimumReleaseAge": "2 days",
+  "separateMinorPatch": true,
   "packageRules": [
     {
       "description": "Pin TypeScript to v6 only — never auto-upgrade to v7",
@@ -21,25 +20,36 @@
       "allowedVersions": "<7.0.0"
     },
     {
+      "description": "Automerge stable patch updates for npm",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["patch"],
+      "matchCurrentVersion": "!/^0/",
+      "automerge": true
+    },
+    {
+      "description": "Group npm minor dependencies",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor"],
+      "groupName": "npm dependencies (minor)"
+    },
+    {
+      "description": "Group Docker minor updates",
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "matchUpdateTypes": ["minor"],
+      "groupName": "Docker dependencies (minor)"
+    },
+    {
+      "description": "Group GitHub Actions minor updates",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor"],
+      "groupName": "GitHub Actions (minor)"
+    },
+    {
       "description": "Group GitHub Actions digest updates together",
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["digest"],
-      "groupName": "github-actions digests",
+      "groupName": "GitHub Actions digests",
       "groupSlug": "github-actions-digests"
-    },
-    {
-      "description": "Group GitHub Actions minor/patch updates together",
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "github-actions minor/patch",
-      "groupSlug": "github-actions-minor-patch"
-    },
-    {
-      "description": "Group GitHub Actions major updates separately",
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["major"],
-      "groupName": "github-actions major",
-      "groupSlug": "github-actions-major"
     },
     {
       "description": "Group pnpm updates (runtime + action)",
@@ -68,10 +78,14 @@
       "groupSlug": "lint-typecheck-tooling"
     },
     {
-      "description": "Major updates are non-urgent — warn only",
+      "description": "Major updates are non-urgent — no automerge",
       "matchUpdateTypes": ["major"],
-      "matchManagers": ["npm"],
       "automerge": false
+    },
+    {
+      "description": "Use chore for all dependency updates",
+      "matchPackageNames": ["*"],
+      "semanticCommitType": "chore"
     }
   ]
 }
