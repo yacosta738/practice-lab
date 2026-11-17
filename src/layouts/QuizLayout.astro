@@ -7,6 +7,7 @@ interface Props {
 	title: string;
 	subtitle: string;
 	description?: string;
+	studyHref?: string;
 	theme: {
 		brand: string;
 		brand2: string;
@@ -14,7 +15,7 @@ interface Props {
 	};
 }
 
-const { title, subtitle, description, theme } = Astro.props;
+const { title, subtitle, description, studyHref, theme } = Astro.props;
 
 // Astro does not interpolate expressions inside is:inline scripts, so the
 // theme values are injected through define:vars (object form) and applied as
@@ -40,14 +41,21 @@ const { title, subtitle, description, theme } = Astro.props;
 					<small>{subtitle}</small>
 				</span>
 			</a>
-			<button
-				type="button"
-				class="ghost"
-				data-action="theme"
-				aria-label="Theme: toggle light and dark appearance"
-			>
-				Theme
-			</button>
+			<div class="navActions">
+				{studyHref && (
+					<a class="ghost" href={studyHref}>
+						Study notes
+					</a>
+				)}
+				<button
+					type="button"
+					class="ghost"
+					data-action="theme"
+					aria-label="Theme: toggle light and dark appearance"
+				>
+					Theme
+				</button>
+			</div>
 		</header>
 		<div id="app" aria-live="polite"></div>
 		<footer>Independent study material · Progress stays in your browser</footer>

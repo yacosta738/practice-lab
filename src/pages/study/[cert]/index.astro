@@ -1,0 +1,84 @@
+---
+import { getCollection } from "astro:content";
+import StudyLayout from "../../../layouts/StudyLayout.astro";
+import { base } from "../../../lib/base";
+import { groupNotes, toNoteMeta } from "../../../lib/study-groups";
+import { type StudyCert, studyCerts } from "../../../study/registry";
+
+export async function getStaticPaths() {
+	return studyCerts.map((cert) => ({
+		params: { cert: cert.slug },
+		props: { cert },
+	}));
+}
+
+const { cert }: { cert: StudyCert } = Astro.props;
+
+const allNotes = await getCollection("study");
+const notes = allNotes.filter((entry) => entry.id.startsWith(`${cert.slug}/`)).map(toNoteMeta);
+const sections = groupNotes(notes, cert.certification.domains);
+
+const totalNotes = notes.length;
+const totalSections = sections.length;
+---
+
+<StudyLayout
+	title={cert.title}
+	description={`${cert.description} Personal study notes organised by exam domain.`}
+>
+	<nav class="breadcrumb" aria-label="Breadcrumb">
+		<a href={base}>Home</a>
+		<span>/</span>
+		<a href={`${base}study/`}>Study</a>
+		<span>/</span>
+		<span aria-current="page">{cert.title}</span>
+	</nav>
+
+	<section class="hero">
+		<span class="eyebrow">{cert.subtitle} · Study notes</span>
+		<h1>{cert.title}</h1>
+		<p class="lead">{cert.description}</p>
+		<div class="ctaRow">
+			<a class="primary" href={`${base}${cert.quizPath}`}>Practice the quiz</a>
+			{cert.examGuide && (
+				<a class="ghost ghostOnDark" href={`${base}${cert.examGuide.path}`}>
+					{cert.examGuide.label}
+				</a>
+			)}
+		</div>
+		<div class="pills">
+			<span class="pill">{totalNotes} notes</span>
+			<span class="pill">{totalSections} sections</span>
+			<span class="pill">{cert.certification.slug}</span>
+		</div>
+	</section>
+
+	<nav class="studyJump" aria-label="Jump to section">
+		{sections.map((section) => <a href={`#${section.id}`}>{section.title}</a>)}
+	</nav>
+
+	{sections.map((section) => (
+		<section class="section studyGroup" id={section.id}>
+			<div class="sectionHead">
+				<h2>{section.title}</h2>
+				<span class="muted small">
+					{section.notes.length} note
+					{section.notes.length !== 1 ? "s" : ""}
+					{section.weight !== undefined ? ` · ${section.weight}% exam weight` : ""}
+				</span>
+			</div>
+			<ul class="studyList">
+				{section.notes.map((note) => (
+					<li>
+						<a class="studyNote" href={`${base}study/${cert.slug}/${note.slug}/`}>
+							<span class="studyNoteTitle">{note.title}</span>
+							{note.kind && <span class="kindBadge">{note.kind}</span>}
+						</a>
+					</li>
+				))}
+			</ul>
+		</section>
+	))}
+
+	<p class="alert section">Personal study notes. Not affiliated with or endorsed by Anthropic.</p>
+</StudyLayout>

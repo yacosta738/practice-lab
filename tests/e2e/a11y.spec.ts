@@ -3,7 +3,13 @@ import { expect, test } from "@playwright/test";
 
 // The site is deployed as a GitHub Pages project site, so every route is
 // prefixed with the `base` value from astro.config.mjs.
-const ROUTES = ["/practice-lab/", "/practice-lab/certifications/ccdv-f"];
+const ROUTES = [
+	"/practice-lab/",
+	"/practice-lab/certifications/ccdv-f",
+	"/practice-lab/study/",
+	"/practice-lab/study/ccdv-f/",
+	"/practice-lab/study/ccdv-f/workflows-versus-agents/",
+];
 
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 

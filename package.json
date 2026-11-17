@@ -18,6 +18,7 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:a11y": "playwright test",
+		"sync:study": "node scripts/sync-study.mjs",
 		"prepare": "lefthook install"
 	},
 	"dependencies": {

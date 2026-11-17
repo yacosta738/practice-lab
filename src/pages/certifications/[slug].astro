@@ -4,6 +4,7 @@
 import { config } from "../../certifications/ccdv-f/config";
 import { questions } from "../../certifications/ccdv-f/questions";
 import QuizLayout from "../../layouts/QuizLayout.astro";
+import { base } from "../../lib/base";
 
 export function getStaticPaths() {
 	return [{ params: { slug: "ccdv-f" } }];
@@ -18,6 +19,7 @@ const certConfig = config;
 	title={certConfig.title}
 	subtitle={certConfig.subtitle}
 	description={certConfig.description}
+	studyHref={`${base}study/${certConfig.slug}/`}
 	theme={certConfig.theme}
 >
 	<!-- Quiz data passed inline -->
