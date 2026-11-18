@@ -3,6 +3,7 @@
 
 import QuizLayout from "../../layouts/QuizLayout.astro";
 import { base } from "../../lib/base";
+import { OPTION_SHORTCUT_KEYS } from "../../lib/quiz-keys";
 import type { CertificationConfig, Question } from "../../lib/quiz-types";
 import { studyCerts } from "../../study/registry";
 
@@ -64,7 +65,10 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 	<!-- Quiz data passed inline -->
 </QuizLayout>
 
-<script define:vars={{ cfg: certConfig, qs: questions }} is:inline>
+<script
+	define:vars={{ cfg: certConfig, qs: questions, optionKeys: OPTION_SHORTCUT_KEYS }}
+	is:inline
+>
 (function () {
 	// cfg and qs are provided by define:vars above
 	if (!cfg || !qs) return;
@@ -643,8 +647,9 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 			/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName || "")
 		)
 			return;
-		if ("1234".includes(e.key) && e.key.length === 1) {
-			const b = app.querySelector(`[data-action="pick"][data-value="${+e.key - 1}"]`);
+		const optionIndex = optionKeys.indexOf(e.key);
+		if (optionIndex !== -1) {
+			const b = app.querySelector(`[data-action="pick"][data-value="${optionIndex}"]`);
 			if (b && !b.disabled) b.click();
 		} else if (e.key === "Enter" && document.activeElement === document.body) {
 			const b = app.querySelector('[data-action="check"]:not(:disabled),[data-action="next"]');

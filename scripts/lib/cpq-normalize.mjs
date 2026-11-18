@@ -5,6 +5,8 @@
  * @module cpq-normalize
  */
 
+import { sanitizeOptionText, sanitizeWhyNot } from "./cpq-sanitize.mjs";
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -40,11 +42,12 @@ const CCDVF_DOMAIN_MAP = {
  */
 export function mapAnswerLettersToIndices(letters) {
 	return letters.map((letter) => {
-		const idx = letter.charCodeAt(0) - 65; // 'A' = 65
-		if (idx < 0 || idx > 4) {
+		// Validate the whole token: "" and "AB" both pass a charCodeAt(0)
+		// check (NaN or the first character) and would corrupt the bank.
+		if (!/^[A-E]$/.test(letter)) {
 			throw new Error(`Invalid answer letter: "${letter}" (expected A–E)`);
 		}
-		return idx;
+		return letter.charCodeAt(0) - 65; // 'A' = 65
 	});
 }
 
@@ -119,18 +122,25 @@ export function normalizeQuestion(certId, cpqQ, domainMap = {}) {
 	let domain;
 	if (certId === "ccdvf") {
 		domain = mapCcdvfDomain(cpqQ.domain);
-	} else if (domainMap[cpqQ.domain]) {
-		domain = domainMap[cpqQ.domain];
 	} else {
-		// Fallback: derive D1, D2, … from the order domains appear on the site
-		domain = slugifyDomain(cpqQ.domain);
+		const mapped = domainMap[cpqQ.domain];
+		if (!mapped) {
+			// Inventing an id here would produce a question whose domain is
+			// absent from the certification config, which breaks the quiz UI.
+			// Fail loudly so the mapping is updated instead.
+			throw new Error(
+				`Unmapped CPQ domain "${cpqQ.domain}" for certification "${certId}". ` +
+					"Add it to the certification domain map.",
+			);
+		}
+		domain = mapped;
 	}
 
 	// Answer indices
 	const correctAnswers = mapAnswerLettersToIndices(cpqQ.answer);
 
 	// Options as plain text array
-	const options = cpqQ.options.map((o) => o.text);
+	const options = cpqQ.options.map((o) => sanitizeOptionText(o.text, certId, cpqQ.id, o.id));
 
 	// Build the question object (omit topic — CPQ source has no topic field)
 	const question = {
@@ -148,7 +158,7 @@ export function normalizeQuestion(certId, cpqQ, domainMap = {}) {
 
 	// Preserve whyNot as an optional extension
 	if (cpqQ.whyNot) {
-		question.whyNot = cpqQ.whyNot;
+		question.whyNot = sanitizeWhyNot(cpqQ.whyNot, certId, cpqQ.id);
 	}
 
 	// Preserve selectCount for multi-select questions
@@ -175,7 +185,9 @@ export function normalizeQuestion(certId, cpqQ, domainMap = {}) {
  * @returns {Record<string, number>} domain name → blueprint count
  */
 export function deriveBlueprint(domainCounts, target) {
-	const domains = Object.keys(domainCounts);
+	const domains = Object.keys(domainCounts).filter((d) => domainCounts[d] > 0);
+	if (!domains.length) return {};
+
 	const total = Object.values(domainCounts).reduce((s, v) => s + v, 0);
 
 	// If target exceeds total, just use the actual counts
@@ -188,34 +200,50 @@ export function deriveBlueprint(domainCounts, target) {
 		return result;
 	}
 
-	// Quota for each domain
-	const quota = {};
-	for (const [domain, count] of Object.entries(domainCounts)) {
-		quota[domain] = (count / total) * target;
-	}
-
-	// Initial allocation: floor of quota, minimum 1
+	// Every domain with questions keeps at least one seat when the target has
+	// room for all domains. Apportion the remaining seats across the residual
+	// capacity using the Largest Remainder Method.
+	const reserveOne = domains.length <= target;
 	/** @type {Record<string, number>} */
 	const allocation = {};
-	let allocated = 0;
+	let reserved = 0;
 	for (const domain of domains) {
-		allocation[domain] = Math.max(1, Math.floor(quota[domain]));
-		allocated += allocation[domain];
+		allocation[domain] = reserveOne ? 1 : 0;
+		reserved += allocation[domain];
 	}
 
-	// Distribute remaining seats by largest remainder
-	const remaining = target - allocated;
-	if (remaining > 0) {
-		// Sort domains by fractional remainder (descending)
-		const remainders = domains.map((domain) => ({
-			domain,
-			remainder: quota[domain] - Math.floor(quota[domain]),
-		}));
-		remainders.sort((a, b) => b.remainder - a.remainder);
+	const remaining = target - reserved;
+	const residualCapacity = domains.reduce(
+		(sum, domain) => sum + domainCounts[domain] - allocation[domain],
+		0,
+	);
+	/** @type {{domain: string, remainder: number}[]} */
+	const remainders = [];
+	let apportioned = 0;
 
-		for (let i = 0; i < remaining && i < remainders.length; i++) {
-			allocation[remainders[i].domain] += 1;
+	for (const domain of domains) {
+		const capacity = domainCounts[domain] - allocation[domain];
+		const quota = residualCapacity > 0 ? (capacity / residualCapacity) * remaining : 0;
+		const base = Math.min(capacity, Math.floor(quota));
+		allocation[domain] += base;
+		apportioned += base;
+		remainders.push({ domain, remainder: quota - Math.floor(quota) });
+	}
+
+	remainders.sort((a, b) => b.remainder - a.remainder || a.domain.localeCompare(b.domain));
+	for (const { domain } of remainders) {
+		if (apportioned >= remaining) break;
+		if (allocation[domain] < domainCounts[domain]) {
+			allocation[domain] += 1;
+			apportioned += 1;
 		}
+	}
+
+	const allocated = Object.values(allocation).reduce((s, v) => s + v, 0);
+	if (allocated !== target) {
+		throw new Error(
+			`deriveBlueprint: allocated ${allocated} of ${target} questions (domain counts: ${JSON.stringify(domainCounts)})`,
+		);
 	}
 
 	return allocation;
