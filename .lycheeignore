@@ -24,3 +24,12 @@ drive\.google\.com
 
 # GitHub rate limiting protection
 # github\.com
+
+# GitHub issue URLs that redirect to PRs (302)
+github\.com/yacosta738/practice-lab/issues/
+
+# Opensource.org redirects (301)
+opensource\.org/licenses/
+
+# GitHub compare links for old tags that may not exist
+github\.com/yacosta738/practice-lab/compare/
