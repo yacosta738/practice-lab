@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/yacosta738/practice-lab/compare/v0.4.0...v0.5.0) (2026-11-18)
+
+
+### Features
+
+* **deploy:** add Vercel deployment configuration ([de66a75](https://github.com/yacosta738/practice-lab/commit/de66a75f34e0878eda91b2a0b157979fec47484b))
+
+
+### Bug Fixes
+
+* **style:** format notify-vercel.yml with double quotes per Biome ([65b0fb4](https://github.com/yacosta738/practice-lab/commit/65b0fb4b6991e6ef6a376170b0ec3ab15d277193))
+* use static output locally so astro preview works with Playwright tests ([4b9302e](https://github.com/yacosta738/practice-lab/commit/4b9302e1c5b8b1bb3024bf9f0bc9249f670f5eaa))
+
 ## [0.4.0](https://github.com/yacosta738/practice-lab/compare/v0.3.0...v0.4.0) (2026-11-18)
 
 
