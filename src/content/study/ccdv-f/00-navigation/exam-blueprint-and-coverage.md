@@ -42,5 +42,5 @@ tags:
 
 ## Links
 
-- [00 - START HERE](../00-navigation/start-here/) · [Study Roadmap](../study-roadmap/) · [Knowledge Gap Backlog](../knowledge-gap-backlog/) · [Source Register](../source-register/)
+- [00 - START HERE](../start-here/) · [Study Roadmap](../study-roadmap/) · [Knowledge Gap Backlog](../knowledge-gap-backlog/) · [Source Register](../source-register/)
 - [Interactive practice quiz](https://drive.google.com/file/d/1ZEnvO9nZSFz61k3exGBMf1MMEISgzbHs/view) · [Study guide of 100 questions](https://drive.google.com/file/d/1jG9vCpCUpkmSTlY4_y-wzDfAUieYiGkr/view).

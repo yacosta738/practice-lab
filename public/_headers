@@ -1,5 +1,5 @@
 # Security headers for static deployment
-# Supported by Netlify, Vercel, and other static hosts
+# Applied by Netlify from this file; Vercel uses vercel.json instead
 
 /*
   X-Content-Type-Options: nosniff

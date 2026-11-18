@@ -126,6 +126,13 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 			Number.isInteger(raw.currentIndex) && raw.currentIndex >= 0 && raw.currentIndex < ids.length
 				? raw.currentIndex
 				: 0;
+		// Restore shuffledOptions so saved answer indexes remain meaningful.
+		// For legacy sessions without shuffledOptions, answers were recorded
+		// against the original option order, so grading falls back to that.
+		const shuffledOptions =
+			raw.shuffledOptions && typeof raw.shuffledOptions === "object"
+				? raw.shuffledOptions
+				: undefined;
 		return {
 			mode: raw.mode,
 			ids,
@@ -138,6 +145,7 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 			submitted: raw.submitted === true,
 			timedOut: raw.timedOut === true,
 			finished: Number.isFinite(raw.finished) ? raw.finished : undefined,
+			shuffledOptions,
 		};
 	}
 
@@ -182,23 +190,32 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 	}
 
 	function getSelectCount(q, id) {
+		// Prefer the question's explicit selectCount when defined;
+		// otherwise fall back to the answer-key length (from shuffled
+		// session data or the original question).
+		if (q.selectCount != null) return q.selectCount;
 		const so = session?.shuffledOptions?.[id];
 		if (so) return so.correctAnswers.length;
-		return q.selectCount ?? q.correctAnswers.length;
+		return q.correctAnswers.length;
 	}
 
 	function answered(id) {
 		return Array.isArray(session?.answers?.[id]) && session.answers[id].length > 0;
 	}
 
-	function accurate(id) {
-		const so = session.shuffledOptions?.[id];
-		const v = session.answers[id] || [];
-		if (so)
-			return v.length === so.correctAnswers.length && v.every((k) => so.correctAnswers.includes(k));
-		// Fallback for restored sessions without shuffledOptions
+	// Shared accessor: returns { options, correctAnswers } for a question,
+	// preferring the session's shuffled permutation when available.
+	function getQuestionOptions(id) {
 		const q = byId[id];
-		return v.length === q.correctAnswers.length && v.every((k) => q.correctAnswers.includes(k));
+		const so = session?.shuffledOptions?.[id];
+		if (so) return { options: so.options, correctAnswers: so.correctAnswers };
+		return { options: q.options, correctAnswers: q.correctAnswers };
+	}
+
+	function accurate(id) {
+		const { correctAnswers } = getQuestionOptions(id);
+		const v = session.answers[id] || [];
+		return v.length === correctAnswers.length && v.every((k) => correctAnswers.includes(k));
 	}
 
 	function remember(id, ok) {
@@ -367,10 +384,8 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		const good = checked && accurate(id);
 		const progress = session.ids.filter(answered).length;
 
-		// Use shuffled options if available, otherwise fall back to original
-		const so = session.shuffledOptions?.[id];
-		const displayOptions = so ? so.options : x.options;
-		const displayCorrect = so ? so.correctAnswers : x.correctAnswers;
+		// Shared accessor: shuffled session data wins, otherwise original question.
+		const { options: displayOptions, correctAnswers: displayCorrect } = getQuestionOptions(id);
 
 		const opts = displayOptions
 			.map((t, n) => {
@@ -486,12 +501,13 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		// Estimate scaled score band when passingScore is configured
 		let passingBandHtml = "";
 		if (cfg.passingScore) {
-			const estimatedScaled = Math.round((score / 100) * 1000);
-			const isAbove = estimatedScaled >= cfg.passingScore;
+			// Use raw ratio for the estimate, round only for display
+			const rawRatio = correct.length / ids.length;
+			const estimatedScaled = Math.round(rawRatio * 1000);
 			passingBandHtml = `
-				<div class="panel" style="margin:16px 0;padding:14px;border-left:4px solid ${isAbove ? "#22c55e" : "#f59e0b"}">
+				<div class="panel" style="margin:16px 0;padding:14px;border-left:4px solid #3b82f6">
 					<strong>Estimated score band: ${estimatedScaled} / 1,000</strong>
-					<p class="small muted" style="margin:4px 0 0">${isAbove ? "Above" : "Below"} the estimated passing threshold of ${cfg.passingScore}. This is a rough diagnostic estimate — not an official pass prediction.</p>
+					<p class="small muted" style="margin:4px 0 0">Reference passing threshold: ${cfg.passingScore}. This is a rough diagnostic estimate — not an official pass prediction.</p>
 				</div>`;
 		}
 
@@ -509,9 +525,7 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 				const q = byId[id];
 				const v = session.answers[id] || [];
 				const ok = accurate(id) && answered(id);
-				const so = session.shuffledOptions?.[id];
-				const revOptions = so ? so.options : q.options;
-				const revCorrect = so ? so.correctAnswers : q.correctAnswers;
+				const { options: revOptions, correctAnswers: revCorrect } = getQuestionOptions(id);
 				return `<details class="panel review"><summary><span class="badge">${q.domain}</span> ${k + 1}. ${ok ? "✓" : "✕"} ${esc(q.question)}</summary>
 				<div class="small muted" style="margin:9px 0">Your selection: ${v.length ? v.map((n) => LETTERS[n]).join(", ") : "Unanswered"} · Correct: ${revCorrect.map((n) => LETTERS[n]).join(", ")}</div>
 				${revOptions.map((t, n) => `<div class="option${revCorrect.includes(n) ? " good" : v.includes(n) ? " bad" : ""}"><span class="letter">${LETTERS[n]}</span><span>${esc(t)}</span></div>`).join("")}

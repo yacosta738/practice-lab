@@ -1,4 +1,5 @@
 import { describe, it } from "vitest";
+
 import { questions as ccaoFQuestions } from "../../src/certifications/ccao-f/questions";
 import { questions as ccarFQuestions } from "../../src/certifications/ccar-f/questions";
 import { questions as ccarPQuestions } from "../../src/certifications/ccar-p/questions";
@@ -19,13 +20,11 @@ const allBanks: Record<string, Question[]> = {
 const failOnBias = false;
 
 /**
- * Check position bias: the correct answer should not be concentrated
- * in the first positions (A/B). With random distribution across N
+ * Check position bias: the correct answer should be evenly distributed
+ * across all positions (A, B, C, D…). With random distribution across N
  * options, each position should get roughly 1/N of the answers.
  *
- * We use a chi-squared-like heuristic: if more than 60% of single-select
- * questions have the correct answer in position 0 or 1 (out of 4+ options),
- * that's suspicious.
+ * Flag if any single position holds more than the threshold of answers.
  */
 function checkPositionBias(questions: Question[]) {
 	const singleSelect = questions.filter(
@@ -41,28 +40,30 @@ function checkPositionBias(questions: Question[]) {
 		positionCounts[pos] = (positionCounts[pos] || 0) + 1;
 	}
 
-	const top2Count = (positionCounts[0] || 0) + (positionCounts[1] || 0);
-	const top2Pct = (top2Count / singleSelect.length) * 100;
+	// Find the maximum concentration in any single position
+	const maxCount = Math.max(...Object.values(positionCounts));
+	const maxPct = (maxCount / singleSelect.length) * 100;
 
-	// With 4 options, random would give ~50% in top 2. Flag if > 60%.
-	// With 5 options, random would give ~40%. Flag if > 55%.
+	// With 4 options, random would give ~25% per position. Flag if > 40%.
+	// With 5 options, random would give ~20%. Flag if > 35%.
 	const avgOptions =
 		singleSelect.reduce((sum, q) => sum + q.options.length, 0) / singleSelect.length;
-	const threshold = avgOptions >= 5 ? 55 : 60;
+	const threshold = avgOptions >= 5 ? 35 : 40;
 
 	return {
 		total: singleSelect.length,
 		positionCounts,
-		top2Pct: Math.round(top2Pct * 10) / 10,
-		exceedsThreshold: top2Pct > threshold,
+		maxPct: Math.round(maxPct * 10) / 10,
+		exceedsThreshold: maxPct > threshold,
 		threshold,
 	};
 }
 
 /**
  * Check length bias: the correct answer should not consistently be
- * the longest option. If > 65% of questions have the correct answer
- * as the longest option, that's a strong signal of bias.
+ * the uniquely longest option. If > 65% of questions have the correct
+ * answer as the only longest option, that's a strong signal of bias.
+ * Questions where multiple options tie for longest are not counted.
  */
 function checkLengthBias(questions: Question[]) {
 	const singleSelect = questions.filter(
@@ -72,24 +73,28 @@ function checkLengthBias(questions: Question[]) {
 		return { total: singleSelect.length, warning: "too few questions to analyze" };
 	}
 
-	let correctIsLongest = 0;
+	let correctIsUniquelyLongest = 0;
 	for (const q of singleSelect) {
 		const correctIdx = q.correctAnswers[0];
 		const correctLen = q.options[correctIdx].length;
 
-		// Find the max length among all options
-		const maxLen = Math.max(...q.options.map((o) => o.length));
+		// Find the max length and how many options share it
+		const lengths = q.options.map((o) => o.length);
+		const maxLen = Math.max(...lengths);
+		const tiesForLongest = lengths.filter((l) => l === maxLen).length;
 
-		// Check if the correct answer is the longest (or tied for longest)
-		if (correctLen === maxLen) {
-			correctIsLongest++;
+		// Only count as bias when the correct answer is strictly the unique
+		// longest option. When all options tie for longest, there is no
+		// length signal to exploit.
+		if (correctLen === maxLen && tiesForLongest === 1) {
+			correctIsUniquelyLongest++;
 		}
 	}
 
-	const pct = (correctIsLongest / singleSelect.length) * 100;
+	const pct = (correctIsUniquelyLongest / singleSelect.length) * 100;
 	return {
 		total: singleSelect.length,
-		correctIsLongest,
+		correctIsLongest: correctIsUniquelyLongest,
 		pct: Math.round(pct * 10) / 10,
 		exceedsThreshold: pct > 65,
 	};
@@ -107,7 +112,7 @@ describe("Quiz bias detection", () => {
 				}
 
 				if (result.exceedsThreshold) {
-					const msg = `⚠️  ${bankName} position bias: ${result.top2Pct}% of correct answers in A/B (threshold: ${result.threshold}%)`;
+					const msg = `⚠️  ${bankName} position bias: ${result.maxPct}% of correct answers in one position (threshold: ${result.threshold}%)`;
 					if (failOnBias) {
 						throw new Error(msg);
 					}
@@ -116,7 +121,7 @@ describe("Quiz bias detection", () => {
 					console.warn(`  Distribution: ${JSON.stringify(result.positionCounts)}`);
 				} else {
 					console.log(
-						`✓ ${bankName} position bias OK: ${result.top2Pct}% in A/B (threshold: ${result.threshold}%)`,
+						`✓ ${bankName} position bias OK: ${result.maxPct}% max concentration (threshold: ${result.threshold}%)`,
 					);
 				}
 			});
@@ -130,16 +135,18 @@ describe("Quiz bias detection", () => {
 				}
 
 				if (result.exceedsThreshold) {
-					const msg = `⚠️  ${bankName} length bias: ${result.pct}% of correct answers are the longest option (threshold: 65%)`;
+					const msg = `⚠️  ${bankName} length bias: ${result.pct}% of correct answers are the uniquely longest option (threshold: 65%)`;
 					if (failOnBias) {
 						throw new Error(msg);
 					}
 					console.warn(msg);
 					console.warn(
-						`  ${result.correctIsLongest}/${result.total} questions have the longest option as correct`,
+						`  ${result.correctIsLongest}/${result.total} questions have the uniquely longest option as correct`,
 					);
 				} else {
-					console.log(`✓ ${bankName} length bias OK: ${result.pct}% longest (threshold: 65%)`);
+					console.log(
+						`✓ ${bankName} length bias OK: ${result.pct}% uniquely longest (threshold: 65%)`,
+					);
 				}
 			});
 		});

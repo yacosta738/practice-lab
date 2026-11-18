@@ -174,14 +174,15 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Restore lychee cache
-        uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4
+        id: restore-cache
+        uses: actions/cache/restore@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4
         with:
           path: .lycheecache
           key: cache-lychee-${{ github.sha }}
           restore-keys: cache-lychee-
 
       - name: Check links
-        uses: lycheeverse/lychee-action@v2
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
           fail: true
           args: >
@@ -194,7 +195,7 @@ jobs:
             '*.md'
 
       - name: Save lychee cache
-        if: always()
+        if: always() && hashFiles('.lycheecache') != '' && steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4
         with:
           path: .lycheecache

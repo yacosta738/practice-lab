@@ -9,14 +9,14 @@ localhost
 ^mailto:
 
 # Social media (rate-limited or require auth)
-linkedin\.com
-twitter\.com
-x\.com
-facebook\.com
-instagram\.com
+^https?://[^/]*linkedin\.com/
+^https?://[^/]*twitter\.com/
+^https?://[^/]*x\.com/
+^https?://[^/]*facebook\.com/
+^https?://[^/]*instagram\.com/
 
 # Google Drive (requires auth)
-drive\.google\.com
+^https?://[^/]*drive\.google\.com/
 
 # Anthropic engineering blog (sometimes rate-limits)
 # Uncomment if needed:
