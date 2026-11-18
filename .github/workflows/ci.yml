@@ -189,7 +189,7 @@ jobs:
             --max-cache-age 1d
             --verbose
             --no-progress
-            'src/content/study/**/*.md'
+            --exclude-path 'src/content/study'
             'src/certifications/**/*.ts'
             '*.md'
 
