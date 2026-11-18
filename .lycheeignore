@@ -1,0 +1,26 @@
+# Lychee ignore file
+# Patterns to exclude from link checking (one regex per line)
+
+# Local links
+localhost
+127\.0\.0\.1
+
+# Mailto links
+^mailto:
+
+# Social media (rate-limited or require auth)
+linkedin\.com
+twitter\.com
+x\.com
+facebook\.com
+instagram\.com
+
+# Google Drive (requires auth)
+drive\.google\.com
+
+# Anthropic engineering blog (sometimes rate-limits)
+# Uncomment if needed:
+# anthropic\.com/engineering
+
+# GitHub rate limiting protection
+# github\.com

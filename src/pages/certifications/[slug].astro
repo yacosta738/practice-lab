@@ -83,6 +83,16 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		domains[key] = { name: d.name, weight: d.weight };
 	}
 
+	// Shuffle the options of a question and remap correctAnswers.
+	// Returns { options: string[], correctAnswers: number[] }.
+	function shuffleQuestionOptions(q) {
+		const indices = q.options.map((_, i) => i);
+		const shuffled = shuffle(indices);
+		const newOptions = shuffled.map((i) => q.options[i]);
+		const newCorrect = q.correctAnswers.map((origIdx) => shuffled.indexOf(origIdx));
+		return { options: newOptions, correctAnswers: newCorrect };
+	}
+
 	const KEY = `${cfg.slug}-practice-lab-v2`;
 	const LETTERS = "ABCDE";
 	const app = document.getElementById("app");
@@ -171,7 +181,9 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		);
 	}
 
-	function getSelectCount(q) {
+	function getSelectCount(q, id) {
+		const so = session?.shuffledOptions?.[id];
+		if (so) return so.correctAnswers.length;
 		return q.selectCount ?? q.correctAnswers.length;
 	}
 
@@ -180,8 +192,12 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 	}
 
 	function accurate(id) {
-		const q = byId[id];
+		const so = session.shuffledOptions?.[id];
 		const v = session.answers[id] || [];
+		if (so)
+			return v.length === so.correctAnswers.length && v.every((k) => so.correctAnswers.includes(k));
+		// Fallback for restored sessions without shuffledOptions
+		const q = byId[id];
 		return v.length === q.correctAnswers.length && v.every((k) => q.correctAnswers.includes(k));
 	}
 
@@ -225,6 +241,11 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 				.map((q) => q.id);
 		}
 		if (!ids.length) return;
+		// Build shuffled options for every question in this session
+		const shuffledOptions = {};
+		for (const id of ids) {
+			shuffledOptions[id] = shuffleQuestionOptions(byId[id]);
+		}
 		session = {
 			mode,
 			ids,
@@ -235,6 +256,7 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 			created: Date.now(),
 			deadline: mode === "exam" ? Date.now() + (cfg.examMinutes ?? 120) * 60 * 1000 : null,
 			submitted: false,
+			shuffledOptions,
 		};
 		persist();
 		render();
@@ -345,14 +367,19 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		const good = checked && accurate(id);
 		const progress = session.ids.filter(answered).length;
 
-		const opts = x.options
+		// Use shuffled options if available, otherwise fall back to original
+		const so = session.shuffledOptions?.[id];
+		const displayOptions = so ? so.options : x.options;
+		const displayCorrect = so ? so.correctAnswers : x.correctAnswers;
+
+		const opts = displayOptions
 			.map((t, n) => {
 				let status = "";
 				if (checked)
 					status =
-						x.correctAnswers.includes(n) && v.includes(n)
+						displayCorrect.includes(n) && v.includes(n)
 							? " good"
-							: x.correctAnswers.includes(n)
+							: displayCorrect.includes(n)
 								? " missing"
 								: v.includes(n)
 									? " bad"
@@ -380,7 +407,7 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 				<span class="badge">${x.domain} · ${esc(domains[x.domain].name)}</span>
 				${x.topic ? `<span class="muted small" style="margin-left:8px">${esc(x.topic)}</span>` : ""}
 				<h2>${esc(x.question)}</h2>
-				<p class="hint">${getSelectCount(x) === 1 ? "Select ONE answer." : `Select exactly ${getSelectCount(x)} answers.`}${isExam ? " Your choices stay editable until you submit." : " Check your answer to see the explanation."}</p>
+ 			<p class="hint">${getSelectCount(x, id) === 1 ? "Select ONE answer." : `Select exactly ${getSelectCount(x, id)} answers.`}${isExam ? " Your choices stay editable until you submit." : " Check your answer to see the explanation."}</p>
 				${opts}${fb}
 				<div class="actions">
 					${session.currentIndex > 0 ? `<button class="ghost" data-action="prev">← Previous</button>` : ""}
@@ -390,7 +417,7 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 						<button class="primary" data-action="next">${isLast ? "Go to review" : "Next →"}</button>`
 							: checked
 								? `<button class="primary" data-action="next">${isLast ? "Finish session" : "Next question →"}</button>`
-								: `<button class="primary" data-action="check" ${v.length === getSelectCount(x) ? "" : "disabled"}>Check answer</button>`
+								: `<button class="primary" data-action="check" ${v.length === getSelectCount(x, id) ? "" : "disabled"}>Check answer</button>`
 					}
 				</div>
 			</div>`;
@@ -456,6 +483,18 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		const correct = ids.filter((id) => answered(id) && accurate(id));
 		const score = pct(correct.length, ids.length);
 
+		// Estimate scaled score band when passingScore is configured
+		let passingBandHtml = "";
+		if (cfg.passingScore) {
+			const estimatedScaled = Math.round((score / 100) * 1000);
+			const isAbove = estimatedScaled >= cfg.passingScore;
+			passingBandHtml = `
+				<div class="panel" style="margin:16px 0;padding:14px;border-left:4px solid ${isAbove ? "#22c55e" : "#f59e0b"}">
+					<strong>Estimated score band: ${estimatedScaled} / 1,000</strong>
+					<p class="small muted" style="margin:4px 0 0">${isAbove ? "Above" : "Below"} the estimated passing threshold of ${cfg.passingScore}. This is a rough diagnostic estimate — not an official pass prediction.</p>
+				</div>`;
+		}
+
 		const rows = Object.entries(cfg.domains)
 			.map(([d, domainConfig]) => {
 				const list = ids.filter((id) => byId[id].domain === d);
@@ -470,9 +509,12 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 				const q = byId[id];
 				const v = session.answers[id] || [];
 				const ok = accurate(id) && answered(id);
+				const so = session.shuffledOptions?.[id];
+				const revOptions = so ? so.options : q.options;
+				const revCorrect = so ? so.correctAnswers : q.correctAnswers;
 				return `<details class="panel review"><summary><span class="badge">${q.domain}</span> ${k + 1}. ${ok ? "✓" : "✕"} ${esc(q.question)}</summary>
-				<div class="small muted" style="margin:9px 0">Your selection: ${v.length ? v.map((n) => LETTERS[n]).join(", ") : "Unanswered"} · Correct: ${q.correctAnswers.map((n) => LETTERS[n]).join(", ")}</div>
-				${q.options.map((t, n) => `<div class="option${q.correctAnswers.includes(n) ? " good" : v.includes(n) ? " bad" : ""}"><span class="letter">${LETTERS[n]}</span><span>${esc(t)}</span></div>`).join("")}
+				<div class="small muted" style="margin:9px 0">Your selection: ${v.length ? v.map((n) => LETTERS[n]).join(", ") : "Unanswered"} · Correct: ${revCorrect.map((n) => LETTERS[n]).join(", ")}</div>
+				${revOptions.map((t, n) => `<div class="option${revCorrect.includes(n) ? " good" : v.includes(n) ? " bad" : ""}"><span class="letter">${LETTERS[n]}</span><span>${esc(t)}</span></div>`).join("")}
 				<p>${esc(q.explanation)}</p>
 				${q.whyNot ? `<p class="small muted">Why not the others: ${esc(q.whyNot)}</p>` : ""}
 				<a href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">${esc(q.source.label)} ↗</a>
@@ -493,6 +535,7 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 							<p class="muted" style="margin:0">Unofficial practice score · not equivalent to the scaled passing score.</p>
 						</div>
 					</div>
+					${passingBandHtml}
 					<div class="actions">
 						<button class="primary" data-action="home">Back to dashboard</button>
 						<button class="ghost" data-action="start-weak">Retake missed questions</button>

@@ -4,9 +4,14 @@ import { base } from "../lib/base";
 interface Props {
 	title: string;
 	description?: string;
+	ogImage?: string;
 }
 
-const { title, description = "Practice quiz for certification preparation" } = Astro.props;
+const { title, description = "Practice quiz for certification preparation", ogImage } = Astro.props;
+
+// Build canonical URL from the current URL (includes base path)
+const canonicalPath = Astro.url.pathname.replace(/\/$/, "") || "/";
+const canonicalUrl = `${Astro.url.protocol}//${Astro.url.host}${canonicalPath}`;
 ---
 
 <!doctype html>
@@ -15,12 +20,30 @@ const { title, description = "Practice quiz for certification preparation" } = A
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta name="description" content={description}>
+		<link rel="canonical" href={canonicalUrl}>
 		<link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`}>
 		<link rel="icon" href={`${base}favicon.ico`}>
 		<meta name="generator" content={Astro.generator}>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<title>{title}</title>
+
+		<!-- Open Graph -->
+		<meta property="og:url" content={Astro.url}>
+		<meta property="og:title" content={title}>
+		<meta property="og:description" content={description}>
+		{ogImage && <meta property="og:image" content={ogImage}>}
+		<meta property="og:type" content="website">
+
+		<!-- Twitter/X Card -->
+		<meta name="twitter:card" content="summary">
+		<meta name="twitter:title" content={title}>
+		<meta name="twitter:description" content={description}>
+		{ogImage && <meta name="twitter:image" content={ogImage}>}
+
+		<!-- Security Headers (meta fallback — server headers are preferred) -->
+		<meta http-equiv="X-Content-Type-Options" content="nosniff">
+		<meta name="referrer" content="strict-origin-when-cross-origin">
 	</head>
 	<body>
 		<slot />
