@@ -21,9 +21,16 @@ test("imported multi-select questions render five options and honor selectCount"
 	// Start practice mode — this reads #amount and begins the session
 	await page.getByRole("button", { name: "Practice mode" }).click();
 
-	// Walk through questions with a bounded loop until we find one with 5 options
-	const maxQuestions = 60;
-	for (let i = 0; i < maxQuestions; i++) {
+	// Wait for the first question to render
+	await page.waitForSelector("button.option", { state: "visible", timeout: 10000 });
+
+	// Read the total number of questions in the session from the UI
+	const qHeadText = await page.locator(".qhead span").first().textContent();
+	const totalMatch = qHeadText?.match(/Question \d+ of (\d+)/);
+	const totalQuestions = totalMatch ? Number.parseInt(totalMatch[1], 10) : 60;
+
+	// Walk through questions until we find one with 5 options
+	for (let i = 0; i < totalQuestions; i++) {
 		await page.waitForLoadState("networkidle");
 
 		// Option buttons use class "option" — count them
@@ -91,19 +98,23 @@ test("imported multi-select questions render five options and honor selectCount"
 
 		// Check answer
 		await checkBtn.click();
+		await page.waitForLoadState("networkidle");
 
-		// Move to next question
+		// Move to next question — wait for the button to appear
 		const nextBtn = page.getByRole("button", { name: /Next|Finish/i });
-		if (await nextBtn.isVisible().catch(() => false)) {
+		try {
+			await nextBtn.waitFor({ state: "visible", timeout: 5000 });
 			await nextBtn.click();
-		} else {
-			// Session may have ended
-			break;
+		} catch {
+			// Session may have ended unexpectedly
+			throw new Error(
+				`Session ended at question ${i + 1} of ${totalQuestions} without finding a 5-option question`,
+			);
 		}
 	}
 
 	// If we reach here, no 5-option question was found
 	throw new Error(
-		`No question with 5 options found after walking through ${maxQuestions} questions in CCAO-F practice session`,
+		`No question with 5 options found after walking through all ${totalQuestions} questions in CCAO-F practice session`,
 	);
 });
