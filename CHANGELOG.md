@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/yacosta738/practice-lab/compare/v0.3.0...v0.4.0) (2026-11-18)
+
+
+### Features
+
+* add web assets and SEO optimization ([#28](https://github.com/yacosta738/practice-lab/issues/28)) ([9c9f436](https://github.com/yacosta738/practice-lab/commit/9c9f4369c776ceed957a0bf189724ba4b83464bd))
+
 ## [0.3.0](https://github.com/yacosta738/practice-lab/compare/v0.2.0...v0.3.0) (2026-11-18)
 
 
