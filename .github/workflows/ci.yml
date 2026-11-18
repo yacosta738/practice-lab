@@ -189,7 +189,6 @@ jobs:
             --max-cache-age 1d
             --verbose
             --no-progress
-            --exclude-mail
             'src/content/study/**/*.md'
             'src/certifications/**/*.ts'
             '*.md'

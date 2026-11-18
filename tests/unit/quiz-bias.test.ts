@@ -1,11 +1,10 @@
 import { describe, it } from "vitest";
-import type { Question } from "../../src/lib/quiz-types";
-
-// Import all question banks to check for bias
-import { questions as ccdvFQuestions } from "../../src/certifications/ccdv-f/questions";
 import { questions as ccaoFQuestions } from "../../src/certifications/ccao-f/questions";
 import { questions as ccarFQuestions } from "../../src/certifications/ccar-f/questions";
 import { questions as ccarPQuestions } from "../../src/certifications/ccar-p/questions";
+// Import all question banks to check for bias
+import { questions as ccdvFQuestions } from "../../src/certifications/ccdv-f/questions";
+import type { Question } from "../../src/lib/quiz-types";
 
 const allBanks: Record<string, Question[]> = {
 	"ccdv-f": ccdvFQuestions,
