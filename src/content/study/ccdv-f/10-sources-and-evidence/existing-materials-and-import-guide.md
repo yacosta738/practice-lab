@@ -31,4 +31,4 @@ tags:
 3. Google Drive web previews may not resolve Obsidian wikilinks syntax; Obsidian resolves them after local synchronization into a vault.
 4. Obsidian search: `tag:#certification/ccdv-f` or `tag:#domain/applications-integration` (field support may vary by plugin).
 
-Related: [00 - START HERE](../00-start-here/) · [PKM Conventions](../pkm-conventions/) · [Course Access Coverage](../course-access-coverage/).
+Related: [00 - START HERE](../start-here/) · [PKM Conventions](../pkm-conventions/) · [Course Access Coverage](../course-access-coverage/).

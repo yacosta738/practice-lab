@@ -1,0 +1,35 @@
+# Lychee ignore file
+# Patterns to exclude from link checking (one regex per line)
+
+# Local links
+localhost
+127\.0\.0\.1
+
+# Mailto links
+^mailto:
+
+# Social media (rate-limited or require auth)
+^https?://[^/]*linkedin\.com/
+^https?://[^/]*twitter\.com/
+^https?://[^/]*x\.com/
+^https?://[^/]*facebook\.com/
+^https?://[^/]*instagram\.com/
+
+# Google Drive (requires auth)
+^https?://[^/]*drive\.google\.com/
+
+# Anthropic engineering blog (sometimes rate-limits)
+# Uncomment if needed:
+# anthropic\.com/engineering
+
+# GitHub rate limiting protection
+# github\.com
+
+# GitHub issue URLs that redirect to PRs (302)
+github\.com/yacosta738/practice-lab/issues/
+
+# Opensource.org redirects (301)
+opensource\.org/licenses/
+
+# GitHub compare links for old tags that may not exist
+github\.com/yacosta738/practice-lab/compare/
