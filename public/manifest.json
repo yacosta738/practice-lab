@@ -1,0 +1,39 @@
+{
+	"name": "Practice Lab — Certification Prep",
+	"short_name": "Practice Lab",
+	"description": "Practice quiz and study notes for Anthropic certification preparation",
+	"start_url": "/practice-lab/",
+	"display": "standalone",
+	"background_color": "#f7f4ee",
+	"theme_color": "#f7f4ee",
+	"orientation": "portrait-primary",
+	"icons": [
+		{
+			"src": "/practice-lab/android-chrome-192x192.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/practice-lab/android-chrome-192x192-maskable.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "maskable"
+		},
+		{
+			"src": "/practice-lab/android-chrome-512x512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/practice-lab/android-chrome-512x512-maskable.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "maskable"
+		}
+	],
+	"categories": ["education"],
+	"lang": "en",
+	"dir": "ltr"
+}

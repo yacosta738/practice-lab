@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://yacosta738.github.io/practice-lab/sitemap-index.xml
