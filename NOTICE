@@ -1,0 +1,33 @@
+NOTICE
+======
+
+Third-Party Content Attribution
+-------------------------------
+
+The question banks for the following certifications include practice questions
+imported from Cert Pro Quest (https://cert-pro-quest.lovable.app/), a practice
+bank created by Matthew Purcell:
+
+- CCAO-F (Claude Certified Associate — Foundations)
+- CCAR-P (Claude Certified Architect — Professional)
+- CCAR-F (Claude Certified Architect — Foundations)
+- CCDV-F (Claude Developer Foundations) — 53 of the 175 items
+
+Those imported items are community-created practice questions. They are NOT
+official Anthropic exam content, are not endorsed by Anthropic, and no official
+exam content is reproduced here.
+
+The practice questions were imported for personal study use, with attribution
+preserved on every imported item. Each imported question carries a source label
+and URL pointing back to Cert Pro Quest. A versioned, local correction layer
+(`scripts/lib/cpq-corrections.mjs`) records documented factual corrections to
+specific items. It preserves source attribution and imported question IDs; it
+is applied during bank generation and does not modify the raw source snapshot.
+
+License Scope
+-------------
+
+The MIT license included in this repository covers the application's own code
+only. It does not grant rights over the imported practice content, which remains
+the work of its author (Matthew Purcell). No license is claimed or implied for
+the imported content beyond what the source itself states.

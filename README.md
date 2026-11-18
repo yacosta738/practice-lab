@@ -6,9 +6,12 @@ Interactive practice platform for certification preparation. Study by domain, ta
 
 ## Available Certifications
 
-| Certification | Description                              | Questions | Domains |
-| ------------- | ---------------------------------------- | --------- | ------- |
-| **CCDV-F**    | Claude Developer Foundations (Anthropic) | 122       | 8       |
+| Certification | Description                               | Bank | Domains | Mock exam |
+| ------------- | ----------------------------------------- | ---- | ------- | --------- |
+| **CCDV-F**    | Claude Developer Foundations              | 175  | 8       | 53        |
+| **CCAO-F**    | Claude Certified Associate — Foundations  | 60   | 7       | 50        |
+| **CCAR-P**    | Claude Certified Architect — Professional | 58   | 7       | 50        |
+| **CCAR-F**    | Claude Certified Architect — Foundations  | 60   | 5       | 50        |
 
 ## Features
 
@@ -18,6 +21,10 @@ Interactive practice platform for certification preparation. Study by domain, ta
 - **Progress tracking** — persistent statistics in `localStorage`.
 - **100% offline** — no server, no external dependencies.
 - **Study library** — per-certification study notes rendered from Markdown, organised by exam domain with a table of contents and cross-links.
+
+## Content Sources and Attribution
+
+The imported practice questions for CCAO-F, CCAR-P, CCAR-F, and 53 items in CCDV-F come from [Cert Pro Quest](https://cert-pro-quest.lovable.app/) by Matthew Purcell. These are community-created practice questions and are not official exam content. See the [`NOTICE`](NOTICE) file for full attribution details.
 
 ## Stack
 
@@ -31,6 +38,11 @@ Interactive practice platform for certification preparation. Study by domain, ta
 ```
 /
 ├── public/                  # Static assets
+├── scripts/
+│   ├── scrape-cert-pro-quest.mjs  # Scraper for Cert Pro Quest
+│   ├── generate-cpq-banks.mjs     # Generator for imported question banks
+│   └── lib/
+│       └── cpq-normalize.mjs      # Normalization utilities
 ├── src/
 │   ├── certifications/      # Config and questions per certification
 │   │   ├── ccdv-f/
@@ -46,12 +58,23 @@ Interactive practice platform for certification preparation. Study by domain, ta
 └── package.json
 ```
 
+### Regenerating the imported banks
+
+The question banks for CCAO-F, CCAR-P, CCAR-F, and the CPQ additions for CCDV-F are generated from a snapshot of Cert Pro Quest. To regenerate them:
+
+1. Update the snapshot: `node scripts/scrape-cert-pro-quest.mjs`
+2. Regenerate banks: `node scripts/generate-cpq-banks.mjs`
+
+The generator automatically formats its output with the project's Biome, so no manual formatting step is required.
+
 ## Adding a New Certification
 
-1. Create a directory at `src/certifications/<slug>/`.
-2. Add `config.ts` with the exam blueprint and domains.
-3. Add `questions.ts` with the question bank.
-4. Register the certification in `src/certifications/index.ts`.
+The registry auto-discovers certifications from `src/certifications/<slug>/`. Create a directory with two files:
+
+1. `config.ts` — export a `config` constant of type `CertificationConfig` with the exam blueprint, domains, and theme.
+2. `questions.ts` — export a `questions` array of type `Question[]` with the question bank.
+
+No manual registration is required; both files are loaded at build time via `import.meta.glob`.
 
 ## Study Notes
 

@@ -35,4 +35,7 @@ export const config: CertificationConfig = {
 	},
 	passingScore: 720,
 	totalQuestions: 53,
+	examMinutes: 120,
+	examGuideNote: "the published exam objectives",
+	blueprintSource: "official",
 };

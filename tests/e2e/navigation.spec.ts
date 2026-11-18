@@ -10,6 +10,13 @@ test("homepage certification link navigates under the GitHub Pages base path", a
 	await expect(page.getByRole("heading", { name: /Know the platform/i })).toBeVisible();
 });
 
+test("certification card navigates to a new certification page", async ({ page }) => {
+	await page.goto(`${BASE_PATH}/`);
+	await page.getByRole("link", { name: /Claude Certified Associate.*Foundations/i }).click();
+	await expect(page).toHaveURL(new RegExp(`${BASE_PATH}/certifications/ccao-f/?$`));
+	await expect(page.getByRole("heading", { name: /Know the platform/i })).toBeVisible();
+});
+
 test("study library navigation reaches a note from the home page", async ({ page }) => {
 	await page.goto(`${BASE_PATH}/`);
 	await page.getByRole("link", { name: "Study the notes" }).click();

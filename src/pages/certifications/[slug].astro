@@ -1,31 +1,74 @@
 ---
 // Dynamic certification page — loads config and questions server-side
 
-import { config } from "../../certifications/ccdv-f/config";
-import { questions } from "../../certifications/ccdv-f/questions";
 import QuizLayout from "../../layouts/QuizLayout.astro";
 import { base } from "../../lib/base";
+import { OPTION_SHORTCUT_KEYS } from "../../lib/quiz-keys";
+import type { CertificationConfig, Question } from "../../lib/quiz-types";
+import { studyCerts } from "../../study/registry";
 
-export function getStaticPaths() {
-	return [{ params: { slug: "ccdv-f" } }];
+/** Extract the certification slug from a glob key (segment immediately before config.ts / questions.ts) */
+function extractSlug(path: string): string {
+	const match = path.match(/(?:^|\/)([^/]+)\/(?:config|questions)\.ts$/);
+	return match ? match[1] : "";
 }
 
-// Currently only CCDV-F is supported via getStaticPaths.
-// For multiple certifications, use a map or dynamic import here.
-const certConfig = config;
+// Auto-discover config and questions modules for all certifications
+const configModules = import.meta.glob("../../certifications/*/config.ts", { eager: true });
+const questionsModules = import.meta.glob("../../certifications/*/questions.ts", { eager: true });
+
+// Build maps keyed by slug
+const configMap: Record<string, { config: CertificationConfig }> = {};
+const questionsMap: Record<string, { questions: Question[] }> = {};
+for (const [path, mod] of Object.entries(configModules)) {
+	const slug = extractSlug(path);
+	if (slug) configMap[slug] = mod as { config: CertificationConfig };
+}
+for (const [path, mod] of Object.entries(questionsModules)) {
+	const slug = extractSlug(path);
+	if (slug) questionsMap[slug] = mod as { questions: Question[] };
+}
+
+// Slugs that have study notes
+const studySlugs = new Set(studyCerts.map((c) => c.slug));
+
+// getStaticPaths is extracted by Astro into a separate module, so it must
+// be fully self-contained — no references to frontmatter variables.
+export async function getStaticPaths() {
+	const modules = import.meta.glob("../../certifications/*/config.ts", { eager: true });
+	const slugs = Object.keys(modules)
+		.map((path) => {
+			const m = path.match(/(?:^|\/)([^/]+)\/(?:config|questions)\.ts$/);
+			return m ? m[1] : "";
+		})
+		.filter((s) => s.length > 0);
+	return slugs.map((slug) => ({
+		params: { slug },
+	}));
+}
+
+const slug = Astro.params.slug;
+const certConfig = configMap[slug]?.config;
+const questions = questionsMap[slug]?.questions ?? [];
+
+// Only pass studyHref when the certification actually has study notes
+const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 ---
 
 <QuizLayout
 	title={certConfig.title}
 	subtitle={certConfig.subtitle}
 	description={certConfig.description}
-	studyHref={`${base}study/${certConfig.slug}/`}
+	studyHref={studyHref}
 	theme={certConfig.theme}
 >
 	<!-- Quiz data passed inline -->
 </QuizLayout>
 
-<script define:vars={{ cfg: config, qs: questions }} is:inline>
+<script
+	define:vars={{ cfg: certConfig, qs: questions, optionKeys: OPTION_SHORTCUT_KEYS }}
+	is:inline
+>
 (function () {
 	// cfg and qs are provided by define:vars above
 	if (!cfg || !qs) return;
@@ -41,7 +84,7 @@ const certConfig = config;
 	}
 
 	const KEY = `${cfg.slug}-practice-lab-v2`;
-	const LETTERS = "ABCD";
+	const LETTERS = "ABCDE";
 	const app = document.getElementById("app");
 
 	// --- Storage ---
@@ -128,6 +171,10 @@ const certConfig = config;
 		);
 	}
 
+	function getSelectCount(q) {
+		return q.selectCount ?? q.correctAnswers.length;
+	}
+
 	function answered(id) {
 		return Array.isArray(session?.answers?.[id]) && session.answers[id].length > 0;
 	}
@@ -186,7 +233,7 @@ const certConfig = config;
 			checked: {},
 			flags: [],
 			created: Date.now(),
-			deadline: mode === "exam" ? Date.now() + 120 * 60 * 1000 : null,
+			deadline: mode === "exam" ? Date.now() + (cfg.examMinutes ?? 120) * 60 * 1000 : null,
 			submitted: false,
 		};
 		persist();
@@ -201,11 +248,12 @@ const certConfig = config;
 		const mastered = values.filter((s) => s.attempts > 0 && !s.lastWrong).length;
 		const weak = getWeakCount();
 
+		const bpLabel = cfg.blueprintSource === "official" ? "Exam weight" : "Bank distribution";
 		const cards = Object.entries(cfg.domains)
 			.map(([d, domainConfig]) => {
 				const list = qs.filter((q) => q.domain === d);
 				const done = list.filter((q) => saved.stats[q.id]?.attempts);
-				return `<div class="panel domainRow"><span><strong>${d}</strong> ${esc(domainConfig.name)}<br><span class="muted">Exam weight ${domainConfig.weight}%</span></span><strong>${done.length}/${list.length}</strong></div>`;
+				return `<div class="panel domainRow"><span><strong>${d}</strong> ${esc(domainConfig.name)}<br><span class="muted">${bpLabel} ${domainConfig.weight}%</span></span><strong>${done.length}/${list.length}</strong></div>`;
 			})
 			.join("");
 
@@ -213,7 +261,7 @@ const certConfig = config;
 			<div class="hero">
 				<span class="eyebrow">${esc(cfg.subtitle)} · ${esc(cfg.title)}</span>
 				<h1>Know the platform.<br>Ship with confidence.</h1>
-				<p class="lead">${qs.length} source-linked practice questions across the ${Object.keys(cfg.domains).length} domains in Anthropic's public <strong>${esc(cfg.title)}</strong> exam guide. Learn by doing, then test your readiness.</p>
+				<p class="lead">${qs.length} source-linked practice questions across the ${Object.keys(cfg.domains).length} domains${cfg.examGuideNote ? ` mapped to ${cfg.examGuideNote} for the <strong>${esc(cfg.title)}</strong> certification` : ` for the <strong>${esc(cfg.title)}</strong> certification`}. Learn by doing, then test your readiness.</p>
 				<div class="ctaRow">
 					${
 						session && !session.submitted
@@ -223,23 +271,23 @@ const certConfig = config;
 					<a class="ghost ghostOnDark" href="#coverage">See your progress</a>
 				</div>
 				<div class="pills">
-					<span class="pill">${qs.length}-question bank</span>
-					<span class="pill">${cfg.totalQuestions}-question mock</span>
-					<span class="pill">120-minute exam timer</span>
-					<span class="pill">Offline & private</span>
-				</div>
+				<span class="pill">${qs.length}-question bank</span>
+				<span class="pill">${cfg.totalQuestions}-question mock</span>
+				<span class="pill">${cfg.examMinutes ?? 120}-minute exam timer</span>
+				<span class="pill">Offline & private</span>
+			</div>
 			</div>
 			<section class="section" id="session">
 				<div class="sectionHead"><h2>Choose your session</h2><span class="muted small">Save & resume automatically</span></div>
 				<div class="modes">
 					<button class="mode" data-action="start-practice">
 						<strong>Practice mode</strong>
-						<p>Instant feedback, explanations and links to primary documentation. Study by exam domain or focus on the new questions from a Skilljar module.</p>
+						<p>Instant feedback, explanations and links to primary documentation. Study by exam domain or focus on your weakest areas.</p>
 					</button>
-					<button class="mode" data-action="start-exam">
-						<strong>Mock exam</strong>
-						<p>${cfg.totalQuestions} questions proportioned to the official blueprint. 120 minutes. Answers revealed after submission.</p>
-					</button>
+				<button class="mode" data-action="start-exam">
+					<strong>Mock exam</strong>
+					<p>${cfg.totalQuestions} questions proportioned to the ${cfg.blueprintSource === "official" ? "official blueprint" : "blueprint derived from the imported bank's domain distribution"}. ${cfg.examMinutes ?? 120} minutes. Answers revealed after submission.</p>
+				</button>
 					<button class="mode" data-action="start-weak" ${weak ? "" : "disabled"}>
 						<strong>Review mistakes</strong>
 						<p>${weak ? `${weak} questions need another pass.` : "Complete a session to unlock targeted revision."} Retest only your latest missed questions.</p>
@@ -259,9 +307,9 @@ const certConfig = config;
 					<select class="select" id="amount">
 						<option value="10">10</option>
 						<option value="20" selected>20</option>
-						<option value="50">50</option>
- 					<option value="${qs.length}">All available</option>
-					</select>
+					<option value="50">50</option>
+					<option value="${qs.length}">All available</option>
+				</select>
 				</div>
 			</section>
 			<section class="section" id="coverage">
@@ -276,6 +324,7 @@ const certConfig = config;
 				<div class="domainGrid">${cards}</div>
 			</section>
 			<p class="alert section">Independent study material. Practice scores are not equivalent to official exam scores.</p>
+			<p class="small muted section">This bank includes practice questions from <strong>Cert Pro Quest</strong> by Matthew Purcell. These are community-created practice questions and are not official exam content.</p>
 		`;
 	}
 
@@ -321,6 +370,7 @@ const certConfig = config;
 			fb = `<div class="feedback ${good ? "correct" : "wrong"}" role="status">
 			<strong>${good ? "Correct — well reasoned." : "Not quite — review the reasoning."}</strong>
 			<p>${esc(x.explanation)}</p>
+			${x.whyNot ? `<p class="small muted">Why not the others: ${esc(x.whyNot)}</p>` : ""}
 			<a href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">Study source: ${esc(src.label)} ↗</a>
 		</div>`;
 
@@ -328,9 +378,9 @@ const certConfig = config;
 			<div class="progress" aria-label="Progress"><i style="width:${pct(session.currentIndex + 1, session.ids.length)}%"></i></div>
 			<div class="panel question" style="margin-top:16px">
 				<span class="badge">${x.domain} · ${esc(domains[x.domain].name)}</span>
-				<span class="muted small" style="margin-left:8px">${esc(x.topic)}</span>
+				${x.topic ? `<span class="muted small" style="margin-left:8px">${esc(x.topic)}</span>` : ""}
 				<h2>${esc(x.question)}</h2>
-				<p class="hint">${x.correctAnswers.length === 1 ? "Select ONE answer." : `Select exactly ${x.correctAnswers.length} answers.`}${isExam ? " Your choices stay editable until you submit." : " Check your answer to see the explanation."}</p>
+				<p class="hint">${getSelectCount(x) === 1 ? "Select ONE answer." : `Select exactly ${getSelectCount(x)} answers.`}${isExam ? " Your choices stay editable until you submit." : " Check your answer to see the explanation."}</p>
 				${opts}${fb}
 				<div class="actions">
 					${session.currentIndex > 0 ? `<button class="ghost" data-action="prev">← Previous</button>` : ""}
@@ -340,7 +390,7 @@ const certConfig = config;
 						<button class="primary" data-action="next">${isLast ? "Go to review" : "Next →"}</button>`
 							: checked
 								? `<button class="primary" data-action="next">${isLast ? "Finish session" : "Next question →"}</button>`
-								: `<button class="primary" data-action="check" ${v.length === x.correctAnswers.length ? "" : "disabled"}>Check answer</button>`
+								: `<button class="primary" data-action="check" ${v.length === getSelectCount(x) ? "" : "disabled"}>Check answer</button>`
 					}
 				</div>
 			</div>`;
@@ -424,6 +474,7 @@ const certConfig = config;
 				<div class="small muted" style="margin:9px 0">Your selection: ${v.length ? v.map((n) => LETTERS[n]).join(", ") : "Unanswered"} · Correct: ${q.correctAnswers.map((n) => LETTERS[n]).join(", ")}</div>
 				${q.options.map((t, n) => `<div class="option${q.correctAnswers.includes(n) ? " good" : v.includes(n) ? " bad" : ""}"><span class="letter">${LETTERS[n]}</span><span>${esc(t)}</span></div>`).join("")}
 				<p>${esc(q.explanation)}</p>
+				${q.whyNot ? `<p class="small muted">Why not the others: ${esc(q.whyNot)}</p>` : ""}
 				<a href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">${esc(q.source.label)} ↗</a>
 			</details>`;
 			})
@@ -522,19 +573,20 @@ const certConfig = config;
 			if (session.checked[id]) return;
 			const n = +el.dataset.value;
 			const vals = session.answers[id] || [];
+			const pickCount = getSelectCount(q);
 			session.answers[id] =
-				q.correctAnswers.length === 1
+				pickCount === 1
 					? [n]
 					: vals.includes(n)
 						? vals.filter((x) => x !== n)
-						: vals.length >= q.correctAnswers.length
+						: vals.length >= pickCount
 							? vals
 							: [...vals, n];
 			persist();
 			return question();
 		}
 		if (action === "check") {
-			if ((session.answers[id] || []).length !== q.correctAnswers.length) return;
+			if ((session.answers[id] || []).length !== getSelectCount(q)) return;
 			session.checked[id] = true;
 			remember(id, accurate(id));
 			persist();
@@ -595,8 +647,9 @@ const certConfig = config;
 			/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName || "")
 		)
 			return;
-		if ("1234".includes(e.key) && e.key.length === 1) {
-			const b = app.querySelector(`[data-action="pick"][data-value="${+e.key - 1}"]`);
+		const optionIndex = optionKeys.indexOf(e.key);
+		if (optionIndex !== -1) {
+			const b = app.querySelector(`[data-action="pick"][data-value="${optionIndex}"]`);
 			if (b && !b.disabled) b.click();
 		} else if (e.key === "Enter" && document.activeElement === document.body) {
 			const b = app.querySelector('[data-action="check"]:not(:disabled),[data-action="next"]');
