@@ -1,0 +1,26 @@
+name: Notify Vercel
+
+on:
+  repository_dispatch:
+    types:
+      - 'vercel.deployment.success'
+      - 'vercel.deployment.error'
+      - 'vercel.deployment.canceled'
+      - 'vercel.deployment.ignored'
+      - 'vercel.deployment.skipped'
+      - 'vercel.deployment.failed'
+
+jobs:
+  notify:
+    name: Notify Vercel
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+        with:
+          ref: ${{ github.event.client_payload.git.sha }}
+
+      - name: Notify Vercel
+        uses: vercel/repository-dispatch/actions/status@v1
+        with:
+          name: 'Vercel - project-lab: lint'

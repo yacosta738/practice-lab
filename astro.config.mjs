@@ -1,15 +1,21 @@
 // @ts-check
 
 import sitemap from "@astrojs/sitemap";
+import vercel from "@astrojs/vercel";
 import { defineConfig } from "astro/config";
 
 // https://astro.build/config
+
+// `base` depends on the deployment platform:
+// - Vercel: root path ("/")
+// - GitHub Pages: subpath ("/practice-lab")
+// Note: `import.meta.env` is not available in astro.config.mjs. Use `process.env` instead.
+const isVercel = process.env.VERCEL === "1";
+
 export default defineConfig({
-	// GitHub Pages project site: https://yacosta738.github.io/practice-lab/
-	// `base` prefixes every generated asset URL and `import.meta.env.BASE_URL`.
-	// Internal links must use BASE_URL so they resolve under the subpath.
-	site: "https://yacosta738.github.io",
-	base: "/practice-lab",
-	output: "static",
+	site: isVercel ? "https://certificate-nine-phi.vercel.app" : "https://yacosta738.github.io",
+	base: isVercel ? "/" : "/practice-lab",
+	output: "server",
+	adapter: vercel(),
 	integrations: [sitemap()],
 });
