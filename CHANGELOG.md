@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/yacosta738/practice-lab/compare/v0.2.0...v0.3.0) (2026-11-18)
+
+
+### Features
+
+* **certifications:** import Cert Pro Quest practice banks ([#24](https://github.com/yacosta738/practice-lab/issues/24)) ([bd76c8a](https://github.com/yacosta738/practice-lab/commit/bd76c8a2889446a56445695c5a8060d6c3399ab2))
+* SEO improvements, quiz option shuffling, bias tests, and CI link checker ([#25](https://github.com/yacosta738/practice-lab/issues/25)) ([e5f73cc](https://github.com/yacosta738/practice-lab/commit/e5f73cc742a1b7035ca2f122f6a00fe0048d9d80))
+
+
+### Bug Fixes
+
+* **ci:** exclude generated CHANGELOG.md from Biome ([#22](https://github.com/yacosta738/practice-lab/issues/22)) ([48f8f1e](https://github.com/yacosta738/practice-lab/commit/48f8f1e0ce8702c5041e109bd23fe3b6fc401810))
+
 ## [0.2.0](https://github.com/yacosta738/practice-lab/compare/v0.1.2...v0.2.0) (2026-11-17)
 
 
