@@ -28,6 +28,18 @@ describe("mapAnswerLettersToIndices", () => {
 		expect(() => mapAnswerLettersToIndices(["F"])).toThrow();
 		expect(() => mapAnswerLettersToIndices(["Z"])).toThrow();
 	});
+
+	it("rejects an empty answer token instead of producing NaN", () => {
+		// "".charCodeAt(0) is NaN and every NaN comparison is false, so an
+		// unguarded implementation returned [NaN], which serialized to [null]
+		// in the generated bank.
+		expect(() => mapAnswerLettersToIndices([""])).toThrow(/Invalid answer letter/);
+	});
+
+	it("rejects multi-character answer tokens", () => {
+		expect(() => mapAnswerLettersToIndices(["AB"])).toThrow(/Invalid answer letter/);
+		expect(() => mapAnswerLettersToIndices([" A"])).toThrow(/Invalid answer letter/);
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -89,8 +101,14 @@ describe("normalizeQuestion", () => {
 		whyNot: "A is wrong because… C is wrong because… D is wrong because…",
 	};
 
+	// Every non-CCDV-F certification maps the source domain names to the
+	// D1..Dn ids used by the generated config.
+	const ccaofDomainMap = {
+		"Prompting and Task Execution": "D1",
+	};
+
 	it("produces a valid Question object with CPQ- prefix", () => {
-		const q = normalizeQuestion("ccaof", cpqQuestion, {} as Record<string, string>);
+		const q = normalizeQuestion("ccaof", cpqQuestion, ccaofDomainMap);
 		expect(q.id).toBe("CPQ-ccaof-1.1");
 		expect(q.question).toBe(cpqQuestion.text);
 		expect(q.options).toEqual(cpqQuestion.options.map((o) => o.text));
@@ -102,7 +120,7 @@ describe("normalizeQuestion", () => {
 
 	it("maps multi-select answers and preserves selectCount", () => {
 		const multiQ = { ...cpqQuestion, answer: ["A", "C"], selectCount: 2 };
-		const q = normalizeQuestion("ccaof", multiQ, {} as Record<string, string>);
+		const q = normalizeQuestion("ccaof", multiQ, ccaofDomainMap);
 		expect(q.correctAnswers).toEqual([0, 2]);
 		expect(q.selectCount).toBe(2);
 	});
@@ -117,15 +135,21 @@ describe("normalizeQuestion", () => {
 	});
 
 	it("uses domain map for non-CCDV-F certs", () => {
-		const domainMap = {
-			"Prompting and Task Execution": "D1",
-		};
-		const q = normalizeQuestion("ccaof", cpqQuestion, domainMap);
+		const q = normalizeQuestion("ccaof", cpqQuestion, ccaofDomainMap);
 		expect(q.domain).toBe("D1");
 	});
 
+	it("throws when a domain has no mapping instead of inventing an id", () => {
+		// A generated domain id that is absent from the certification config
+		// breaks the quiz UI at runtime, so normalization must fail loudly.
+		expect(() => normalizeQuestion("ccaof", cpqQuestion, {})).toThrow(/Unmapped CPQ domain/i);
+		expect(() =>
+			normalizeQuestion("ccaof", { ...cpqQuestion, domain: "Brand New Domain" }, ccaofDomainMap),
+		).toThrow(/Brand New Domain/);
+	});
+
 	it("preserves whyNot in the question object when present", () => {
-		const q = normalizeQuestion("ccaof", cpqQuestion, {} as Record<string, string>);
+		const q = normalizeQuestion("ccaof", cpqQuestion, ccaofDomainMap);
 		expect(q.whyNot).toBe(cpqQuestion.whyNot);
 	});
 
@@ -141,13 +165,13 @@ describe("normalizeQuestion", () => {
 			],
 			answer: ["E"],
 		};
-		const q = normalizeQuestion("ccaof", fiveOptQ, {} as Record<string, string>);
+		const q = normalizeQuestion("ccaof", fiveOptQ, ccaofDomainMap);
 		expect(q.correctAnswers).toEqual([4]);
 		expect(q.options).toHaveLength(5);
 	});
 
 	it("omits topic when source has none", () => {
-		const q = normalizeQuestion("ccaof", cpqQuestion, {} as Record<string, string>);
+		const q = normalizeQuestion("ccaof", cpqQuestion, ccaofDomainMap);
 		// topic should be absent
 		expect(q.topic).toBeUndefined();
 	});
@@ -204,6 +228,28 @@ describe("deriveBlueprint", () => {
 		const blueprint = deriveBlueprint(domainCounts, 50);
 		const total = Object.values(blueprint).reduce((s, v) => s + v, 0);
 		expect(total).toBe(10);
+	});
+
+	it("allocates exactly the target when small domains would overshoot it", () => {
+		// 97 + 1 + 1 + 1 = 100 items, target 50. Rounding up three tiny domains
+		// to one slot each would push the allocation past the target.
+		const domainCounts = { D1: 97, D2: 1, D3: 1, D4: 1 };
+		const blueprint = deriveBlueprint(domainCounts, 50);
+		const total = Object.values(blueprint).reduce((s, v) => s + v, 0);
+		expect(total).toBe(50);
+		for (const [domain, count] of Object.entries(blueprint)) {
+			expect(count).toBeGreaterThanOrEqual(1);
+			expect(count).toBeLessThanOrEqual(domainCounts[domain as keyof typeof domainCounts]);
+		}
+	});
+
+	it("never allocates more items than a domain actually has", () => {
+		const domainCounts = { D1: 30, D2: 2, D3: 1, D4: 1, D5: 1 };
+		const blueprint = deriveBlueprint(domainCounts, 20);
+		for (const [domain, count] of Object.entries(blueprint)) {
+			expect(count).toBeLessThanOrEqual(domainCounts[domain as keyof typeof domainCounts]);
+		}
+		expect(Object.values(blueprint).reduce((s, v) => s + v, 0)).toBe(20);
 	});
 
 	it("ensures every domain gets at least 1", () => {

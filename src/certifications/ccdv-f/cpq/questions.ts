@@ -171,7 +171,7 @@ export const questions: Question[] = [
 			url: "https://cert-pro-quest.lovable.app/",
 		},
 		whyNot:
-			"B is impossible — LLM sampling remains non-deterministic regardless of framework; D is false — framework agents need evals like any other; E confuses orchestration tooling with model training. ## Domain 2: Applications and Integration",
+			"B is impossible — LLM sampling remains non-deterministic regardless of framework; D is false — framework agents need evals like any other; E confuses orchestration tooling with model training.",
 		selectCount: 2,
 	},
 	{
@@ -534,7 +534,7 @@ export const questions: Question[] = [
 			url: "https://cert-pro-quest.lovable.app/",
 		},
 		whyNot:
-			"B puts secrets in source control, a security failure; D guarantees drift between what developers test and what ships; E removes review from the changes most likely to alter behaviour. ## Domain 3: Claude Code",
+			"B puts secrets in source control, a security failure; D guarantees drift between what developers test and what ships; E removes review from the changes most likely to alter behaviour.",
 		selectCount: 2,
 	},
 	{
@@ -577,7 +577,7 @@ export const questions: Question[] = [
 			url: "https://cert-pro-quest.lovable.app/",
 		},
 		whyNot:
-			"A governs permission prompting, not non-interactive invocation; B has no human to type or supervise; D is false — headless operation is a core Claude Code feature. ## Domain 4: Eval, Testing, and Debugging",
+			"A governs permission prompting, not non-interactive invocation; B has no human to type or supervise; D is false — headless operation is a core Claude Code feature.",
 	},
 	{
 		id: "CPQ-ccdvf-4.1",
@@ -598,7 +598,7 @@ export const questions: Question[] = [
 			url: "https://cert-pro-quest.lovable.app/",
 		},
 		whyNot:
-			"B guesses at a cause that may not exist — no prompt fixes bad retrieval; C spends money to mask an undiagnosed problem; D communicates around the failure instead of finding it. ## Domain 5: Model Selection and Optimization",
+			"B guesses at a cause that may not exist — no prompt fixes bad retrieval; C spends money to mask an undiagnosed problem; D communicates around the failure instead of finding it.",
 	},
 	{
 		id: "CPQ-ccdvf-5.1",
@@ -779,7 +779,7 @@ export const questions: Question[] = [
 			'Enable fast mode by opting in with the speed: "fast" parameter, which serves the same Opus model with faster output token generation at premium per-token pricing',
 			"Downgrade to the smallest model tier, since all Claude models produce equivalent output for debugging tasks",
 		],
-		correctAnswers: [0, 3],
+		correctAnswers: [2],
 		explanation:
 			'Fast mode delivers up to 2.5x higher output tokens per second at premium pricing, opted into with speed: "fast" and the fast-mode beta header — it is not a different model, so reasoning quality is preserved while interactive latency improves, matching a workload where speed outweighs cost.',
 		source: {
@@ -787,8 +787,8 @@ export const questions: Question[] = [
 			url: "https://cert-pro-quest.lovable.app/",
 		},
 		whyNot:
-			"A, the Batch API targets latency-tolerant workloads with results returned asynchronously; it is the opposite of what an interactive session needs (and fast mode is not available with it); B, extended thinking adds reasoning tokens before the answer, increasing time-to-answer rather than reducing it; D, model tiers trade capability for speed and cost; the scenario explicitly rules out sacrificing reasoning quality, and cost is stated as secondary ## Domain 6: Prompt and Context Engineering",
-		selectCount: 2,
+			"A, the Batch API targets latency-tolerant workloads with results returned asynchronously; it is the opposite of what an interactive session needs (and fast mode is not available with it); B, extended thinking adds reasoning tokens before the answer, increasing time-to-answer rather than reducing it; D, model tiers trade capability for speed and cost; the scenario explicitly rules out sacrificing reasoning quality, and cost is stated as secondary",
+		selectCount: 1,
 	},
 	{
 		id: "CPQ-ccdvf-6.1",
@@ -915,7 +915,7 @@ export const questions: Question[] = [
 			url: "https://cert-pro-quest.lovable.app/",
 		},
 		whyNot:
-			"A is exactly the assumption that causes production incidents; B replaces strict parsing with fragile pattern-matching; D increases variability, making structured output less reliable. ## Domain 7: Security and Safety",
+			"A is exactly the assumption that causes production incidents; B replaces strict parsing with fragile pattern-matching; D increases variability, making structured output less reliable.",
 		selectCount: 2,
 	},
 	{
@@ -1001,7 +1001,7 @@ export const questions: Question[] = [
 			url: "https://cert-pro-quest.lovable.app/",
 		},
 		whyNot:
-			"A is probabilistic where a guarantee is needed; C maximises blast radius — the opposite of least privilege; E misunderstands temperature, which adds randomness, not caution. ## Domain 8: Tools and MCPs",
+			"A is probabilistic where a guarantee is needed; C maximises blast radius — the opposite of least privilege; E misunderstands temperature, which adds randomness, not caution.",
 		selectCount: 2,
 	},
 	{
