@@ -183,10 +183,10 @@ importers:
         specifier: 0.9.12
         version: 0.9.12(prettier@3.10.1)(typescript@6.0.3)
       '@astrojs/sitemap':
-        specifier: ^3.7.5
+        specifier: 3.7.5
         version: 3.7.5
       '@astrojs/vercel':
-        specifier: ^11.0.22
+        specifier: 11.0.22
         version: 11.0.22(astro@7.4.12(@types/node@26.6.6)(@vercel/functions@3.11.3)(jiti@2.7.0)(yaml@2.9.1))
       '@axe-core/playwright':
         specifier: 4.14.0
@@ -204,16 +204,16 @@ importers:
         specifier: 1.65.1
         version: 1.65.1
       '@types/node':
-        specifier: ^26.6.6
+        specifier: 26.6.6
         version: 26.6.6
       acorn:
-        specifier: ^8.19.0
+        specifier: 8.19.0
         version: 8.19.0
       lefthook:
-        specifier: ^2.2.2
+        specifier: 2.2.2
         version: 2.2.2
       typescript:
-        specifier: ^6.0.3
+        specifier: 6.0.3
         version: 6.0.3
       vitest:
         specifier: 5.1.0
