@@ -31,6 +31,48 @@ jobs:
       tag_name: ${{ steps.release.outputs.tag_name }}
       version: ${{ steps.release.outputs.version }}
     steps:
+      - name: Wait for main to settle
+        env:
+          STABLE_SECONDS: "30"
+          POLL_SECONDS: "5"
+          MAX_POLLS: "24"
+        run: |
+          set -euo pipefail
+          # release-please reads the target branch contents at the start of the
+          # run, but resolves the commit base at the end. If main advances in
+          # between, the changeset is computed against one commit and applied
+          # on top of another. The result silently reverts dependency
+          # specifiers in package.json while pnpm-lock.yaml keeps the newer
+          # ones, and the Vercel build dies with ERR_PNPM_OUTDATED_LOCKFILE.
+          #
+          # Observed on 2026-11-23: @astrojs/sitemap went from ^3.7.6 back to
+          # ^3.7.5 because a dependabot merge landed mid-run.
+          #
+          # Waiting until main stops changing closes that window.
+          previous=""
+          stable_since=0
+          for _ in $(seq 1 "$MAX_POLLS"); do
+            current=$(curl -sS \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/commits/main" | jq -r '.sha')
+            now=$(date +%s)
+            if [ -z "$current" ] || [ "$current" = "null" ]; then
+              echo "::warning::Could not resolve main HEAD; continuing without the settle wait"
+              exit 0
+            fi
+            if [ "$current" != "$previous" ]; then
+              echo "main moved to ${current:0:7}; resetting the settle timer"
+              previous="$current"
+              stable_since=$now
+            elif [ $((now - stable_since)) -ge "$STABLE_SECONDS" ]; then
+              echo "main has been stable at ${current:0:7} for ${STABLE_SECONDS}s"
+              exit 0
+            fi
+            sleep "$POLL_SECONDS"
+          done
+          echo "::warning::main did not settle within the time budget; continuing anyway"
+
       - name: Run release-please
         id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
@@ -48,6 +90,75 @@ jobs:
 
           Check the [Releases page](https://github.com/${{ github.repository }}/releases) for the changelog.
           EOF
+
+  verify-release-branch:
+    name: 🔍 Verify Release Branch
+    runs-on: ubuntu-latest
+    needs: [release-please]
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      # The CI workflow cannot guard the release branch: GitHub marks the
+      # pull_request runs coming from the release-please bot as
+      # action_required, so they never execute without a manual approval.
+      # This job runs right after Release Please pushes the branch, where it
+      # always has write access.
+      - name: Find the open release pull request
+        id: find
+        run: |
+          set -euo pipefail
+          branch=$(curl -sS \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" \
+            | jq -r '[.[] | select(.head.ref | startswith("release-please--")) | .head.ref] | first // empty')
+          if [ -z "$branch" ]; then
+            echo "No open release pull request; there is nothing to verify."
+            exit 0
+          fi
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout the release branch
+        if: steps.find.outputs.branch != ''
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ steps.find.outputs.branch }}
+          fetch-depth: 0
+
+      - name: Fetch the base branch
+        if: steps.find.outputs.branch != ''
+        run: git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+
+      - name: Setup pnpm
+        if: steps.find.outputs.branch != ''
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - name: Setup Node
+        if: steps.find.outputs.branch != ''
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: "22"
+
+      - name: Verify the release branch against main
+        if: steps.find.outputs.branch != ''
+        run: node scripts/verify-release-branch.mjs --base origin/main
+
+      - name: Commit the repair
+        if: steps.find.outputs.branch != ''
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "The release branch is consistent with main; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json pnpm-lock.yaml
+          git commit -m "fix(release): sync the release branch with main"
+          git push origin "HEAD:refs/heads/${{ steps.find.outputs.branch }}"
+          echo "::notice::Repaired the release branch and pushed the fix."
 
   post-release:
     name: 🧪 Post-Release Validation
