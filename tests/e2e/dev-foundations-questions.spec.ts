@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 const BASE_PATH = "/practice-lab";
 
 // Developer Foundations exam recall question IDs
-const RECALL_IDS = [
+const _RECALL_IDS = [
 	"D5-020", // Model selection tradeoffs
 	"D2-038", // Real-time communication
 	"D2-039", // Code migration strategy
@@ -16,7 +16,7 @@ const RECALL_IDS = [
 ];
 
 // Expected question text snippets to identify each recall question
-const RECALL_QUESTION_SNIPPETS: Record<string, string> = {
+const _RECALL_QUESTION_SNIPPETS: Record<string, string> = {
 	"D5-020": "balancing three factors",
 	"D2-038": "real-time, bidirectional communication",
 	"D2-039": "40 different places",

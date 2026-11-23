@@ -1,14 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { questions as ccdvQuestions } from "../../src/certifications/ccdv-f/questions";
+import { config as ccaoConfig } from "../../src/certifications/ccao-f/config";
 import { questions as ccaoQuestions } from "../../src/certifications/ccao-f/questions";
-import { questions as ccarpQuestions } from "../../src/certifications/ccar-p/questions";
+import { config as ccarfConfig } from "../../src/certifications/ccar-f/config";
 import { questions as ccarfQuestions } from "../../src/certifications/ccar-f/questions";
-
+import { config as ccarpConfig } from "../../src/certifications/ccar-p/config";
+import { questions as ccarpQuestions } from "../../src/certifications/ccar-p/questions";
 // Load config modules to validate domains
 import { config as ccdvConfig } from "../../src/certifications/ccdv-f/config";
-import { config as ccaoConfig } from "../../src/certifications/ccao-f/config";
-import { config as ccarpConfig } from "../../src/certifications/ccar-p/config";
-import { config as ccarfConfig } from "../../src/certifications/ccar-f/config";
+import { questions as ccdvQuestions } from "../../src/certifications/ccdv-f/questions";
 
 interface CertBank {
 	slug: string;
