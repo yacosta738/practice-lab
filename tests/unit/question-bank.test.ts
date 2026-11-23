@@ -89,6 +89,19 @@ function validateBank(bank: CertBank) {
 			}
 		});
 
+		it("has valid source URL or empty string (no broken links)", () => {
+			for (const q of questions) {
+				// source.url must be either a valid HTTP(S) URL or an empty string
+				// Empty string is allowed for community recall questions without a primary source
+				if (q.source.url !== "") {
+					expect(() => {
+						const url = new URL(q.source.url);
+						expect(["http:", "https:"]).toContain(url.protocol);
+					}).not.toThrow();
+				}
+			}
+		});
+
 		it("has valid domain for each question", () => {
 			for (const q of questions) {
 				expect(domainIds).toContain(q.domain);

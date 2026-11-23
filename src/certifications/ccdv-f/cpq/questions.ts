@@ -90,7 +90,7 @@ export const questions: Question[] = [
 	},
 	{
 		id: "CPQ-ccdvf-1.5",
-		domain: "D1",
+		domain: "D2",
 		question:
 			"An application calling Claude through an official Anthropic client SDK intermittently receives HTTP 429 rate-limit responses during traffic spikes. The developer wants transient failures handled gracefully without duplicating logic the SDK already provides. What is the SDK's default behaviour, and what is the appropriate adjustment?",
 		options: [

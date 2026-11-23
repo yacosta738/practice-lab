@@ -1,6 +1,12 @@
 // Core quiz engine logic — mode-agnostic, certification-agnostic
 
-import type { CertificationConfig, Question, QuestionStats, QuizSession } from "./quiz-types";
+import type {
+	CertificationConfig,
+	Question,
+	QuestionStats,
+	QuizSession,
+	ShuffledQuestionOptions,
+} from "./quiz-types";
 
 // --- Utilities ---
 
@@ -17,13 +23,49 @@ export function percent(n: number, t: number): number {
 	return t ? Math.round((n / t) * 100) : 0;
 }
 
+// --- Option Shuffling ---
+
+/** Shuffle a question's options and remap correctAnswers to the new positions. */
+export function shuffleQuestionOptions(question: Question): ShuffledQuestionOptions {
+	const indices = question.options.map((_, i) => i);
+	const shuffled = shuffle(indices);
+	const newOptions = shuffled.map((i) => question.options[i]);
+	const newCorrect = question.correctAnswers.map((origIdx) => shuffled.indexOf(origIdx));
+	return { options: newOptions, correctAnswers: newCorrect };
+}
+
+/** Return the effective options and correct answers for a question, preferring session shuffled data. */
+export function getQuestionOptions(
+	question: Question,
+	shuffledOptions?: Record<string, ShuffledQuestionOptions>,
+	questionId?: string,
+): { options: string[]; correctAnswers: number[] } {
+	if (questionId && shuffledOptions?.[questionId]) {
+		const so = shuffledOptions[questionId];
+		return { options: so.options, correctAnswers: so.correctAnswers };
+	}
+	return { options: question.options, correctAnswers: question.correctAnswers };
+}
+
+/** Build a shuffledOptions map for all questions in a session. */
+export function buildShuffledOptions(
+	ids: string[],
+	byId: Record<string, Question>,
+): Record<string, ShuffledQuestionOptions> {
+	const result: Record<string, ShuffledQuestionOptions> = {};
+	for (const id of ids) {
+		result[id] = shuffleQuestionOptions(byId[id]);
+	}
+	return result;
+}
+
 // --- Session Creation ---
 
 export function createSession(
 	mode: "practice" | "exam" | "weak",
 	config: CertificationConfig,
 	questions: Question[],
-	options?: {
+	opts?: {
 		domain?: string; // for practice mode
 		amount?: number; // for practice mode
 		weakStats?: Record<string, QuestionStats>; // for weak mode
@@ -47,7 +89,7 @@ export function createSession(
 			.map((id) => byId.get(id))
 			.filter((q): q is Question => q !== undefined);
 	} else if (mode === "weak") {
-		const weakStats = options?.weakStats;
+		const weakStats = opts?.weakStats;
 		if (!weakStats) return null;
 		pool = questions.filter((q) => weakStats[q.id]?.lastWrong === true);
 		if (!pool.length) return null;
@@ -55,25 +97,30 @@ export function createSession(
 	} else {
 		// Practice mode
 		pool = [...questions];
-		if (options?.domain && options.domain !== "all") {
-			pool = pool.filter((q) => q.domain === options.domain);
+		if (opts?.domain && opts.domain !== "all") {
+			pool = pool.filter((q) => q.domain === opts.domain);
 		}
-		const amount = options?.amount ?? pool.length;
+		const amount = opts?.amount ?? pool.length;
 		pool = shuffle(pool).slice(0, amount);
 	}
 
 	if (!pool.length) return null;
 
+	const sessionIds = pool.map((q) => q.id);
+	const byIdRecord = Object.fromEntries(questions.map((q) => [q.id, q]));
+	const shuffledOptions = buildShuffledOptions(sessionIds, byIdRecord);
+
 	return {
 		mode,
-		ids: pool.map((q) => q.id),
+		ids: sessionIds,
 		currentIndex: 0,
 		answers: {},
 		checked: {},
 		flags: [],
 		created: Date.now(),
-		deadline: mode === "exam" ? Date.now() + 120 * 60 * 1000 : null,
+		deadline: mode === "exam" ? Date.now() + (config.examMinutes ?? 120) * 60 * 1000 : null,
 		submitted: false,
+		shuffledOptions,
 	};
 }
 
@@ -86,8 +133,77 @@ export function isAnswerCorrect(question: Question, selected: number[]): boolean
 	);
 }
 
+/** Check answer correctness using the effective correct answers (shuffled or original). */
+export function isAnswerCorrectWithShuffle(
+	question: Question,
+	selected: number[],
+	shuffledOptions?: Record<string, ShuffledQuestionOptions>,
+	questionId?: string,
+): boolean {
+	const { correctAnswers } = getQuestionOptions(question, shuffledOptions, questionId);
+	return (
+		selected.length === correctAnswers.length && selected.every((k) => correctAnswers.includes(k))
+	);
+}
+
 export function hasAnswered(session: QuizSession, questionId: string): boolean {
 	return Array.isArray(session.answers[questionId]) && session.answers[questionId].length > 0;
+}
+
+// --- Session Restoration ---
+
+/**
+ * Validate and restore a saved session from localStorage.
+ * Filters out question IDs that no longer exist in the question bank,
+ * validates schema fields, and falls back defaults for missing data.
+ * Returns null if the session is invalid or has no valid questions.
+ */
+export function restoreSession(raw: unknown, byId: Record<string, Question>): QuizSession | null {
+	if (!raw || typeof raw !== "object") return null;
+	const obj = raw as Record<string, unknown>;
+
+	if (!["practice", "exam", "weak"].includes(obj.mode as string)) return null;
+	if (!Array.isArray(obj.ids)) return null;
+
+	// Filter to only question IDs that still exist in the bank
+	const ids = (obj.ids as string[]).filter((id) => byId[id]);
+	if (!ids.length) return null;
+
+	const answers =
+		obj.answers && typeof obj.answers === "object" ? (obj.answers as Record<string, number[]>) : {};
+	const checked =
+		obj.checked && typeof obj.checked === "object" ? (obj.checked as Record<string, boolean>) : {};
+	const flags = Array.isArray(obj.flags) ? (obj.flags as string[]).filter((id) => byId[id]) : [];
+
+	const index =
+		Number.isInteger(obj.currentIndex) &&
+		(obj.currentIndex as number) >= 0 &&
+		(obj.currentIndex as number) < ids.length
+			? (obj.currentIndex as number)
+			: 0;
+
+	// Restore shuffledOptions so saved answer indexes remain meaningful.
+	// For legacy sessions without shuffledOptions, answers were recorded
+	// against the original option order, so grading falls back to that.
+	const shuffledOptions =
+		obj.shuffledOptions && typeof obj.shuffledOptions === "object"
+			? (obj.shuffledOptions as Record<string, ShuffledQuestionOptions>)
+			: undefined;
+
+	return {
+		mode: obj.mode as "practice" | "exam" | "weak",
+		ids,
+		currentIndex: index,
+		answers,
+		checked,
+		flags,
+		created: Number.isFinite(obj.created as number) ? (obj.created as number) : Date.now(),
+		deadline: Number.isFinite(obj.deadline as number) ? (obj.deadline as number) : null,
+		submitted: obj.submitted === true,
+		timedOut: obj.timedOut === true,
+		finished: Number.isFinite(obj.finished as number) ? (obj.finished as number) : undefined,
+		shuffledOptions,
+	};
 }
 
 // --- Stats Update ---
@@ -130,9 +246,12 @@ export function calculateResults(
 	domains: Record<string, { name: string }>,
 ): ResultsData {
 	const byId = Object.fromEntries(questions.map((q) => [q.id, q]));
-	const correctIds = session.ids.filter(
-		(id) => hasAnswered(session, id) && isAnswerCorrect(byId[id], session.answers[id] || []),
-	);
+	const correctIds = session.ids.filter((id) => {
+		if (!hasAnswered(session, id)) return false;
+		const q = byId[id];
+		const selected = session.answers[id] || [];
+		return isAnswerCorrectWithShuffle(q, selected, session.shuffledOptions, id);
+	});
 	const correctCount = correctIds.length;
 	const totalCount = session.ids.length;
 	const scorePercent = percent(correctCount, totalCount);
