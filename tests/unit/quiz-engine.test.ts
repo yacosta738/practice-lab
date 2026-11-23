@@ -6,6 +6,7 @@ import {
 	formatTime,
 	getStorageKey,
 	getWeakCount,
+	hasAnswered,
 	isAnswerCorrect,
 	isExamExpired,
 	percent,
@@ -264,6 +265,134 @@ describe("isExamExpired", () => {
 	});
 });
 
+describe("hasAnswered", () => {
+	it("returns true when the question has a non-empty answer array", () => {
+		const session = {
+			mode: "practice" as const,
+			ids: ["q1"],
+			currentIndex: 0,
+			answers: { q1: [0] },
+			checked: {},
+			flags: [],
+			created: 0,
+			deadline: null,
+			submitted: false,
+		};
+
+		expect(hasAnswered(session, "q1")).toBe(true);
+	});
+
+	it("returns false when the answer array is empty", () => {
+		const session = {
+			mode: "practice" as const,
+			ids: ["q1"],
+			currentIndex: 0,
+			answers: { q1: [] },
+			checked: {},
+			flags: [],
+			created: 0,
+			deadline: null,
+			submitted: false,
+		};
+
+		expect(hasAnswered(session, "q1")).toBe(false);
+	});
+
+	it("returns false when the question has no answer key", () => {
+		const session = {
+			mode: "practice" as const,
+			ids: ["q1"],
+			currentIndex: 0,
+			answers: {},
+			checked: {},
+			flags: [],
+			created: 0,
+			deadline: null,
+			submitted: false,
+		};
+
+		expect(hasAnswered(session, "q1")).toBe(false);
+	});
+
+	it("returns false when the answer value is not an array", () => {
+		const session = {
+			mode: "practice" as const,
+			ids: ["q1"],
+			currentIndex: 0,
+			answers: { q1: "not-an-array" as unknown as number[] },
+			checked: {},
+			flags: [],
+			created: 0,
+			deadline: null,
+			submitted: false,
+		};
+
+		expect(hasAnswered(session, "q1")).toBe(false);
+	});
+});
+
+describe("calculateResults edge cases", () => {
+	it("returns 100% when all answers are correct", () => {
+		const session = {
+			mode: "practice" as const,
+			ids: ["q1", "q2"],
+			currentIndex: 0,
+			answers: { q1: [0], q2: [0] },
+			checked: {},
+			flags: [],
+			created: 0,
+			deadline: null,
+			submitted: false,
+		};
+
+		const results = calculateResults(session, questions, config.domains);
+
+		expect(results.correctCount).toBe(2);
+		expect(results.totalCount).toBe(2);
+		expect(results.scorePercent).toBe(100);
+		expect(results.missedIds).toEqual([]);
+	});
+
+	it("returns 0% when no answers are correct", () => {
+		const session = {
+			mode: "practice" as const,
+			ids: ["q1", "q2"],
+			currentIndex: 0,
+			answers: { q1: [1], q2: [2] },
+			checked: {},
+			flags: [],
+			created: 0,
+			deadline: null,
+			submitted: false,
+		};
+
+		const results = calculateResults(session, questions, config.domains);
+
+		expect(results.correctCount).toBe(0);
+		expect(results.scorePercent).toBe(0);
+		expect(results.missedIds).toEqual(["q1", "q2"]);
+	});
+
+	it("includes domainBreakdown only for domains with session questions", () => {
+		const session = {
+			mode: "practice" as const,
+			ids: ["q1"],
+			currentIndex: 0,
+			answers: { q1: [0] },
+			checked: {},
+			flags: [],
+			created: 0,
+			deadline: null,
+			submitted: false,
+		};
+
+		const results = calculateResults(session, questions, config.domains);
+
+		expect(results.domainBreakdown).toHaveLength(1);
+		expect(results.domainBreakdown[0].domain).toBe("domain-a");
+	});
+});
+
 describe("storage helpers", () => {
 	it("derives the storage key from the certification slug", () => {
 		expect(getStorageKey("ccdv-f")).toBe("ccdv-f-practice-lab-v2");
@@ -277,5 +406,9 @@ describe("storage helpers", () => {
 		};
 
 		expect(getWeakCount(stats)).toBe(2);
+	});
+
+	it("returns 0 when there are no stats", () => {
+		expect(getWeakCount({})).toBe(0);
 	});
 });
