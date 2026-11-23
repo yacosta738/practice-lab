@@ -33,6 +33,7 @@ jobs:
     steps:
       - name: Wait for main to settle
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           STABLE_SECONDS: "30"
           POLL_SECONDS: "5"
           MAX_POLLS: "24"
@@ -107,6 +108,8 @@ jobs:
       # always has write access.
       - name: Find the open release pull request
         id: find
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           branch=$(curl -sS \
