@@ -2492,7 +2492,7 @@ const handAuthored: Question[] = [
 		},
 	},
 	{
-		id: "D8-013",
+		id: "D8-014",
 		domain: "D8",
 		topic: "MCP local transport",
 		question:
@@ -2512,7 +2512,7 @@ const handAuthored: Question[] = [
 		},
 	},
 	{
-		id: "D1-021",
+		id: "D1-022",
 		domain: "D1",
 		topic: "Multi-agent architecture",
 		question:
