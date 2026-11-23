@@ -9,6 +9,10 @@ on:
 
 # Skip CI for Release Please PRs to avoid infinite loops with status checks.
 # Release Please pushes changelog/version updates, triggering CI repeatedly.
+#
+# The `lockfile` job below is the deliberate exception: it never pushes and
+# never triggers a rebuild, so it cannot loop. It guards the one failure mode
+# that only the release branch can produce.
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   NODE_VERSION: "22"
@@ -26,6 +30,34 @@ defaults:
     shell: bash
 
 jobs:
+  lockfile:
+    name: 🔒 Lockfile
+    # No `if:` gate on purpose. This job must run on release-please branches,
+    # where every other job is skipped.
+    #
+    # Release Please rewrites package.json from a snapshot of the release
+    # branch taken before a dependency bump landed on main. When it does, the
+    # manifest specifiers and pnpm-lock.yaml drift apart, and Vercel fails the
+    # build with ERR_PNPM_OUTDATED_LOCKFILE (the deploy runs pnpm with
+    # --frozen-lockfile). Catching the drift here turns a broken preview
+    # deployment into a red check on the release PR.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Verify lockfile matches package.json
+        run: pnpm install --frozen-lockfile --lockfile-only
+
   lint:
     name: 🔍 Lint
     if: ${{ github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release-please--') }}
