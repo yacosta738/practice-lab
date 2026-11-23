@@ -498,16 +498,13 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		const correct = ids.filter((id) => answered(id) && accurate(id));
 		const score = pct(correct.length, ids.length);
 
-		// Estimate scaled score band when passingScore is configured
+		// Show passing threshold reference when configured
 		let passingBandHtml = "";
 		if (cfg.passingScore) {
-			// Use raw ratio for the estimate, round only for display
-			const rawRatio = correct.length / ids.length;
-			const estimatedScaled = Math.round(rawRatio * 1000);
 			passingBandHtml = `
 				<div class="panel" style="margin:16px 0;padding:14px;border-left:4px solid #3b82f6">
-					<strong>Estimated score band: ${estimatedScaled} / 1,000</strong>
-					<p class="small muted" style="margin:4px 0 0">Reference passing threshold: ${cfg.passingScore}. This is a rough diagnostic estimate — not an official pass prediction.</p>
+					<strong>Reference passing threshold: ${cfg.passingScore} / 1,000</strong>
+					<p class="small muted" style="margin:4px 0 0">The official exam uses a scaled scoring model. This practice score is a raw percentage and cannot predict the scaled result.</p>
 				</div>`;
 		}
 
@@ -531,7 +528,7 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 				${revOptions.map((t, n) => `<div class="option${revCorrect.includes(n) ? " good" : v.includes(n) ? " bad" : ""}"><span class="letter">${LETTERS[n]}</span><span>${esc(t)}</span></div>`).join("")}
 				<p>${esc(q.explanation)}</p>
 				${q.whyNot ? `<p class="small muted">Why not the others: ${esc(q.whyNot)}</p>` : ""}
-				<a href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">${esc(q.source.label)} ↗</a>
+				${q.source.url ? `<a href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">${esc(q.source.label)} ↗</a>` : `<span class="small muted">${esc(q.source.label)}</span>`}
 			</details>`;
 			})
 			.join("");
@@ -598,7 +595,9 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 
 		if (action === "theme") {
 			const dark = document.documentElement.dataset.theme === "dark";
-			document.documentElement.dataset.theme = dark ? "light" : "dark";
+			const next = dark ? "light" : "dark";
+			document.documentElement.dataset.theme = next;
+			localStorage.setItem("practice-lab-theme", next);
 			return;
 		}
 		if (action === "home") {

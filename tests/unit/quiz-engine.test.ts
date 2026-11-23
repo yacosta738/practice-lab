@@ -1,16 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
+	buildShuffledOptions,
 	calculateHomeStats,
 	calculateResults,
 	createSession,
 	formatTime,
+	getQuestionOptions,
 	getStorageKey,
 	getWeakCount,
 	hasAnswered,
 	isAnswerCorrect,
+	isAnswerCorrectWithShuffle,
 	isExamExpired,
 	percent,
+	restoreSession,
 	shuffle,
+	shuffleQuestionOptions,
 	updateStats,
 } from "../../src/lib/quiz-engine";
 import type { CertificationConfig, Question, QuestionStats } from "../../src/lib/quiz-types";
@@ -410,5 +415,280 @@ describe("storage helpers", () => {
 
 	it("returns 0 when there are no stats", () => {
 		expect(getWeakCount({})).toBe(0);
+	});
+});
+
+describe("shuffleQuestionOptions", () => {
+	it("returns all options in a shuffled order", () => {
+		const q = question("q1");
+		const result = shuffleQuestionOptions(q);
+
+		expect(result.options).toHaveLength(q.options.length);
+		expect(result.options.sort()).toEqual(q.options.sort());
+	});
+
+	it("remaps correctAnswers to the new positions", () => {
+		const q = { ...question("q1"), correctAnswers: [0, 2] };
+		const result = shuffleQuestionOptions(q);
+
+		expect(result.correctAnswers).toHaveLength(2);
+		// The correct answers should point to the positions of the original correct options
+		expect(result.options[result.correctAnswers[0]]).toBe(q.options[0]);
+		expect(result.options[result.correctAnswers[1]]).toBe(q.options[2]);
+	});
+
+	it("does not mutate the original question", () => {
+		const q = question("q1");
+		const origOptions = [...q.options];
+		const origCorrect = [...q.correctAnswers];
+		shuffleQuestionOptions(q);
+
+		expect(q.options).toEqual(origOptions);
+		expect(q.correctAnswers).toEqual(origCorrect);
+	});
+});
+
+describe("getQuestionOptions", () => {
+	it("returns original options when no shuffled data is provided", () => {
+		const q = question("q1");
+		const result = getQuestionOptions(q, undefined, "q1");
+
+		expect(result.options).toBe(q.options);
+		expect(result.correctAnswers).toBe(q.correctAnswers);
+	});
+
+	it("returns shuffled options when available", () => {
+		const q = question("q1");
+		const shuffled = { options: ["C", "B", "A"], correctAnswers: [2] };
+		const result = getQuestionOptions(q, { q1: shuffled }, "q1");
+
+		expect(result.options).toEqual(["C", "B", "A"]);
+		expect(result.correctAnswers).toEqual([2]);
+	});
+
+	it("falls back to original when shuffled entry is missing for the id", () => {
+		const q = question("q1");
+		const shuffled = { q2: { options: ["X"], correctAnswers: [0] } };
+		const result = getQuestionOptions(q, shuffled, "q1");
+
+		expect(result.options).toBe(q.options);
+		expect(result.correctAnswers).toBe(q.correctAnswers);
+	});
+});
+
+describe("buildShuffledOptions", () => {
+	it("builds shuffled options for all given ids", () => {
+		const byId: Record<string, Question> = { q1: question("q1"), q2: question("q2") };
+		const result = buildShuffledOptions(["q1", "q2"], byId);
+
+		expect(result).toHaveProperty("q1");
+		expect(result).toHaveProperty("q2");
+		expect(result.q1.options).toHaveLength(3);
+		expect(result.q2.options).toHaveLength(3);
+	});
+});
+
+describe("isAnswerCorrectWithShuffle", () => {
+	it("uses shuffled correct answers when available", () => {
+		const q = question("q1");
+		const shuffled = { q1: { options: ["C", "B", "A"], correctAnswers: [2] } };
+
+		// In the shuffled order, index 2 is "A" which was originally index 0 (correct)
+		expect(isAnswerCorrectWithShuffle(q, [2], shuffled, "q1")).toBe(true);
+		expect(isAnswerCorrectWithShuffle(q, [0], shuffled, "q1")).toBe(false);
+	});
+
+	it("falls back to original correct answers when no shuffle", () => {
+		const q = question("q1");
+		expect(isAnswerCorrectWithShuffle(q, [0], undefined, "q1")).toBe(true);
+		expect(isAnswerCorrectWithShuffle(q, [1], undefined, "q1")).toBe(false);
+	});
+});
+
+describe("restoreSession", () => {
+	const byId: Record<string, Question> = {
+		q1: question("q1"),
+		q2: question("q2"),
+	};
+
+	it("returns null for invalid input", () => {
+		expect(restoreSession(null, byId)).toBeNull();
+		expect(restoreSession(undefined, byId)).toBeNull();
+		expect(restoreSession("not an object", byId)).toBeNull();
+		expect(restoreSession({ mode: "invalid" }, byId)).toBeNull();
+		expect(restoreSession({ mode: "practice" }, byId)).toBeNull(); // no ids
+	});
+
+	it("filters out question ids that no longer exist", () => {
+		const raw = {
+			mode: "practice",
+			ids: ["q1", "q2", "q_deleted"],
+			currentIndex: 0,
+			answers: {},
+			checked: {},
+			flags: [],
+			created: Date.now(),
+			deadline: null,
+			submitted: false,
+		};
+		const result = restoreSession(raw, byId);
+
+		expect(result).not.toBeNull();
+		expect(result?.ids).toEqual(["q1", "q2"]);
+	});
+
+	it("returns null when all ids are missing from the bank", () => {
+		const raw = {
+			mode: "practice",
+			ids: ["q_deleted"],
+			currentIndex: 0,
+			answers: {},
+			checked: {},
+			flags: [],
+			created: Date.now(),
+			deadline: null,
+			submitted: false,
+		};
+		expect(restoreSession(raw, byId)).toBeNull();
+	});
+
+	it("validates currentIndex and falls back to 0", () => {
+		const raw = {
+			mode: "practice",
+			ids: ["q1", "q2"],
+			currentIndex: 99, // out of range
+			answers: {},
+			checked: {},
+			flags: [],
+			created: Date.now(),
+			deadline: null,
+			submitted: false,
+		};
+		const result = restoreSession(raw, byId);
+
+		expect(result?.currentIndex).toBe(0);
+	});
+
+	it("preserves shuffledOptions when present", () => {
+		const shuffledOptions = { q1: { options: ["C", "B", "A"], correctAnswers: [2] } };
+		const raw = {
+			mode: "exam",
+			ids: ["q1"],
+			currentIndex: 0,
+			answers: { q1: [2] },
+			checked: {},
+			flags: [],
+			created: Date.now(),
+			deadline: Date.now() + 60000,
+			submitted: false,
+			shuffledOptions,
+		};
+		const result = restoreSession(raw, byId);
+
+		expect(result).not.toBeNull();
+		expect(result?.shuffledOptions).toEqual(shuffledOptions);
+	});
+
+	it("filters flags to only existing question ids", () => {
+		const raw = {
+			mode: "exam",
+			ids: ["q1", "q2"],
+			currentIndex: 0,
+			answers: {},
+			checked: {},
+			flags: ["q1", "q_deleted"],
+			created: Date.now(),
+			deadline: null,
+			submitted: false,
+		};
+		const result = restoreSession(raw, byId);
+
+		expect(result?.flags).toEqual(["q1"]);
+	});
+});
+
+describe("createSession with shuffledOptions", () => {
+	it("includes shuffledOptions in the created session", () => {
+		const session = createSession("practice", config, questions, { amount: 2 });
+
+		expect(session).not.toBeNull();
+		expect(session?.shuffledOptions).toBeDefined();
+		for (const id of session?.ids ?? []) {
+			expect(session?.shuffledOptions?.[id]).toBeDefined();
+		}
+	});
+
+	it("uses config.examMinutes for exam deadline", () => {
+		const customConfig: CertificationConfig = {
+			...config,
+			examMinutes: 60,
+		};
+		const session = createSession("exam", customConfig, questions);
+		const now = Date.now();
+
+		expect(session).not.toBeNull();
+		expect(session?.deadline).not.toBeNull();
+		// Deadline should be approximately 60 minutes from now (allow 2s tolerance for execution time)
+		expect(session?.deadline).toBeGreaterThanOrEqual(now + 59 * 60 * 1000);
+		expect(session?.deadline).toBeLessThanOrEqual(now + 61 * 60 * 1000);
+	});
+
+	it("defaults to 120 minutes when examMinutes is not set", () => {
+		const session = createSession("exam", config, questions);
+
+		expect(session).not.toBeNull();
+		expect(session?.deadline).not.toBeNull();
+		const now = Date.now();
+		expect(session?.deadline).toBeGreaterThanOrEqual(now + 119 * 60 * 1000);
+		expect(session?.deadline).toBeLessThanOrEqual(now + 121 * 60 * 1000);
+	});
+});
+
+describe("calculateResults with shuffledOptions", () => {
+	it("scores correctly when session has shuffledOptions", () => {
+		const shuffledOptions = {
+			q1: { options: ["C", "B", "A"], correctAnswers: [2] },
+			q2: { options: ["A", "B", "C"], correctAnswers: [0] },
+		};
+		const session = {
+			mode: "practice" as const,
+			ids: ["q1", "q2"],
+			currentIndex: 0,
+			answers: { q1: [2], q2: [0] }, // both correct in shuffled order
+			checked: {},
+			flags: [],
+			created: 0,
+			deadline: null,
+			submitted: false,
+			shuffledOptions,
+		};
+
+		const results = calculateResults(session, questions, config.domains);
+
+		expect(results.correctCount).toBe(2);
+		expect(results.scorePercent).toBe(100);
+	});
+
+	it("scores incorrectly when answers don't match shuffled correct", () => {
+		const shuffledOptions = {
+			q1: { options: ["C", "B", "A"], correctAnswers: [2] },
+		};
+		const session = {
+			mode: "practice" as const,
+			ids: ["q1"],
+			currentIndex: 0,
+			answers: { q1: [0] }, // wrong in shuffled order
+			checked: {},
+			flags: [],
+			created: 0,
+			deadline: null,
+			submitted: false,
+			shuffledOptions,
+		};
+
+		const results = calculateResults(session, questions, config.domains);
+
+		expect(results.correctCount).toBe(0);
+		expect(results.scorePercent).toBe(0);
 	});
 });

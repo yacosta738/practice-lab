@@ -8,7 +8,7 @@ Interactive practice platform for certification preparation. Study by domain, ta
 
 | Certification | Description                               | Bank | Domains | Mock exam |
 | ------------- | ----------------------------------------- | ---- | ------- | --------- |
-| **CCDV-F**    | Claude Developer Foundations              | 175  | 8       | 53        |
+| **CCDV-F**    | Claude Developer Foundations              | 184  | 8       | 53        |
 | **CCAO-F**    | Claude Certified Associate — Foundations  | 60   | 7       | 50        |
 | **CCAR-P**    | Claude Certified Architect — Professional | 58   | 7       | 50        |
 | **CCAR-F**    | Claude Certified Architect — Foundations  | 60   | 5       | 50        |
@@ -19,7 +19,7 @@ Interactive practice platform for certification preparation. Study by domain, ta
 - **Exam mode** — timed mock exam with 53 questions distributed by domain.
 - **Weaknesses mode** — focus on the questions you got wrong.
 - **Progress tracking** — persistent statistics in `localStorage`.
-- **100% offline** — no server, no external dependencies.
+- **Works offline after first load** — no server required. Note: Google Fonts are loaded from CDN on first visit.
 - **Study library** — per-certification study notes rendered from Markdown, organised by exam domain with a table of contents and cross-links.
 
 ## Content Sources and Attribution

@@ -52,6 +52,12 @@ export interface QuestionStats {
 	lastWrong: boolean;
 }
 
+/** Per-question shuffled option permutation stored in the session so saved answers remain valid. */
+export interface ShuffledQuestionOptions {
+	options: string[];
+	correctAnswers: number[];
+}
+
 export interface QuizSession {
 	mode: "practice" | "exam" | "weak";
 	ids: string[];
@@ -64,6 +70,8 @@ export interface QuizSession {
 	submitted: boolean;
 	timedOut?: boolean;
 	finished?: number;
+	/** Per-question shuffled option order; when present, answers reference these indices. */
+	shuffledOptions?: Record<string, ShuffledQuestionOptions>;
 }
 
 export interface StorageData {
