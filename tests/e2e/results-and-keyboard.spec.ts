@@ -135,15 +135,20 @@ test("CCDV-F keyboard shortcut Enter checks answer", async ({ page }) => {
 	// Wait for the first question to render
 	await page.waitForSelector("button.option", { state: "visible", timeout: 10000 });
 
+	// Focus on body so Enter shortcut works (the handler requires activeElement === body)
+	await page.evaluate(() => document.body.focus());
+
 	// Select an option using keyboard
 	await page.keyboard.press("1");
 
+	// Re-focus body after selecting option
+	await page.evaluate(() => document.body.focus());
+
 	// Press Enter to check answer
 	await page.keyboard.press("Enter");
-	await page.waitForLoadState("networkidle");
 
 	// Verify feedback appears
-	await expect(page.locator(".feedback")).toBeVisible();
+	await expect(page.locator(".feedback")).toBeVisible({ timeout: 10000 });
 });
 
 test("CCDV-F Next button moves to next question", async ({ page }) => {
