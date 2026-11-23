@@ -135,13 +135,17 @@ test("CCDV-F keyboard shortcut Enter checks answer", async ({ page }) => {
 	// Wait for the first question to render
 	await page.waitForSelector("button.option", { state: "visible", timeout: 10000 });
 
+	// Read the hint to know how many answers to select
+	const hintText = await page.locator(".hint").first().textContent();
+	const exactMatch = hintText?.match(/Select exactly (\d+) answers/i);
+	const needed = exactMatch ? Number.parseInt(exactMatch[1], 10) : 1;
+
+	// Select the required number of options using keyboard shortcuts
+	for (let i = 0; i < needed; i++) {
+		await page.keyboard.press(String(i + 1));
+	}
+
 	// Focus on body so Enter shortcut works (the handler requires activeElement === body)
-	await page.evaluate(() => document.body.focus());
-
-	// Select an option using keyboard
-	await page.keyboard.press("1");
-
-	// Re-focus body after selecting option
 	await page.evaluate(() => document.body.focus());
 
 	// Press Enter to check answer
@@ -173,16 +177,25 @@ test("CCDV-F Next button moves to next question", async ({ page }) => {
 	// Get the first question text
 	const firstQuestion = await page.locator("h2").first().textContent();
 
-	// Select an option and check
-	await page.keyboard.press("1");
+	// Read the hint to know how many answers to select
+	const hintText = await page.locator(".hint").first().textContent();
+	const exactMatch = hintText?.match(/Select exactly (\d+) answers/i);
+	const needed = exactMatch ? Number.parseInt(exactMatch[1], 10) : 1;
+
+	// Select the required number of options using keyboard shortcuts
+	for (let i = 0; i < needed; i++) {
+		await page.keyboard.press(String(i + 1));
+	}
+
+	// Focus on body and press Enter to check answer
+	await page.evaluate(() => document.body.focus());
 	await page.keyboard.press("Enter");
-	await page.waitForLoadState("networkidle");
 
 	// Click Next button to move to next question
 	const nextBtn = page.getByRole("button", { name: /Next/i }).first();
 	await nextBtn.waitFor({ state: "visible", timeout: 5000 });
 	await nextBtn.click();
-	await page.waitForLoadState("networkidle");
+	await page.waitForSelector("button.option", { state: "visible", timeout: 10000 });
 
 	// Verify the question changed
 	const secondQuestion = await page.locator("h2").first().textContent();
