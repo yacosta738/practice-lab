@@ -2392,7 +2392,7 @@ const handAuthored: Question[] = [
 	},
 	// --- Developer Foundations exam recall questions ---
 	{
-		id: "D5-014",
+		id: "D5-020",
 		domain: "D5",
 		topic: "Model selection tradeoffs",
 		question:
@@ -2412,7 +2412,7 @@ const handAuthored: Question[] = [
 		},
 	},
 	{
-		id: "D2-023",
+		id: "D2-038",
 		domain: "D2",
 		topic: "Real-time communication",
 		question:
@@ -2432,7 +2432,7 @@ const handAuthored: Question[] = [
 		},
 	},
 	{
-		id: "D2-024",
+		id: "D2-039",
 		domain: "D2",
 		topic: "Code migration strategy",
 		question:
@@ -2452,7 +2452,7 @@ const handAuthored: Question[] = [
 		},
 	},
 	{
-		id: "D6-012",
+		id: "D6-017",
 		domain: "D6",
 		topic: "Context drift",
 		question:
@@ -2472,7 +2472,7 @@ const handAuthored: Question[] = [
 		},
 	},
 	{
-		id: "D2-025",
+		id: "D2-040",
 		domain: "D2",
 		topic: "JSON validation",
 		question:
@@ -2532,7 +2532,7 @@ const handAuthored: Question[] = [
 		},
 	},
 	{
-		id: "D6-013",
+		id: "D6-018",
 		domain: "D6",
 		topic: "Prompt vs Context Engineering",
 		question:
@@ -2552,7 +2552,7 @@ const handAuthored: Question[] = [
 		},
 	},
 	{
-		id: "D3-005",
+		id: "D3-006",
 		domain: "D3",
 		topic: "CLAUDE.md organization",
 		question:
