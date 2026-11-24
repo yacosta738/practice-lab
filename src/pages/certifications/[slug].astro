@@ -719,7 +719,12 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		}
 		if (action === "filter-review") {
 			reviewFilter = el.dataset.value || "all";
-			return results();
+			results();
+			const activeBtn = app.querySelector(
+				`[data-action="filter-review"][data-value="${reviewFilter}"]`,
+			);
+			if (activeBtn instanceof HTMLElement) activeBtn.focus();
+			return;
 		}
 		if (action === "start-practice") {
 			const d = document.getElementById("domain")?.value || "all";
@@ -812,6 +817,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 			e.altKey ||
 			e.metaKey ||
 			e.ctrlKey ||
+			document.querySelector("dialog[open]") ||
 			/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName || "")
 		)
 			return;

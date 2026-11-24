@@ -342,6 +342,24 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 		}
 	});
 
+	drawer?.addEventListener("click", (event) => {
+		if (
+			event.defaultPrevented ||
+			event.button !== 0 ||
+			event.metaKey ||
+			event.ctrlKey ||
+			event.shiftKey ||
+			event.altKey
+		) {
+			return;
+		}
+		const target = event.target instanceof Element ? event.target : null;
+		const link = target?.closest('a[data-action="go-to-site-home"][href]');
+		if (link && drawer.open) {
+			drawer.close();
+		}
+	});
+
 	searchInput?.addEventListener("input", () => renderResults(searchInput.value));
 
 	// Cmd/Ctrl+K shortcut
