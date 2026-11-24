@@ -72,6 +72,15 @@ const isDefaultImage = !ogImage;
 	</head>
 	<body>
 		<slot />
+		<script is:inline>
+		// Restore persisted theme preference as early as possible to avoid flash
+		(function () {
+			const stored = localStorage.getItem("practice-lab-theme");
+			if (stored === "dark" || stored === "light") {
+				document.documentElement.dataset.theme = stored;
+			}
+		})();
+		</script>
 	</body>
 </html>
 

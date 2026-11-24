@@ -413,7 +413,7 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 			<strong>${good ? "Correct — well reasoned." : "Not quite — review the reasoning."}</strong>
 			<p>${esc(x.explanation)}</p>
 			${x.whyNot ? `<p class="small muted">Why not the others: ${esc(x.whyNot)}</p>` : ""}
-			<a href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">Study source: ${esc(src.label)} ↗</a>
+			${src.url ? `<a href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">Study source: ${esc(src.label)} ↗</a>` : `<span class="small muted">Study source: ${esc(src.label)}</span>`}
 		</div>`;
 
 		const main = `<div class="qhead"><span>Question ${session.currentIndex + 1} of ${session.ids.length} · ${esc(session.mode.toUpperCase())}</span><span>${progress} answered</span></div>
@@ -422,7 +422,7 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 				<span class="badge">${x.domain} · ${esc(domains[x.domain].name)}</span>
 				${x.topic ? `<span class="muted small" style="margin-left:8px">${esc(x.topic)}</span>` : ""}
 				<h2>${esc(x.question)}</h2>
- 			<p class="hint">${getSelectCount(x, id) === 1 ? "Select ONE answer." : `Select exactly ${getSelectCount(x, id)} answers.`}${isExam ? " Your choices stay editable until you submit." : " Check your answer to see the explanation."}</p>
+		 <p class="hint">${getSelectCount(x, id) === 1 ? "Select ONE answer." : `Select exactly ${getSelectCount(x, id)} answers.`}${isExam ? " Your choices stay editable until you submit." : " Check your answer to see the explanation."}</p>
 				${opts}${fb}
 				<div class="actions">
 					${session.currentIndex > 0 ? `<button class="ghost" data-action="prev">← Previous</button>` : ""}
@@ -590,8 +590,11 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 	document.addEventListener("click", (event) => {
 		const el = event.target.closest("[data-action]");
 		if (!el) return;
-		event.preventDefault();
 		const action = el.dataset.action;
+
+		// Allow site-home link to navigate normally (don't preventDefault)
+		if (action === "go-to-site-home") return;
+		event.preventDefault();
 
 		if (action === "theme") {
 			const dark = document.documentElement.dataset.theme === "dark";
