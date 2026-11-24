@@ -51,12 +51,12 @@ See [Messages API Contract](../messages-api-contract/), [SDK versus REST and Asy
 
 The service sends a ticket-creation request, times out before receiving a response, and cannot tell whether the ticket was created. What is the safest next design action?
 
-- A. Retry immediately with a new operation ID so the provider can distinguish the calls.
-- B. Ask the model whether it thinks the ticket was created, then follow its answer.
-- C. Reconcile using a stable operation identifier or retry with the same idempotency key, if the ticket service supports it.
-- D. Increase the model's token limit and repeat the original prompt.
+- A. Retry immediately with a new operation ID; handle duplicates after the fact.
+- B. Reconcile by operation ID, then retry idempotently if needed.
+- C. Ask the model whether the ticket has already been saved.
+- D. Raise the token limit and send a fresh ticket request.
 
-**Best answer: C.** A timeout does not establish whether the side effect occurred. Reconciliation or an idempotent retry prevents creating a second ticket. A makes duplicates more likely; B delegates a transport fact to a model that cannot observe it; D does not address the uncertain mutation.
+**Best answer: B.** A timeout does not establish whether the side effect occurred. Reconciliation or an idempotent retry prevents creating a second ticket. A makes duplicates more likely; C delegates a transport fact to a model that cannot observe it; D does not address the uncertain mutation.
 
 ## Review checklist
 

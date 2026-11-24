@@ -91,14 +91,14 @@ This is an original study aid for reasoning through developer scenarios. It summ
 
 ## Worked example
 
-**Scenario:** A support agent can issue a refund, but the operation is irreversible and must be approved by a support lead.
+**Scenario:** A report-generation task always validates a fixed schema, retrieves one record, and renders a summary; no decision changes the sequence. Which starting design best matches the requirement?
 
-- A. Ask the model to promise not to issue refunds without permission.
-- B. Lower the model temperature and let it call the refund service directly.
-- C. Enforce the caller's authorization and the support-lead approval in application code before the refund service accepts the request.
-- D. Add more examples to the system prompt and retry when the model hesitates.
+- A. Use a deterministic workflow with explicit, testable transitions.
+- B. Start an agent loop that chooses every step, then add a turn limit.
+- C. Run several agents in parallel and reconcile their separate reports.
+- D. Let a model decide whether to skip validation based on its confidence.
 
-**Best answer: C.** The requirement is an enforced approval boundary for an irreversible action, so the trusted application/service must check it. A and D depend on model instructions; B changes generation settings but adds no authorization control. The model may help prepare or explain a request, but it does not grant permission.
+**Best answer: A.** The steps and transitions are fixed, so a deterministic workflow is simpler to test and operate. B adds autonomy without a useful decision; C parallelizes dependent steps; D makes a required validation conditional on model confidence.
 
 ## Readiness check
 
@@ -110,4 +110,4 @@ Use the [Practice Lab quiz](../../../certifications/ccdv-f/) and [timed exam lab
 
 ## Related study material
 
-[Learning Resources](../learning-resources/) · [Exam Blueprint and Coverage](../exam-blueprint-and-coverage/) · [25-competency index](../topics/ccdv-f-indice-de-certificacion/) · [Source Register](../source-register/).
+[Learning Resources](../learning-resources/) · [Exam Blueprint and Coverage](../exam-blueprint-and-coverage/) · [25-competency index](../ccdv-f-indice-de-certificacion/) · [Source Register](../source-register/).

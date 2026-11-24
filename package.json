@@ -9,6 +9,7 @@
 	"scripts": {
 		"dev": "astro dev",
 		"build": "astro build",
+		"check:study-links": "node scripts/check-study-links.mjs",
 		"preview": "astro preview",
 		"astro": "astro",
 		"check": "biome check . && astro check",

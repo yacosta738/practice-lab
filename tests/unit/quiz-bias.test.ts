@@ -1,4 +1,6 @@
-import { describe, it } from "vitest";
+import { readFileSync } from "node:fs";
+
+import { describe, expect, it } from "vitest";
 
 import { questions as ccaoFQuestions } from "../../src/certifications/ccao-f/questions";
 import { questions as ccarFQuestions } from "../../src/certifications/ccar-f/questions";
@@ -18,6 +20,28 @@ const allBanks: Record<string, Question[]> = {
 // warnings so the report is visible without blocking merges while questions
 // are being improved. Flip to true once the banks are shuffled / balanced.
 const failOnBias = false;
+
+const markdownPracticeFiles = [
+	"../../src/content/study/ccdv-f/00-navigation/exam-decision-guide.md",
+	"../../src/content/study/ccdv-f/01-agents-and-workflows/agent-architecture-design-workshop.md",
+	"../../src/content/study/ccdv-f/02-applications-and-integration/application-integration-design-workshop.md",
+	"../../src/content/study/ccdv-f/05-model-selection-and-optimization/model-selection-and-optimization-workshop.md",
+];
+
+const markdownPracticeQuestions = markdownPracticeFiles.map((file) => {
+	const content = readFileSync(new URL(file, import.meta.url), "utf8");
+	const answer = content.match(/\*\*Best answer:\s*([A-D])\./)?.[1];
+	const options = [...content.matchAll(/^- ([A-D])\.\s+(.+)$/gm)].map(([, letter, text]) => ({
+		letter,
+		text,
+	}));
+
+	if (!answer || options.length !== 4) {
+		throw new Error(`Expected one four-option practice question in ${file}`);
+	}
+
+	return { file, answer, options };
+});
 
 /**
  * Check position bias: the correct answer should be evenly distributed
@@ -101,6 +125,31 @@ function checkLengthBias(questions: Question[]) {
 }
 
 describe("Quiz bias detection", () => {
+	it("balances answer positions and option lengths in new study questions", () => {
+		expect(markdownPracticeQuestions).toHaveLength(4);
+		expect(
+			markdownPracticeQuestions.reduce<Record<string, number>>((counts, question) => {
+				counts[question.answer] = (counts[question.answer] ?? 0) + 1;
+				return counts;
+			}, {}),
+		).toEqual({ A: 1, B: 1, C: 1, D: 1 });
+
+		for (const question of markdownPracticeQuestions) {
+			const lengths = question.options.map((option) => option.text.length);
+			const longestLength = Math.max(...lengths);
+			const correctOption = question.options.find((option) => option.letter === question.answer);
+			expect(correctOption, question.file).toBeDefined();
+			expect(
+				lengths.filter((length) => length === longestLength).length > 1 ||
+					correctOption?.text.length !== longestLength,
+				question.file,
+			).toBe(true);
+			expect(longestLength - Math.min(...lengths), question.file).toBeLessThanOrEqual(
+				Math.ceil(longestLength * 0.3),
+			);
+		}
+	});
+
 	for (const [bankName, questions] of Object.entries(allBanks)) {
 		describe(bankName, () => {
 			it("should not have position bias", () => {

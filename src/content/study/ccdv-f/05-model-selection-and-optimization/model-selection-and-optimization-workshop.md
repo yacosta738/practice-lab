@@ -68,10 +68,10 @@ See [Tokens Context Window and Sampling](../tokens-context-window-and-sampling/)
 
 A new, less expensive configuration lowers average API spend, but the percentage of requests requiring retries and human escalation rises. What should the team compare before adopting it?
 
-- A. Input price per million tokens only.
-- B. The percentage of requests that contain short prompts.
-- C. Cost per successful task, quality by risk-relevant case type, latency, and escalation/retry rates on the same evaluation set.
-- D. The configuration's temperature setting, in isolation.
+- A. Use token price and average request size only, excluding retries and handoffs.
+- B. Compare average accuracy and median latency, without risk-specific checks.
+- C. Compare cost per successful task, quality slices, latency, and recovery rates.
+- D. Compare input cost and cache hits, ignoring failed or escalated tasks.
 
 **Best answer: C.** The system is valuable when it completes acceptable work, not merely when an individual request is cheap. The same test set makes the tradeoff comparable; quality slices and failure severity reveal regressions that an average can hide. A ignores recovery cost and quality, B is not an outcome metric, and D cannot establish task performance by itself.
 

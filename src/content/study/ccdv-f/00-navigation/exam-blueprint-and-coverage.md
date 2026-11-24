@@ -35,7 +35,7 @@ tags:
 
 ## Coverage interpretation
 
-- The [25-competency index](../topics/ccdv-f-indice-de-certificacion/) already maps each official sub-objective to an existing study note. This is a navigation and content-presence audit, not proof of mastery; use questions and labs to validate understanding.
+- The [25-competency index](../ccdv-f-indice-de-certificacion/) already maps each official sub-objective to an existing study note. This is a navigation and content-presence audit, not proof of mastery; use questions and labs to validate understanding.
 - A linked concept note means **we have a study synthesis**, not that the entire corresponding Skilljar lesson has been retrieved.
 - The official guide lists objective weights; topic notes map to them heuristically.
 - For exact authenticated course coverage see [Course Access Coverage](../course-access-coverage/).

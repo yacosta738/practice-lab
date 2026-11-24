@@ -33,6 +33,20 @@ export function noteSlug(id: string): string {
 	return segments[segments.length - 1] ?? "";
 }
 
+/** Fail route generation when two notes in one certification share a public slug. */
+export function assertUniqueNoteSlugs(notes: readonly StudyNoteMeta[]): void {
+	const idBySlug = new Map<string, string>();
+	for (const note of notes) {
+		const previousId = idBySlug.get(note.slug);
+		if (previousId) {
+			throw new Error(
+				`Duplicate study-note slug "${note.slug}" for ids "${previousId}" and "${note.id}"`,
+			);
+		}
+		idBySlug.set(note.slug, note.id);
+	}
+}
+
 /**
  * Return the section id for a given entry id.
  *

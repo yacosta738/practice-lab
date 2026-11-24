@@ -4,6 +4,7 @@ import { getCollection, render } from "astro:content";
 import StudyLayout from "../../../layouts/StudyLayout.astro";
 import { base } from "../../../lib/base";
 import {
+	assertUniqueNoteSlugs,
 	groupNotes,
 	type StudyNoteMeta,
 	type StudySection,
@@ -36,6 +37,7 @@ export async function getStaticPaths() {
 		const notes = allEntries
 			.filter((entry) => entry.id.startsWith(`${cert.slug}/`))
 			.map(toNoteMeta);
+		assertUniqueNoteSlugs(notes);
 		const sections = groupNotes(notes, cert.certification.domains);
 
 		for (const section of sections) {

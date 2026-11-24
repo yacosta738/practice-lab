@@ -61,14 +61,14 @@ Choose based on operational requirements, not framework familiarity alone. In ev
 
 ## Original practice question
 
-The model has looked up an order and requests a refund tool call. Company policy requires approval from a support lead. What should the harness do next?
+An agent checks a support case using permitted read-only tools. Which rule should terminate its loop?
 
-- A. Execute the refund because the model selected the tool after reading the policy.
-- B. Ask the model to confirm that the caller is authorized, then execute if it says yes.
-- C. Enforce the caller's authorization and the required lead approval in trusted application code; only then may the refund service accept the operation.
-- D. Lower sampling temperature so the model is less likely to request a refund.
+- A. Continue until the model repeats the same tool request twice.
+- B. Stop only when the model emits a final answer to the user after checks.
+- C. Allow the model to declare when its own run-time budget ends.
+- D. Stop on completion, denial, cancellation, or exhausted budgets.
 
-**Best answer: C.** Authorization and approval are application invariants, not model judgments. A and B rely on untrusted generated text; D changes sampling behavior but adds no control. The agent can help prepare the request or explain the approval path without having permission to bypass it.
+**Best answer: D.** The harness owns termination and must stop on a terminal outcome or when a bounded resource limit is reached. A can loop indefinitely, B can keep a failed or denied run alive, and C lets the model set its own limit rather than enforcing an application budget.
 
 ## Review checklist
 
