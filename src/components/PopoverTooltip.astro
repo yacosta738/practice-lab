@@ -280,8 +280,10 @@ const positionArea = positionAreaMap[position] ?? positionAreaMap["block-start"]
 	}
 
 	// 4. Handle popover="hint" fallback for browsers that don't support it
-	// When hint is unsupported, it defaults to "manual". For toggletips,
-	// switch to "auto" in beforetoggle so light-dismiss still works.
+	// When hint is unsupported, it defaults to "manual". For all managed
+	// hint tooltips (including interestfor-only tooltips without a
+	// popovertarget button), switch to "auto" in beforetoggle so
+	// light-dismiss still works. Native hint handling remains unchanged.
 	const probe = document.createElement("div");
 	probe.popover = "hint";
 	if (probe.popover !== "hint") {
@@ -290,11 +292,12 @@ const positionArea = positionAreaMap[position] ?? positionAreaMap["block-start"]
 			function (e) {
 				const target = e.target;
 				const newState = e.newState;
-				if (newState === "open" && target.getAttribute("popover") === "hint") {
-					const toggletip = document.querySelector(`[popovertarget="${CSS.escape(target.id)}"]`);
-					if (toggletip) {
-						target.popover = "auto";
-					}
+				if (
+					newState === "open" &&
+					target.getAttribute("popover") === "hint" &&
+					target.classList.contains("popover-tooltip")
+				) {
+					target.popover = "auto";
 				}
 			},
 			true,
@@ -333,11 +336,14 @@ const positionArea = positionAreaMap[position] ?? positionAreaMap["block-start"]
 	}
 
 	// Keep aria-expanded in sync from toggle event (capture phase)
+	// Use the stable .popover-tooltip class to identify managed tooltips
+	// rather than the mutable popover value (which may change from "hint"
+	// to "auto" when the hint fallback runs).
 	document.addEventListener(
 		"toggle",
 		function (e) {
 			const target = e.target;
-			if (target.getAttribute("popover") !== "hint") return;
+			if (!target.classList.contains("popover-tooltip")) return;
 			const triggers = document.querySelectorAll(`[interestfor="${CSS.escape(target.id)}"]`);
 			triggers.forEach(function (trigger) {
 				if (trigger.hasAttribute("popovertarget")) {

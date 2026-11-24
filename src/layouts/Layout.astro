@@ -38,7 +38,7 @@ const isDefaultImage = !ogImage;
 		<!-- Theme colors -->
 		<meta name="theme-color" content="#f7f4ee" media="(prefers-color-scheme: light)">
 		<meta name="theme-color" content="#101827" media="(prefers-color-scheme: dark)">
-		<meta name="color-scheme" content="light dark">
+		<meta name="color-scheme" content="light">
 
 		<meta name="generator" content={Astro.generator}>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
@@ -76,11 +76,15 @@ const isDefaultImage = !ogImage;
 		// Restore persisted theme preference as early as possible to avoid flash
 		(function () {
 			const stored = localStorage.getItem("practice-lab-theme");
-			if (stored === "dark" || stored === "light") {
-				const meta = document.querySelector('meta[name="color-scheme"]');
-				if (meta) {
-					meta.content = stored === "dark" ? "dark light" : "light dark";
-				}
+			const meta = document.querySelector('meta[name="color-scheme"]');
+			if (!meta) return;
+			if (stored === "dark") {
+				meta.content = "dark";
+			} else if (stored === "light") {
+				meta.content = "light";
+			} else {
+				// No explicit preference — let the browser's system preference apply
+				meta.content = "light dark";
 			}
 		})();
 		</script>

@@ -27,18 +27,18 @@ const pageDescription =
 				This is a paragraph with an
 				<span style="border-bottom: 1px dashed var(--brand, #e76f51); cursor: help;">
 					important term
-					<!-- Using interestfor for hover-triggered tooltip -->
-					<button
-						class="tooltip-trigger-inline"
-						type="button"
-						style="position: absolute; left: -9999px;"
-						{...{ interestfor: "tooltip-term" } as Record<string, string>}
-						aria-label="Definition of important term"
-						aria-describedby="tooltip-term"
-					>
-						?
-					</button>
 				</span>
+				<!-- Using interestfor for hover-triggered tooltip -->
+				<button
+					class="tooltip-trigger-inline"
+					type="button"
+					style="margin-left: 0.25rem; vertical-align: middle; border: none; background: none; color: var(--brand, #e76f51); cursor: help; font-weight: 600; font-size: 0.9em;"
+					{...{ interestfor: "tooltip-term" } as Record<string, string>}
+					aria-label="Definition of important term"
+					aria-describedby="tooltip-term"
+				>
+					?
+				</button>
 				that you can hover to learn more about.
 			</p>
 			<div

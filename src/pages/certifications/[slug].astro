@@ -618,9 +618,10 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		if (action === "theme") {
 			const meta = document.querySelector('meta[name="color-scheme"]');
 			if (meta) {
-				const isDark = meta.content.startsWith("dark");
-				meta.content = isDark ? "light dark" : "dark light";
-				localStorage.setItem("practice-lab-theme", isDark ? "light" : "dark");
+				const isDark = meta.content === "dark";
+				const nextScheme = isDark ? "light" : "dark";
+				meta.content = nextScheme;
+				localStorage.setItem("practice-lab-theme", nextScheme);
 			}
 			return;
 		}

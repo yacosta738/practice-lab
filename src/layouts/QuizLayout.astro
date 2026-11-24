@@ -61,18 +61,3 @@ const { title, subtitle, description, studyHref, theme } = Astro.props;
 		<footer>Independent study material · Progress stays in your browser</footer>
 	</main>
 </Layout>
-
-<script is:inline>
-document.addEventListener("click", (event) => {
-	const el = event.target.closest("[data-action]");
-	if (!el) return;
-	if (el.dataset.action === "theme") {
-		const meta = document.querySelector('meta[name="color-scheme"]');
-		if (meta) {
-			const isDark = meta.content.startsWith("dark");
-			meta.content = isDark ? "light dark" : "dark light";
-			localStorage.setItem("practice-lab-theme", isDark ? "light" : "dark");
-		}
-	}
-});
-</script>
