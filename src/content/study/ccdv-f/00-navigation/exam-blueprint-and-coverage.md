@@ -35,6 +35,7 @@ tags:
 
 ## Coverage interpretation
 
+- The [25-competency index](../ccdv-f-indice-de-certificacion/) already maps each official sub-objective to an existing study note. This is a navigation and content-presence audit, not proof of mastery; use questions and labs to validate understanding.
 - A linked concept note means **we have a study synthesis**, not that the entire corresponding Skilljar lesson has been retrieved.
 - The official guide lists objective weights; topic notes map to them heuristically.
 - For exact authenticated course coverage see [Course Access Coverage](../course-access-coverage/).
@@ -42,5 +43,5 @@ tags:
 
 ## Links
 
-- [00 - START HERE](../start-here/) · [Study Roadmap](../study-roadmap/) · [Knowledge Gap Backlog](../knowledge-gap-backlog/) · [Source Register](../source-register/)
+- [00 - START HERE](../start-here/) · [Study Roadmap](../study-roadmap/) · [Learning Resources](../learning-resources/) · [Exam Decision Guide](../exam-decision-guide/) · [Knowledge Gap Backlog](../knowledge-gap-backlog/) · [Source Register](../source-register/)
 - [Interactive practice quiz](https://drive.google.com/file/d/1ZEnvO9nZSFz61k3exGBMf1MMEISgzbHs/view) · [Study guide of 100 questions](https://drive.google.com/file/d/1jG9vCpCUpkmSTlY4_y-wzDfAUieYiGkr/view).

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	assertUniqueNoteSlugs,
 	groupNotes,
 	noteSlug,
 	type StudyEntry,
@@ -25,6 +26,36 @@ describe("noteSlug", () => {
 
 	it("returns the only segment for a single-segment id", () => {
 		expect(noteSlug("only")).toBe("only");
+	});
+});
+
+describe("assertUniqueNoteSlugs", () => {
+	it("accepts notes with distinct public slugs", () => {
+		expect(() =>
+			assertUniqueNoteSlugs([
+				{ slug: "first", id: "ccdv-f/topics/first", title: "First", sectionId: "topics" },
+				{
+					slug: "second",
+					id: "ccdv-f/references/second",
+					title: "Second",
+					sectionId: "references",
+				},
+			]),
+		).not.toThrow();
+	});
+
+	it("rejects duplicate public slugs even when source ids differ", () => {
+		expect(() =>
+			assertUniqueNoteSlugs([
+				{ slug: "shared", id: "ccdv-f/topics/shared", title: "Topic", sectionId: "topics" },
+				{
+					slug: "shared",
+					id: "ccdv-f/references/nested/shared",
+					title: "Reference",
+					sectionId: "references",
+				},
+			]),
+		).toThrow(/Duplicate study-note slug "shared"/);
 	});
 });
 

@@ -9,6 +9,8 @@ export interface StudyCert {
 	certification: CertificationConfig;
 	quizPath: string;
 	examGuide?: { label: string; path: string };
+	learningResources?: { label: string; path: string };
+	examDecisionGuide?: { label: string; path: string };
 }
 
 export const studyCerts: StudyCert[] = [
@@ -23,6 +25,14 @@ export const studyCerts: StudyCert[] = [
 		examGuide: {
 			label: "Exam guide (PDF)",
 			path: "study/ccdv-f/ccdv-f-exam-guide.pdf",
+		},
+		learningResources: {
+			label: "Learning resources",
+			path: "study/ccdv-f/learning-resources",
+		},
+		examDecisionGuide: {
+			label: "Exam decision guide",
+			path: "study/ccdv-f/exam-decision-guide",
 		},
 	},
 ];

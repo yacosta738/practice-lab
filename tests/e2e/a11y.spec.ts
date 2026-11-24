@@ -11,6 +11,11 @@ const ROUTES = [
 	"/practice-lab/certifications/ccar-f",
 	"/practice-lab/study/",
 	"/practice-lab/study/ccdv-f/",
+	"/practice-lab/study/ccdv-f/learning-resources/",
+	"/practice-lab/study/ccdv-f/exam-decision-guide/",
+	"/practice-lab/study/ccdv-f/application-integration-design-workshop/",
+	"/practice-lab/study/ccdv-f/model-selection-and-optimization-workshop/",
+	"/practice-lab/study/ccdv-f/agent-architecture-design-workshop/",
 	"/practice-lab/study/ccdv-f/workflows-versus-agents/",
 ];
 

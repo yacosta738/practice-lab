@@ -40,3 +40,68 @@ test("study library navigation reaches a note from the home page", async ({ page
 		new RegExp(`${BASE_PATH}/study/ccdv-f/d1-agents-and-workflows-moc/?$`),
 	);
 });
+
+test("CCDV-F study page exposes curated resources and exam decision guidance", async ({ page }) => {
+	await page.goto(`${BASE_PATH}/study/ccdv-f/`);
+	await page.getByRole("link", { name: "Learning resources", exact: true }).click();
+
+	await expect(page).toHaveURL(new RegExp(`${BASE_PATH}/study/ccdv-f/learning-resources/?$`));
+	await expect(page.getByRole("heading", { level: 1, name: /Learning resources/i })).toBeVisible();
+	await expect(
+		page.getByRole("link", { name: "AI Cert Guides — free CCDV-F lessons", exact: true }),
+	).toHaveAttribute("href", "https://aicertguides.com/ccdv-f/learn");
+	await expect(page.getByRole("link", { name: /12-hour.*YouTube/i })).toHaveAttribute(
+		"href",
+		"https://www.youtube.com/watch?v=qaupWs_DcAI",
+	);
+	await expect(page.getByText(/rather than republishing their lessons/i)).toBeVisible();
+
+	await page.goto(`${BASE_PATH}/study/ccdv-f/`);
+	await page.getByRole("link", { name: "Exam decision guide", exact: true }).click();
+	await expect(page).toHaveURL(new RegExp(`${BASE_PATH}/study/ccdv-f/exam-decision-guide/?$`));
+	await expect(page.getByRole("heading", { level: 1, name: /Exam decision guide/i })).toBeVisible();
+	await expect(
+		page.getByRole("heading", { name: /Match the design to the requirement/i }),
+	).toBeVisible();
+});
+
+test("priority-domain maps expose their applied study workshops", async ({ page }) => {
+	await page.goto(`${BASE_PATH}/study/ccdv-f/d2-applications-and-integration-moc/`);
+	await page.getByRole("link", { name: "Application Integration Design Workshop" }).first().click();
+	await expect(page).toHaveURL(
+		new RegExp(`${BASE_PATH}/study/ccdv-f/application-integration-design-workshop/?$`),
+	);
+	await expect(
+		page.getByRole("heading", { level: 1, name: "Application Integration Design Workshop" }),
+	).toBeVisible();
+	await expect(
+		page.getByRole("heading", { name: /Convert constraints into design decisions/i }),
+	).toBeVisible();
+
+	await page.goto(`${BASE_PATH}/study/ccdv-f/d5-model-selection-and-optimization-moc/`);
+	await page
+		.getByRole("link", { name: "Model Selection and Optimization Workshop" })
+		.first()
+		.click();
+	await expect(page).toHaveURL(
+		new RegExp(`${BASE_PATH}/study/ccdv-f/model-selection-and-optimization-workshop/?$`),
+	);
+	await expect(
+		page.getByRole("heading", { level: 1, name: "Model Selection and Optimization Workshop" }),
+	).toBeVisible();
+	await expect(
+		page.getByText(/cost per successful task = total measured API spend/i),
+	).toBeVisible();
+
+	await page.goto(`${BASE_PATH}/study/ccdv-f/d1-agents-and-workflows-moc/`);
+	await page.getByRole("link", { name: "Agent Architecture Design Workshop" }).first().click();
+	await expect(page).toHaveURL(
+		new RegExp(`${BASE_PATH}/study/ccdv-f/agent-architecture-design-workshop/?$`),
+	);
+	await expect(
+		page.getByRole("heading", { level: 1, name: "Agent Architecture Design Workshop" }),
+	).toBeVisible();
+	await expect(
+		page.getByRole("heading", { name: /Define the harness before enabling autonomy/i }),
+	).toBeVisible();
+});

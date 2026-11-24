@@ -4,7 +4,7 @@ type: moc
 certification: CCDV-F
 status: verified
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-15'
+updated: '2026-11-24'
 tags:
 - certification/ccdv-f
 - domain/model-selection-optimization
@@ -28,9 +28,13 @@ domain: D5
 - [Cost and Token Accounting](../cost-and-token-accounting/)
 - [Thinking Blocks and Tool Turns](../thinking-blocks-and-tool-turns/)
 
+## Applied workshop
+
+- [Model Selection and Optimization Workshop](../model-selection-and-optimization-workshop/) — compare candidates on held-out task quality, latency, and cost per successful task.
+
 ## Study strategy
 
-Use the concept notes, reproduce the failure examples, and complete an associated lab.
+Use the concept notes, reproduce the failure examples, and complete the [Model Selection and Optimization Workshop](../model-selection-and-optimization-workshop/). Treat model IDs, pricing, context limits, and caching behavior as changeable; verify them against current official documentation before applying a numeric answer.
 
 ## Cross-domain navigation
 
