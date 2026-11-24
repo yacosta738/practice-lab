@@ -2,6 +2,28 @@ import { expect, test } from "@playwright/test";
 
 const BASE_PATH = "/practice-lab";
 
+test("quiz shortcuts pause while the submit dialog is open", async ({ page }) => {
+	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
+	await page.getByRole("button", { name: /^Mock exam/ }).click();
+	const submit = page.getByRole("button", { name: "Submit exam", exact: true });
+	await submit.click();
+
+	const dialog = page.getByRole("dialog", { name: "Submit mock exam?" });
+	const cancel = dialog.getByRole("button", { name: "Cancel" });
+	await expect(cancel).toBeFocused();
+	const savedSession = () => page.evaluate(() => localStorage.getItem("ccdv-f-practice-lab-v2"));
+	const before = await savedSession();
+	await page.keyboard.press("1");
+	expect(await savedSession()).toBe(before);
+
+	await cancel.press("Enter");
+	await expect(dialog).toBeHidden();
+	await expect(page.locator("button.option.selected")).toHaveCount(0);
+	await page.keyboard.press("1");
+	await expect(page.locator("button.option.selected .letter")).toHaveText("A");
+	expect(await savedSession()).not.toBe(before);
+});
+
 test("CCDV-F practice mode shows results page after finishing questions", async ({ page }) => {
 	test.setTimeout(180_000);
 
@@ -67,6 +89,19 @@ test("CCDV-F practice mode shows results page after finishing questions", async 
 
 	// Verify score is displayed (e.g., "3 / 10 correct")
 	await expect(page.getByText(/\d+ \/ \d+ correct/)).toBeVisible({ timeout: 10000 });
+
+	const missed = page.getByRole("button", { name: /^Missed \(/ });
+	await missed.press("Enter");
+	await expect(missed).toBeFocused();
+	await expect(missed).toHaveAttribute("aria-pressed", "true");
+
+	await page.keyboard.press("Tab");
+	const flagged = page.getByRole("button", { name: "Flagged (0)" });
+	await expect(flagged).toBeFocused();
+	await page.keyboard.press("Space");
+	await expect(flagged).toBeFocused();
+	await expect(flagged).toHaveAttribute("aria-pressed", "true");
+	await expect(page.getByText("No questions match this filter.")).toBeVisible();
 });
 
 test("CCDV-F keyboard shortcuts select options", async ({ page }) => {
