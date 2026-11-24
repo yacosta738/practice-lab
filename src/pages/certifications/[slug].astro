@@ -97,6 +97,25 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 	const LETTERS = "ABCDE";
 	const app = document.getElementById("app");
 
+	// Safe HTML renderer — uses Element.setHTML() with Sanitizer API when available,
+	// falls back to innerHTML for browsers without support (e.g. Safari).
+	// The quiz content is trusted (from the question bank), so the sanitizer allows
+	// data-* attributes required for event delegation.
+	function setAppHTML(html) {
+		if ("setHTML" in Element.prototype && typeof Sanitizer !== "undefined") {
+			try {
+				const sanitizer = new Sanitizer({
+					allowDataAttributes: true,
+				});
+				app.setHTML(html, { sanitizer });
+				return;
+			} catch (_) {
+				/* fallback */
+			}
+		}
+		app.innerHTML = html;
+	}
+
 	// --- Storage ---
 	function getSaved() {
 		try {
@@ -296,7 +315,7 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 			})
 			.join("");
 
-		app.innerHTML = `
+		setAppHTML(`
 			<div class="hero">
 				<span class="eyebrow">${esc(cfg.subtitle)} · ${esc(cfg.title)}</span>
 				<h1>Know the platform.<br>Ship with confidence.</h1>
@@ -363,8 +382,8 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 				<div class="domainGrid">${cards}</div>
 			</section>
 			<p class="alert section">Independent study material. Practice scores are not equivalent to official exam scores.</p>
-			<p class="small muted section">This bank includes practice questions from <strong>Cert Pro Quest</strong> by Matthew Purcell. These are community-created practice questions and are not official exam content.</p>
-		`;
+ 		<p class="small muted section">This bank includes practice questions from <strong>Cert Pro Quest</strong> by Matthew Purcell. These are community-created practice questions and are not official exam content.</p>
+		`);
 	}
 
 	// --- Question view ---
@@ -460,7 +479,7 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 			}
 		</aside>`;
 
-		app.innerHTML = `<div class="split"><div>${main}</div>${side}</div>`;
+		setAppHTML(`<div class="split"><div>${main}</div>${side}</div>`);
 	}
 
 	function clockText() {
@@ -533,7 +552,7 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 			})
 			.join("");
 
-		app.innerHTML = `
+		setAppHTML(`
 			<div class="results">
 				<div class="panel padded">
 					<h2>${session.mode === "exam" ? "Mock exam results" : "Practice session results"}${session.timedOut ? " · time expired" : ""}</h2>
@@ -562,20 +581,20 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 					<p class="muted">Open an item to see the correct option, rationale and primary documentation.</p>
 					${rev}
 				</section>
-			</div>`;
+			</div>`);
 	}
 
 	// --- Exam review ---
 	function examReview() {
 		const un = session.ids.filter((id) => !answered(id)).length;
-		app.innerHTML = `<div class="panel padded results">
+		setAppHTML(`<div class="panel padded results">
 			<h1>Review your answer sheet.</h1>
 			<p class="lead">${session.ids.length - un} answered · ${un} unanswered · ${session.flags.length} flagged. Time remaining: ${clockText()}.</p>
 			<div class="actions">
 				<button class="ghost" data-action="back-to-exam">Review questions</button>
 				<button class="primary" data-action="finish">Submit and score</button>
 			</div>
-		</div>`;
+		</div>`);
 	}
 
 	// --- Render ---
@@ -597,10 +616,13 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		event.preventDefault();
 
 		if (action === "theme") {
-			const dark = document.documentElement.dataset.theme === "dark";
-			const next = dark ? "light" : "dark";
-			document.documentElement.dataset.theme = next;
-			localStorage.setItem("practice-lab-theme", next);
+			const meta = document.querySelector('meta[name="color-scheme"]');
+			if (meta) {
+				const isDark = meta.content === "dark";
+				const nextScheme = isDark ? "light" : "dark";
+				meta.content = nextScheme;
+				localStorage.setItem("practice-lab-theme", nextScheme);
+			}
 			return;
 		}
 		if (action === "home") {

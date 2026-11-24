@@ -48,8 +48,13 @@ document.addEventListener("click", (event) => {
 	const el = event.target.closest("[data-action]");
 	if (!el) return;
 	if (el.dataset.action === "theme") {
-		const dark = document.documentElement.dataset.theme === "dark";
-		document.documentElement.dataset.theme = dark ? "light" : "dark";
+		const meta = document.querySelector('meta[name="color-scheme"]');
+		if (meta) {
+			const isDark = meta.content === "dark";
+			const nextScheme = isDark ? "light" : "dark";
+			meta.content = nextScheme;
+			localStorage.setItem("practice-lab-theme", nextScheme);
+		}
 	}
 });
 </script>
