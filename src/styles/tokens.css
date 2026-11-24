@@ -1,0 +1,565 @@
+/* Practice Lab — Direction A: Precision Workspace Tokens & Shell */
+/* Dual-theme via light-dark(), OS-first with <meta name="color-scheme"> override */
+
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
+:root {
+	color-scheme: light dark;
+
+	&:has(> head > meta[name="color-scheme"][content="dark"]) {
+		color-scheme: dark;
+	}
+	&:has(> head > meta[name="color-scheme"][content="light"]) {
+		color-scheme: light;
+	}
+
+	/* Surfaces */
+	--ground: light-dark(#faf9f5, #0e0f12);
+	--sidebar-bg: light-dark(#f3f1ec, #13151a);
+	--surface: light-dark(#ffffff, #17191f);
+	--raised: light-dark(#f2efe9, #1e2129);
+	--raised-hover: light-dark(#e9e5dd, #262a34);
+	--active: light-dark(#e9e5dd, #262a34);
+	--overlay: light-dark(#e2ddd3, rgba(255, 255, 255, 0.14));
+
+	/* Text */
+	--ink: light-dark(#14171f, #f3f4f6);
+	--ink-secondary: light-dark(#444c59, #b0b7c3);
+	--ink-tertiary: light-dark(#525a66, #9aa2b1);
+	--ink-disabled: light-dark(#9ca3af, #555e6e);
+
+	/* Hairline borders */
+	--border: light-dark(#e2ddd3, rgba(255, 255, 255, 0.09));
+	--border-hover: light-dark(#c9c2b5, rgba(255, 255, 255, 0.18));
+	--border-subtle: light-dark(#efece5, rgba(255, 255, 255, 0.05));
+
+	/* Brand — refined terracotta accent (4.5:1+ AA on both themes) */
+	--brand: light-dark(#d45a3d, #e26d52);
+	--brand-hover: light-dark(#b94d36, #ed7f66);
+	--brand-soft: light-dark(rgba(212, 90, 61, 0.09), rgba(226, 109, 82, 0.14));
+	--brand-soft-hover: light-dark(rgba(212, 90, 61, 0.15), rgba(226, 109, 82, 0.22));
+	--brand-text: light-dark(#9e3721, #ff9982);
+	--brand-strong: light-dark(#9e3721, #e26d52);
+	--brand-strong-hover: light-dark(#963723, #ed7f66);
+	--on-brand: light-dark(#ffffff, #0e0f12);
+
+	/* Hero / focal panel */
+	--hero-bg: light-dark(#14171f, #17191f);
+	--hero-border: light-dark(#14171f, rgba(255, 255, 255, 0.1));
+	--hero-ink: #f3f4f6;
+	--hero-ink-soft: #b8bec9;
+	--hero-accent: #ff9982;
+
+	/* Semantic status */
+	--success: light-dark(#146c43, #34d399);
+	--success-soft: light-dark(#e6f6ee, rgba(52, 211, 153, 0.12));
+	--success-border: light-dark(#b3e5cb, rgba(52, 211, 153, 0.3));
+	--success-ink: light-dark(#0a3d24, #6ee7b7);
+	--error: light-dark(#b42332, #f87171);
+	--error-soft: light-dark(#fdecec, rgba(248, 113, 113, 0.12));
+	--error-border: light-dark(#f5c6cb, rgba(248, 113, 113, 0.3));
+	--error-ink: light-dark(#7f1d24, #fca5a5);
+	--info: light-dark(#1d4ed8, #93c5fd);
+	--info-soft: light-dark(#eff6ff, rgba(147, 197, 253, 0.12));
+	--info-border: light-dark(#bfdbfe, rgba(147, 197, 253, 0.28));
+	--link-on-feedback: light-dark(#1d4ed8, #93c5fd);
+
+	/* Pill tokens */
+	--pill-positive-bg: var(--success-soft);
+	--pill-positive-ink: var(--success-ink);
+	--pill-negative-bg: var(--error-soft);
+	--pill-negative-ink: var(--error-ink);
+	--pill-warning-bg: light-dark(#fef9c3, rgba(251, 191, 36, 0.14));
+	--pill-warning-ink: light-dark(#854d0e, #fcd34d);
+	--pill-neutral-bg: var(--raised);
+	--pill-neutral-ink: var(--ink-secondary);
+
+	/* Radii */
+	--radius-sm: 6px;
+	--radius: 8px;
+	--radius-lg: 12px;
+	--radius-full: 9999px;
+
+	/* Typography */
+	--font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+	--font-mono: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+	--fs-title: 26px;
+	--fs-section: 17px;
+	--fs-kpi: 28px;
+	--fs-body: 15px;
+	--fs-small: 13px;
+	--fs-xs: 12px;
+
+	/* Layout & spacing */
+	--sidebar-width: 248px;
+	--topbar-height: 54px;
+	--gap: 20px;
+	--pad: 20px;
+	--control-height: 36px;
+	--row-height: 44px;
+
+	/* Legacy aliases */
+	--bg: var(--ground);
+	--bg-subtle: var(--raised);
+	--panel: var(--surface);
+	--panel-hover: var(--raised);
+	--muted: var(--ink-secondary);
+	--faint: var(--ink-tertiary);
+	--line: var(--border);
+	--rule: var(--border-subtle);
+	--control: var(--border-hover);
+	--brand2: var(--brand-hover);
+	--brandSoft: var(--brand-soft);
+	--good: var(--success);
+	--goodSoft: var(--success-soft);
+	--bad: var(--error);
+	--badSoft: var(--error-soft);
+	--blue: var(--info);
+	--shadow-sm: none;
+	--shadow-md: none;
+	--shadow-lg: none;
+	--shadow-brand: none;
+}
+
+/* Native modal dialog scroll containment & backdrop (modern-web-guidance: dialog) */
+dialog:modal {
+	overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+	background: rgba(0, 0, 0, 0.56);
+	backdrop-filter: blur(2px);
+	overflow: hidden;
+	overscroll-behavior: contain;
+}
+
+/* ============================================================================
+   Precision Workspace Shell (AppShell.astro)
+   ============================================================================ */
+
+.pl-shell {
+	display: grid;
+	grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+	min-height: 100dvh;
+	background: var(--ground);
+	color: var(--ink);
+}
+
+.pl-sidebar {
+	position: sticky;
+	top: 0;
+	height: 100dvh;
+	overflow-y: auto;
+	background: var(--sidebar-bg);
+	border-right: 1px solid var(--border);
+	padding: 14px 12px 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+.pl-sidebar-brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 6px 8px;
+	text-decoration: none;
+	color: var(--ink);
+	border-radius: var(--radius-sm);
+}
+
+.pl-sidebar-brand:hover {
+	background: var(--raised);
+}
+
+.pl-mark {
+	width: 26px;
+	height: 26px;
+	border-radius: 6px;
+	background: var(--brand-strong);
+	color: var(--on-brand);
+	display: grid;
+	place-items: center;
+	font-weight: 700;
+	font-size: 13px;
+	flex-shrink: 0;
+}
+
+.pl-brand-title {
+	font-size: 14.5px;
+	font-weight: 600;
+	letter-spacing: -0.015em;
+	line-height: 1.2;
+}
+
+.pl-nav-section {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.pl-nav-label {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--ink-tertiary);
+	padding: 4px 10px 6px;
+}
+
+.pl-nav-link {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 7px 10px;
+	min-height: 34px;
+	border-radius: var(--radius-sm);
+	color: var(--ink-secondary);
+	text-decoration: none;
+	font-size: 13.5px;
+	font-weight: 500;
+	transition:
+		background 0.12s ease,
+		color 0.12s ease;
+}
+
+.pl-nav-link:hover {
+	background: var(--raised);
+	color: var(--ink);
+}
+
+.pl-nav-link[aria-current="page"] {
+	background: var(--raised-hover);
+	color: var(--ink);
+	font-weight: 600;
+}
+
+.pl-nav-badge {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-tertiary);
+	font-variant-numeric: tabular-nums;
+	flex-shrink: 0;
+}
+
+.pl-nav-link[aria-current="page"] .pl-nav-badge {
+	color: var(--brand-text);
+}
+
+.pl-nav-truncate {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.pl-workspace {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.pl-topbar {
+	position: sticky;
+	top: 0;
+	z-index: 40;
+	height: var(--topbar-height);
+	background: var(--ground);
+	border-bottom: 1px solid var(--border);
+	padding: 0 28px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.pl-topbar-left {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+}
+
+.pl-topbar-crumb {
+	font-size: 13.5px;
+	color: var(--ink-secondary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.pl-topbar-crumb strong {
+	color: var(--ink);
+	font-weight: 600;
+}
+
+.pl-topbar-right {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.pl-search-trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+	min-height: 34px;
+	padding: 4px 10px;
+	border-radius: var(--radius-sm);
+	border: 1px solid var(--border-hover);
+	background: var(--surface);
+	color: var(--ink-secondary);
+	font-size: 13px;
+	cursor: pointer;
+	transition:
+		border-color 0.12s ease,
+		color 0.12s ease;
+}
+
+.pl-search-trigger:hover {
+	border-color: var(--brand);
+	color: var(--ink);
+}
+
+.pl-kbd {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	padding: 1px 5px;
+	border-radius: 4px;
+	border: 1px solid var(--border-hover);
+	background: var(--raised);
+	color: var(--ink-secondary);
+}
+
+.pl-topbar-link {
+	display: inline-flex;
+	align-items: center;
+	min-height: 34px;
+	padding: 4px 10px;
+	border-radius: var(--radius-sm);
+	font-size: 13.5px;
+	font-weight: 500;
+	color: var(--ink-secondary);
+	text-decoration: none;
+}
+
+.pl-topbar-link:hover {
+	background: var(--raised);
+	color: var(--ink);
+}
+
+.pl-menu-btn {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	border-radius: var(--radius-sm);
+	border: 1px solid var(--border-hover);
+	background: var(--surface);
+	color: var(--ink);
+	cursor: pointer;
+}
+
+.pl-content {
+	width: 100%;
+	max-width: 1080px;
+	margin: 0 auto;
+	padding: 28px 36px 72px;
+	flex: 1;
+}
+
+.pl-content-wide {
+	max-width: 1160px;
+}
+
+.pl-footer {
+	text-align: center;
+	padding: 24px 36px;
+	font-size: var(--fs-small);
+	color: var(--ink-tertiary);
+	border-top: 1px solid var(--border);
+	margin-top: auto;
+}
+
+/* Search & Confirm Native Dialogs */
+.pl-dialog {
+	width: min(560px, calc(100vw - 24px));
+	max-height: min(76dvh, 580px);
+	margin: auto;
+	padding: 0;
+	border: 1px solid var(--border-hover);
+	border-radius: var(--radius-lg);
+	background: var(--surface);
+	color: var(--ink);
+}
+
+.pl-dialog[open] {
+	display: flex;
+	flex-direction: column;
+}
+
+.pl-dialog-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 14px 16px;
+	border-bottom: 1px solid var(--border);
+}
+
+.pl-dialog-input {
+	flex: 1;
+	background: transparent;
+	border: 0;
+	color: var(--ink);
+	font-size: 15px;
+	outline: none;
+	min-height: 32px;
+}
+
+.pl-dialog-body {
+	padding: 8px;
+	overflow-y: auto;
+	flex: 1;
+}
+
+.pl-search-result {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 10px 12px;
+	border-radius: var(--radius-sm);
+	text-decoration: none;
+	color: var(--ink);
+	font-size: 14px;
+}
+
+.pl-search-result:hover,
+.pl-search-result:focus-visible {
+	background: var(--raised);
+}
+
+.pl-search-meta {
+	font-size: 12px;
+	color: var(--ink-tertiary);
+	font-family: var(--font-mono);
+	flex-shrink: 0;
+}
+
+.pl-confirm-dialog {
+	width: min(440px, calc(100vw - 24px));
+	margin: auto;
+	padding: 22px;
+	border: 1px solid var(--border-hover);
+	border-radius: var(--radius-lg);
+	background: var(--surface);
+	color: var(--ink);
+}
+
+.pl-confirm-dialog h1 {
+	font-size: 18px;
+	margin: 0 0 8px;
+}
+
+.pl-confirm-dialog p {
+	margin: 0 0 18px;
+	color: var(--ink-secondary);
+	font-size: 14.5px;
+	line-height: 1.5;
+}
+
+.pl-confirm-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+}
+
+/* Mobile bottom nav */
+.pl-bottom-nav {
+	display: none;
+}
+
+/* Mobile drawer dialog */
+.pl-drawer {
+	width: min(300px, 86vw);
+	height: 100dvh;
+	max-height: 100dvh;
+	margin: 0 auto 0 0;
+	padding: 16px 14px 28px;
+	border: 0;
+	border-right: 1px solid var(--border-hover);
+	background: var(--sidebar-bg);
+	color: var(--ink);
+}
+
+.pl-drawer[open] {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+@media (max-width: 960px) {
+	.pl-shell {
+		grid-template-columns: 1fr;
+	}
+	.pl-sidebar {
+		display: none;
+	}
+	.pl-menu-btn {
+		display: inline-flex;
+	}
+	.pl-topbar {
+		padding: 0 16px;
+	}
+	.pl-topbar-link {
+		display: none;
+	}
+	.pl-search-trigger .pl-search-label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+	.pl-search-trigger .pl-kbd {
+		display: none;
+	}
+	.pl-content {
+		padding: 20px 16px 88px;
+	}
+	.pl-footer {
+		padding-bottom: 84px;
+	}
+	.pl-bottom-nav {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		z-index: 45;
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		background: var(--sidebar-bg);
+		border-top: 1px solid var(--border);
+		padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px));
+	}
+	.pl-bottom-nav a {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		min-height: 44px;
+		font-size: 11.5px;
+		font-weight: 500;
+		color: var(--ink-secondary);
+		text-decoration: none;
+		border-radius: var(--radius-sm);
+	}
+	.pl-bottom-nav a[aria-current="page"] {
+		color: var(--brand-text);
+		font-weight: 600;
+		background: var(--brand-soft);
+	}
+}

@@ -1,130 +1,5 @@
-/* Quiz Practice Lab — premium prep style */
-/* Light-first, IBM Plex Sans, navy + coral palette */
-
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
-
-:root {
-	color-scheme: light dark;
-
-	&:has(> head > meta[name="color-scheme"][content="dark"]) {
-		color-scheme: dark;
-	}
-	&:has(> head > meta[name="color-scheme"][content="light"]) {
-		color-scheme: light;
-	}
-
-	/* Surface palette — light-dark() for dual-theme tokens */
-	--ground: light-dark(#f7f4ee, #101827);
-	--surface: light-dark(#ffffff, #192438);
-	--raised: light-dark(#f0ede6, #1e2d45);
-	--raised-hover: light-dark(#e8e4dc, #253550);
-	--active: light-dark(#e8e4dc, #253550);
-	--overlay: light-dark(#e1ded7, #344157);
-
-	/* Text */
-	--ink: light-dark(#14213d, #f7f4ee);
-	--ink-secondary: light-dark(#4b5565, #b6c0d0);
-	--ink-tertiary: light-dark(#6b7280, #8a95a8);
-	--ink-disabled: light-dark(#b0b2b4, #555e6e);
-
-	/* Borders & dividers */
-	--border: light-dark(#e1ded7, #344157);
-	--border-hover: light-dark(#cdced1, #4a5a72);
-	--border-subtle: light-dark(#f0ede6, #1e2d45);
-
-	/* Brand — coral accent for primary actions.
-	   --brand is decorative (borders, progress, rings).
-	   --brand-strong carries white text and guarantees 4.5:1 on filled controls. */
-	--brand: light-dark(#e76f51, #ff8a70);
-	--brand-hover: light-dark(#d45a3d, #ff9d87);
-	--brand-soft: light-dark(rgba(231, 111, 81, 0.08), rgba(255, 138, 112, 0.08));
-	--brand-soft-hover: light-dark(rgba(231, 111, 81, 0.14), rgba(255, 138, 112, 0.14));
-	--brand-text: light-dark(#b94d36, #ffaa96);
-	--brand-strong: light-dark(#b94d36, #ff8a70);
-	--brand-strong-hover: light-dark(#9e412d, #ff9d87);
-	--on-brand: light-dark(#ffffff, #14213d);
-
-	/* Hero — navy night panel with warm white type */
-	--hero-bg: light-dark(#14213d, #1b2b47);
-	--hero-border: light-dark(rgba(247, 244, 238, 0.16), rgba(247, 244, 238, 0.18));
-	--hero-ink: #f7f4ee;
-	--hero-ink-soft: rgba(247, 244, 238, 0.78);
-	--hero-accent: #ff8a70;
-
-	/* Status — semantic green/red, distinct from brand */
-	--success: light-dark(#176b4d, #67d6a7);
-	--success-soft: light-dark(#dcfae5, #172a1d);
-	--success-border: light-dark(#b6f0d0, #1f3a28);
-	--success-ink: light-dark(#04250e, #67d6a7);
-	--error: light-dark(#b42332, #ff7e88);
-	--error-soft: light-dark(#ffedea, #2c1a20);
-	--error-border: light-dark(#f5d0cc, #3d2228);
-	--error-ink: light-dark(#831c1e, #ff7e88);
-	--info: light-dark(#2f70bb, #7ca5e8);
-	--info-soft: light-dark(#e8f0fa, #141e2e);
-	--info-border: light-dark(#c5d9f0, #1e2e44);
-	--link-on-feedback: light-dark(#1d4ed8, #93c5fd);
-
-	/* Chart hues */
-	--chart-1: light-dark(#e76f51, #ff8a70);
-	--chart-2: #14213d;
-	--chart-3: #a86f0c;
-
-	/* Pill status tokens */
-	--pill-positive-bg: light-dark(#dcfae5, #172a1d);
-	--pill-positive-ink: light-dark(#04250e, #67d6a7);
-	--pill-negative-bg: light-dark(#ffedea, #2c1a20);
-	--pill-negative-ink: light-dark(#831c1e, #ff7e88);
-	--pill-warning-bg: light-dark(#fffbeb, #2a2218);
-	--pill-warning-ink: light-dark(#92400e, #d4a04a);
-	--pill-neutral-bg: light-dark(#e8e4dc, #1e2d45);
-	--pill-neutral-ink: light-dark(#353736, #b6c0d0);
-
-	/* Radius — warm style */
-	--radius-sm: 6px;
-	--radius: 8px;
-	--radius-lg: 16px;
-	--radius-full: 9999px;
-
-	/* Typography — IBM Plex Sans */
-	--font-sans: "IBM Plex Sans", Inter, system-ui, sans-serif;
-	--font-mono: "IBM Plex Mono", "SF Mono", monospace;
-	--fs-title: 26px;
-	--fs-section: 18px;
-	--fs-kpi: 32px;
-	--fs-body: 16px;
-	--fs-small: 13px;
-
-	/* Spacing */
-	--gap: 24px;
-	--pad: 24px;
-	--control-height: 32px;
-	--row-height: 48px;
-}
-
-/* Legacy token aliases for JS-rendered content */
-:root {
-	--bg: var(--ground);
-	--bg-subtle: var(--raised);
-	--panel: var(--surface);
-	--panel-hover: var(--raised);
-	--muted: var(--ink-secondary);
-	--faint: var(--ink-tertiary);
-	--line: var(--border);
-	--rule: var(--border-subtle);
-	--control: var(--border-hover);
-	--brand2: var(--brand-hover);
-	--brandSoft: var(--brand-soft);
-	--good: var(--success);
-	--goodSoft: var(--success-soft);
-	--bad: var(--error);
-	--badSoft: var(--error-soft);
-	--blue: var(--info);
-	--shadow-sm: none;
-	--shadow-md: none;
-	--shadow-lg: none;
-	--shadow-brand: none;
-}
+/* Quiz Practice Lab — Direction A: Precision Workspace components */
+@import "./tokens.css";
 
 /* Browser surfaces */
 
@@ -237,15 +112,16 @@ summary {
 	font-size: inherit;
 }
 
-main {
+/* Layout container (legacy fallback for pages outside AppShell) */
+main:not(.pl-content) {
 	max-width: 1120px;
 	margin: 0 auto;
 	padding: 32px 48px 80px;
 }
 
-/* Header */
+/* Legacy header (pages outside AppShell) */
 
-header {
+header:not(.pl-topbar) {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -740,31 +616,32 @@ label.small {
 	font-weight: 500;
 }
 
-/* Domain grid */
+/* Domain grid — clean gap grid so odd counts never leave an orphan background cell */
 
 .domainGrid {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
-	gap: 1px;
-	background: var(--border);
-	border: 1px solid var(--border);
-	border-radius: var(--radius);
-	overflow: hidden;
-	margin-top: 20px;
+	gap: 8px;
+	margin-top: 16px;
 }
 
 .domainRow {
 	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	gap: 12px;
-	padding: 14px 20px;
-	transition: background 0.12s ease;
+	padding: 13px 16px;
+	transition:
+		border-color 0.12s ease,
+		background 0.12s ease;
 }
 
 .domainRow:hover {
 	background: var(--raised);
+	border-color: var(--border-hover);
 }
 
 .domainRow span {
@@ -1062,6 +939,9 @@ label.small {
 	grid-template-columns: repeat(5, 1fr);
 	gap: 5px;
 	margin-top: 14px;
+	max-height: 290px;
+	overflow-y: auto;
+	padding-right: 2px;
 }
 
 .qchip {
@@ -1380,4 +1260,385 @@ footer {
 	display: flex;
 	align-items: center;
 	gap: 8px;
+}
+
+/* ============================================================================
+   Direction A — Precision Workspace Overview, Exam Command Bar & Results Filters
+   ============================================================================ */
+
+.mono {
+	font-family: var(--font-mono);
+	font-variant-numeric: tabular-nums;
+}
+
+.wsHero {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.wsHeroTop {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-end;
+	gap: 20px;
+	flex-wrap: wrap;
+}
+
+.wsHeroTop h1 {
+	font-size: clamp(24px, 3vw, 30px);
+	margin-bottom: 6px;
+}
+
+.wsHeroTop .lead {
+	margin: 0;
+	font-size: 15.5px;
+}
+
+.wsHeroActions {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.wsPillarGrid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 14px;
+}
+
+.wsPillar {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	padding: 18px 20px;
+	text-decoration: none;
+	color: inherit;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	transition:
+		border-color 0.12s ease,
+		background 0.12s ease;
+}
+
+.wsPillar:hover {
+	border-color: var(--brand);
+	background: var(--raised);
+}
+
+.wsPillarMark {
+	width: 28px;
+	height: 28px;
+	border-radius: 7px;
+	background: var(--brand-soft);
+	color: var(--brand-text);
+	display: grid;
+	place-items: center;
+	font-weight: 700;
+	font-size: 13px;
+	margin-bottom: 4px;
+}
+
+.wsPillar strong {
+	font-size: 15.5px;
+	font-weight: 600;
+	color: var(--ink);
+}
+
+.wsPillar p {
+	margin: 0;
+	font-size: 13.5px;
+	color: var(--ink-secondary);
+	line-height: 1.5;
+	flex: 1;
+}
+
+.wsPillarCta {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--brand-text);
+	margin-top: 6px;
+}
+
+.wsCertList {
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	background: var(--surface);
+	overflow: hidden;
+}
+
+.wsCertRow {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto auto;
+	align-items: center;
+	gap: 20px;
+	padding: 16px 20px;
+	text-decoration: none;
+	color: inherit;
+	border-bottom: 1px solid var(--border);
+	transition: background 0.12s ease;
+}
+
+.wsCertRow:last-child {
+	border-bottom: 0;
+}
+
+.wsCertRow:hover {
+	background: var(--raised);
+}
+
+.wsCertMain strong {
+	display: block;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--ink);
+	margin: 4px 0;
+}
+
+.wsCertMain p {
+	margin: 0;
+	font-size: 13.5px;
+	color: var(--ink-secondary);
+	max-width: 60ch;
+}
+
+.wsCertMeta {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.wsCode {
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	color: var(--brand-text);
+}
+
+.wsBadgeAccent,
+.wsBadgeMuted {
+	font-size: 11.5px;
+	font-weight: 500;
+	padding: 2px 8px;
+	border-radius: var(--radius-full);
+}
+
+.wsBadgeAccent {
+	background: var(--brand-soft);
+	color: var(--brand-text);
+}
+
+.wsBadgeMuted {
+	background: var(--raised);
+	color: var(--ink-secondary);
+}
+
+.wsCertStats {
+	margin: 0;
+	display: flex;
+	gap: 18px;
+}
+
+.wsCertStats > div {
+	min-width: 54px;
+}
+
+.wsCertStats dt {
+	font-size: 11.5px;
+	color: var(--ink-tertiary);
+}
+
+.wsCertStats dd {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	color: var(--ink);
+}
+
+.wsArrow {
+	color: var(--ink-tertiary);
+	font-size: 16px;
+}
+
+.wsCompactList {
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	background: var(--surface);
+	overflow: hidden;
+}
+
+.wsCompactRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 12px 18px;
+	text-decoration: none;
+	color: var(--ink);
+	font-size: 14px;
+	border-bottom: 1px solid var(--border);
+	transition: background 0.12s ease;
+}
+
+.wsCompactRow:last-child {
+	border-bottom: 0;
+}
+
+.wsCompactRow:hover {
+	background: var(--raised);
+}
+
+.wsCompactRight {
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+	flex-shrink: 0;
+}
+
+.wsTextLink {
+	color: var(--brand-text);
+	text-decoration: none;
+	font-weight: 500;
+}
+
+.wsTextLink:hover {
+	text-decoration: underline;
+}
+
+/* Readiness progress inside cert hero */
+.readinessBar {
+	margin-top: 20px;
+	max-width: 460px;
+}
+
+.readinessMeta {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	font-size: 13px;
+	color: var(--hero-ink-soft);
+	margin-bottom: 6px;
+}
+
+.readinessMeta strong {
+	color: var(--hero-ink);
+	font-size: 15px;
+}
+
+.configTop {
+	margin-top: 0;
+	margin-bottom: 16px;
+}
+
+.configTop label {
+	display: block;
+	margin-bottom: 4px;
+}
+
+/* Sticky Exam Command Bar (always visible above fold on mobile + desktop) */
+.examBar {
+	position: sticky;
+	top: calc(var(--topbar-height) + 8px);
+	z-index: 30;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+	padding: 10px 14px;
+	margin-bottom: 14px;
+	background: var(--surface);
+	border: 1px solid var(--border-hover);
+	border-radius: var(--radius);
+}
+
+.examBarLeft,
+.examBarRight {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.clockInline {
+	font-size: 18px;
+	font-family: var(--font-mono);
+	font-weight: 700;
+}
+
+.qheadRight {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.kbdHint {
+	color: var(--ink-tertiary);
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+}
+
+.feedbackLinks {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	align-items: center;
+}
+
+/* Info callout & Results filter bar */
+.infoCallout {
+	margin: 16px 0;
+	padding: 14px 16px;
+	background: var(--info-soft);
+	border: 1px solid var(--info-border);
+	border-radius: var(--radius);
+}
+
+.filterBar {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.filterBtn {
+	min-height: 32px;
+	padding: 4px 12px;
+	border-radius: var(--radius-full);
+	border: 1px solid var(--border-hover);
+	background: var(--surface);
+	color: var(--ink-secondary);
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+.filterBtn[aria-pressed="true"] {
+	background: var(--brand-soft);
+	border-color: var(--brand);
+	color: var(--brand-text);
+	font-weight: 600;
+}
+
+@media (max-width: 860px) {
+	.wsPillarGrid {
+		grid-template-columns: 1fr;
+	}
+	.wsCertRow {
+		grid-template-columns: 1fr;
+		gap: 12px;
+	}
+	.wsArrow {
+		display: none;
+	}
+	.kbdHint {
+		display: none;
+	}
 }
