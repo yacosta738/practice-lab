@@ -76,7 +76,13 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 </QuizLayout>
 
 <script
-	define:vars={{ cfg: certConfig, qs: questions, optionKeys: OPTION_SHORTCUT_KEYS, studyHref }}
+	define:vars={{
+		cfg: certConfig,
+		qs: questions,
+		optionKeys: OPTION_SHORTCUT_KEYS,
+		studyHref,
+		base,
+	}}
 	is:inline
 >
 (function () {
@@ -107,6 +113,11 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 	const LETTERS = "ABCDE";
 	const app = document.getElementById("app");
 	let reviewFilter = "all";
+	const params = new URLSearchParams(window.location.search);
+	const requestedMode = params.get("mode") === "assess" ? "assess" : "practice";
+	const rawDomain = params.get("domain");
+	const requestedDomain = rawDomain && Object.hasOwn(cfg.domains, rawDomain) ? rawDomain : "all";
+	let examNavigatorExpanded = !window.matchMedia("(max-width: 860px)").matches;
 
 	// Native <dialog> confirmation helper (replaces window.confirm())
 	function confirmAction(title, message, okLabel, onConfirm) {
@@ -328,8 +339,34 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 			shuffledOptions,
 		};
 		persist();
+		setResumeUrl(true);
 		render();
 		window.scrollTo({ top: 0, behavior: "smooth" });
+	}
+
+	function requestStart(mode, domain, amount) {
+		if (session && !session.submitted) {
+			const activeType = session.mode === "exam" ? "mock exam" : "practice session";
+			return confirmAction(
+				"Replace active session?",
+				`Your saved ${activeType} will be replaced. If you cancel, your answers and timer remain unchanged.`,
+				"Replace session",
+				() => start(mode, domain, amount),
+			);
+		}
+		start(mode, domain, amount);
+	}
+
+	function setResumeUrl(shouldResume) {
+		const url = new URL(window.location.href);
+		if (shouldResume && session) {
+			url.searchParams.set("mode", session.mode === "exam" ? "assess" : "practice");
+			url.searchParams.set("resume", "1");
+		} else {
+			url.searchParams.delete("resume");
+		}
+		history.replaceState(null, "", url);
+		window.dispatchEvent(new Event("practice-lab:workspace-mode-change"));
 	}
 
 	// --- Home view ---
@@ -338,6 +375,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		const attempted = values.filter((s) => s.attempts > 0).length;
 		const mastered = values.filter((s) => s.attempts > 0 && !s.lastWrong).length;
 		const weak = getWeakCount();
+		const assessSetup = requestedMode === "assess";
 
 		const readinessPct = pct(mastered, qs.length);
 		const bpLabel = cfg.blueprintSource === "official" ? "Exam weight" : "Bank distribution";
@@ -348,6 +386,56 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 				return `<div class="domainRow"><span><strong>${d}</strong> ${esc(domainConfig.name)}<br><span class="muted small">${bpLabel} ${domainConfig.weight}%</span></span><strong>${done.length}/${list.length}</strong></div>`;
 			})
 			.join("");
+		const setupContent = assessSetup
+			? `<div class="panel examSetup">
+				<h3>Timed mock exam</h3>
+				<p>${cfg.totalQuestions} questions mapped to the ${cfg.blueprintSource === "official" ? "official blueprint" : "available question-bank distribution"}.</p>
+				<p class="small muted">${cfg.examMinutes ?? 120} minutes. The timer continues if you leave; return here to resume your saved exam.</p>
+				<button class="primary" data-action="start-exam">Start mock exam</button>
+			</div>`
+			: `<div class="config configTop">
+				<div>
+					<label class="small" for="domain">Practice focus</label>
+					<select class="select" id="domain">
+						<option value="all" ${requestedDomain === "all" ? "selected" : ""}>All domains</option>
+						<optgroup label="Exam domains">
+							${Object.entries(cfg.domains)
+								.map(
+									([id, d]) =>
+										`<option value="${id}" ${requestedDomain === id ? "selected" : ""}>${id} · ${esc(d.name)}</option>`,
+								)
+								.join("")}
+						</optgroup>
+					</select>
+				</div>
+				<div>
+					<label class="small" for="amount">Questions</label>
+					<select class="select" id="amount">
+						<option value="10">10</option>
+						<option value="20" selected>20</option>
+						<option value="50">50</option>
+						<option value="${qs.length}">All available</option>
+					</select>
+				</div>
+			</div>
+			<div class="modes">
+				<button class="mode" data-action="start-practice">
+					<strong>Practice mode</strong>
+					<p>Instant feedback, explanations and links to primary documentation. Study by exam domain or focus on your weakest areas.</p>
+				</button>
+				<button class="mode" data-action="start-weak" ${weak ? "" : "disabled"}>
+					<strong>Review mistakes</strong>
+					<p>${weak ? `${weak} questions need another pass.` : "Complete a session to unlock targeted revision."} Retest only your latest missed questions.</p>
+				</button>
+				<a class="mode modeLink" href="${base}certifications/${cfg.slug}/?mode=assess#session">
+					<strong>Set up a mock exam</strong>
+					<p>Start a timed assessment when you are ready to test yourself.</p>
+				</a>
+			</div>`;
+		const activeSessionNotice =
+			session && !session.submitted
+				? `<p class="sessionNotice" role="status">Your ${session.mode === "exam" ? "mock exam" : "practice session"} is saved. ${session.mode === "exam" ? "The timer continues while you are away." : "Your answers are ready to resume."}</p>`
+				: "";
 
 		setAppHTML(`
 			<div class="hero">
@@ -362,50 +450,16 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 					${
 						session && !session.submitted
 							? `<button class="primary" data-action="resume">Resume ${session.mode === "exam" ? "mock exam" : "practice"} · ${session.currentIndex + 1}/${session.ids.length}</button>`
-							: `<a class="primary" href="#session">Choose a session</a>`
+							: `<a class="primary" href="#session">${assessSetup ? "Review mock exam setup" : "Choose practice settings"}</a>`
 					}
 					${studyHref ? `<a class="ghost ghostOnDark" href="${esc(studyHref)}" data-action="go-to-site-home">Open study notes</a>` : ""}
 					<a class="ghost ghostOnDark" href="#coverage">See your progress</a>
 				</div>
 			</div>
+			${activeSessionNotice}
 			<section class="section" id="session">
-				<div class="sectionHead"><h2>Choose your session</h2><span class="muted small">Save & resume automatically</span></div>
-				<div class="config configTop">
-					<div>
-						<label class="small" for="domain">Practice focus</label>
-						<select class="select" id="domain">
-							<option value="all">All domains</option>
-							<optgroup label="Exam domains">
-								${Object.entries(cfg.domains)
-									.map(([id, d]) => `<option value="${id}">${id} · ${esc(d.name)}</option>`)
-									.join("")}
-							</optgroup>
-						</select>
-					</div>
-					<div>
-						<label class="small" for="amount">Questions</label>
-						<select class="select" id="amount">
-							<option value="10">10</option>
-							<option value="20" selected>20</option>
-							<option value="50">50</option>
-							<option value="${qs.length}">All available</option>
-						</select>
-					</div>
-				</div>
-				<div class="modes">
-					<button class="mode" data-action="start-practice">
-						<strong>Practice mode</strong>
-						<p>Instant feedback, explanations and links to primary documentation. Study by exam domain or focus on your weakest areas.</p>
-					</button>
-					<button class="mode" data-action="start-exam">
-						<strong>Mock exam</strong>
-						<p>${cfg.totalQuestions} questions proportioned to the ${cfg.blueprintSource === "official" ? "official blueprint" : "blueprint derived from the imported bank's domain distribution"}. ${cfg.examMinutes ?? 120} minutes. Answers revealed after submission.</p>
-					</button>
-					<button class="mode" data-action="start-weak" ${weak ? "" : "disabled"}>
-						<strong>Review mistakes</strong>
-						<p>${weak ? `${weak} questions need another pass.` : "Complete a session to unlock targeted revision."} Retest only your latest missed questions.</p>
-					</button>
-				</div>
+				<div class="sectionHead"><h2>${assessSetup ? "Mock exam setup" : "Practice setup"}</h2><span class="muted small">${assessSetup ? "Your saved answers can be resumed" : "Save & resume automatically"}</span></div>
+				${setupContent}
 			</section>
 			<section class="section" id="coverage">
 				<div class="sectionHead"><h2>Learning telemetry</h2><button class="ghost small" data-action="reset-stats">Reset progress</button></div>
@@ -682,7 +736,13 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 
 	// --- Render ---
 	function render() {
-		if (session && !session.submitted) question();
+		if (
+			session &&
+			!session.submitted &&
+			new URLSearchParams(window.location.search).get("resume") === "1"
+		)
+			question();
+		else if (session && !session.submitted) home();
 		else if (session?.submitted) results();
 		else home();
 		tick();
@@ -700,10 +760,26 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 
 		if (action === "home") {
 			if (session?.submitted) session = null;
+			setResumeUrl(false);
 			persist();
 			return home();
 		}
-		if (action === "resume") return render();
+		if (action === "resume") {
+			setResumeUrl(true);
+			return render();
+		}
+		if (action === "exit-exam") {
+			return confirmAction(
+				"Exit mock exam?",
+				"Your answers will be saved, but the timer continues while you are away. Resume the exam from this certification page.",
+				"Exit exam",
+				() => {
+					setResumeUrl(false);
+					home();
+					window.scrollTo({ top: 0, behavior: "smooth" });
+				},
+			);
+		}
 		if (action === "reset-stats") {
 			confirmAction(
 				"Reset saved practice history?",
@@ -729,10 +805,10 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		if (action === "start-practice") {
 			const d = document.getElementById("domain")?.value || "all";
 			const n = +document.getElementById("amount")?.value || 20;
-			return start("practice", d, n);
+			return requestStart("practice", d, n);
 		}
-		if (action === "start-exam") return start("exam");
-		if (action === "start-weak") return start("weak");
+		if (action === "start-exam") return requestStart("exam");
+		if (action === "start-weak") return requestStart("weak");
 		if (!session || session.submitted) return;
 
 		const id = session.ids[session.currentIndex];

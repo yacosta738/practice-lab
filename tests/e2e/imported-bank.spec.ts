@@ -101,16 +101,10 @@ test("imported multi-select questions render five options and honor selectCount"
 		await page.waitForLoadState("networkidle");
 
 		// Move to next question — wait for the button to appear
-		const nextBtn = page.getByRole("button", { name: /Next|Finish/i });
-		try {
-			await nextBtn.waitFor({ state: "visible", timeout: 5000 });
-			await nextBtn.click();
-		} catch {
-			// Session may have ended unexpectedly
-			throw new Error(
-				`Session ended at question ${i + 1} of ${totalQuestions} without finding a 5-option question`,
-			);
-		}
+		const nextBtn = page.getByRole("button", { name: /Next question|Finish session/i });
+		await expect(nextBtn).toBeVisible();
+		await expect(nextBtn).toBeEnabled();
+		await nextBtn.click();
 	}
 
 	// If we reach here, no 5-option question was found

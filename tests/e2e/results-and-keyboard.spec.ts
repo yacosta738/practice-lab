@@ -3,8 +3,8 @@ import { expect, test } from "@playwright/test";
 const BASE_PATH = "/practice-lab";
 
 test("quiz shortcuts pause while the submit dialog is open", async ({ page }) => {
-	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
-	await page.getByRole("button", { name: /^Mock exam/ }).click();
+	await page.goto(`${BASE_PATH}/certifications/ccdv-f/?mode=assess#session`);
+	await page.getByRole("button", { name: "Start mock exam" }).click();
 	const submit = page.getByRole("button", { name: "Submit exam", exact: true });
 	await submit.click();
 
@@ -48,6 +48,7 @@ test("CCDV-F practice mode shows results page after finishing questions", async 
 
 	// Answer all 10 questions
 	for (let i = 0; i < 10; i++) {
+		const questionProgress = await page.locator(".qhead").textContent();
 		// Read the hint to know how many answers to select
 		const hintText = await page.locator(".hint").first().textContent();
 		const exactMatch = hintText?.match(/Select exactly (\d+) answers/i);
@@ -61,17 +62,18 @@ test("CCDV-F practice mode shows results page after finishing questions", async 
 
 		// Check answer
 		await page.getByRole("button", { name: "Check answer" }).click();
-		await page.waitForTimeout(500);
-
 		// Verify feedback appears
 		await expect(page.locator(".feedback")).toBeVisible({ timeout: 5000 });
 
 		// Move to next question (unless this is the last one)
 		if (i < 9) {
 			const nextBtn = page.getByRole("button", { name: /Next/i }).first();
-			await nextBtn.waitFor({ state: "visible", timeout: 5000 });
-			await nextBtn.click();
-			await page.waitForSelector("button.option", { state: "visible", timeout: 10000 });
+			await expect(nextBtn).toBeVisible();
+			await expect(nextBtn).toBeEnabled();
+			await nextBtn.click({ timeout: 5000 });
+			await expect(page.locator(".qhead")).not.toHaveText(questionProgress ?? "", {
+				timeout: 5000,
+			});
 		}
 	}
 
@@ -227,12 +229,11 @@ test("CCDV-F Next button moves to next question", async ({ page }) => {
 	await page.keyboard.press("Enter");
 
 	// Click Next button to move to next question
-	const nextBtn = page.getByRole("button", { name: /Next/i }).first();
-	await nextBtn.waitFor({ state: "visible", timeout: 5000 });
-	await nextBtn.click();
-	await page.waitForSelector("button.option", { state: "visible", timeout: 10000 });
+	const nextBtn = page.getByRole("button", { name: /Next question/ });
+	await expect(nextBtn).toBeVisible();
+	await expect(nextBtn).toBeEnabled();
+	await nextBtn.click({ timeout: 5000 });
 
 	// Verify the question changed
-	const secondQuestion = await page.locator("h2").first().textContent();
-	expect(secondQuestion).not.toBe(firstQuestion);
+	await expect(page.locator("h2").first()).not.toHaveText(firstQuestion ?? "", { timeout: 5000 });
 });

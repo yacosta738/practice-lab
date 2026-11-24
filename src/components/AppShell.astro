@@ -36,16 +36,16 @@ const searchItems = await getSearchIndex();
 const studySlugs = new Set(studyCerts.map((c) => c.slug));
 const hasStudyForCert = studySlugs.has(activeCertSlug);
 const learnHref = hasStudyForCert ? `${base}study/${activeCertSlug}/` : `${base}study/`;
-const practiceHref = `${base}certifications/${activeCertSlug}/`;
-const assessHref = `${base}certifications/${activeCertSlug}/#session`;
+const practiceHref = `${base}certifications/${activeCertSlug}/?mode=practice#session`;
+const assessHref = `${base}certifications/${activeCertSlug}/?mode=assess#session`;
 const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 ---
 
 <div class="pl-shell">
 	<aside class="pl-sidebar" aria-label="Workspace navigation">
 		<a class="pl-sidebar-brand" href={base} data-action="go-to-site-home">
-			<span class="pl-mark" aria-hidden="true">P</span>
-			<span class="pl-brand-title">practice lab</span>
+			<img class="pl-mark" src={`${base}brand/practice-lab-mark.png`} alt="" width="32" height="32">
+			<span class="pl-brand-title">PRACTICE LAB</span>
 		</a>
 
 		<nav class="pl-nav-section" aria-label="Workspace">
@@ -69,6 +69,7 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 			<a
 				class="pl-nav-link"
 				href={practiceHref}
+				data-workspace-mode="practice"
 				aria-current={activeNav === "practice" ? "page" : undefined}
 				data-action="go-to-site-home"
 			>
@@ -77,6 +78,7 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 			<a
 				class="pl-nav-link"
 				href={assessHref}
+				data-workspace-mode="assess"
 				aria-current={activeNav === "assess" ? "page" : undefined}
 				data-action="go-to-site-home"
 			>
@@ -197,6 +199,7 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 	</a>
 	<a
 		href={practiceHref}
+		data-workspace-mode="practice"
 		aria-current={activeNav === "practice" ? "page" : undefined}
 		data-action="go-to-site-home"
 	>
@@ -204,6 +207,7 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 	</a>
 	<a
 		href={assessHref}
+		data-workspace-mode="assess"
 		aria-current={activeNav === "assess" ? "page" : undefined}
 		data-action="go-to-site-home"
 	>
@@ -225,10 +229,22 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 		<span class="pl-nav-label">Workspace</span>
 		<a class="pl-nav-link" href={base} data-action="go-to-site-home">Overview</a>
 		<a class="pl-nav-link" href={learnHref} data-action="go-to-site-home">Learn · Study library</a>
-		<a class="pl-nav-link" href={practiceHref} data-action="go-to-site-home"
+		<a
+			class="pl-nav-link"
+			href={practiceHref}
+			data-workspace-mode="practice"
+			aria-current={activeNav === "practice" ? "page" : undefined}
+			data-action="go-to-site-home"
 			>Practice · Questions</a
 		>
-		<a class="pl-nav-link" href={assessHref} data-action="go-to-site-home">Assess · Mock exam</a>
+		<a
+			class="pl-nav-link"
+			href={assessHref}
+			data-workspace-mode="assess"
+			aria-current={activeNav === "assess" ? "page" : undefined}
+			data-action="go-to-site-home"
+			>Assess · Mock exam</a
+		>
 		<a class="pl-nav-link" href={resourcesHref} data-action="go-to-site-home">Learning resources</a>
 	</nav>
 	<nav class="pl-nav-section" aria-label="Mobile certifications">

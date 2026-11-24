@@ -75,8 +75,9 @@ const studySections = studyCerts.reduce(
 				<div>
 					<h1>Practice with confidence.</h1>
 					<p class="lead">
-						Build knowledge, drill by exam domain, and measure readiness with timed mock exams — all
-						offline in your browser.
+						Build knowledge, drill by exam domain, and measure readiness with timed mock exams.
+						Practice progress is saved locally in your browser. The site itself needs an internet
+						connection to load.
 					</p>
 				</div>
 				<div class="wsHeroActions">
@@ -102,7 +103,7 @@ const studySections = studyCerts.reduce(
 					</p>
 					<span class="wsPillarCta">Start domain drill →</span>
 				</a>
-				<a class="wsPillar" href={`${base}certifications/ccdv-f/#session`}>
+				<a class="wsPillar" href={`${base}certifications/ccdv-f/?mode=assess#session`}>
 					<span class="wsPillarMark" aria-hidden="true">A</span>
 					<strong>Assess</strong>
 					<p>Blueprint-proportioned timed mock exams with flag review and domain diagnostics.</p>
@@ -114,7 +115,7 @@ const studySections = studyCerts.reduce(
 		<section class="section" id="certifications">
 			<div class="sectionHead">
 				<h2>Available certifications</h2>
-				<span class="muted small">{certDetails.length} tracks · offline progress</span>
+				<span class="muted small">{certDetails.length} tracks · local progress tracking</span>
 			</div>
 			<div class="wsCertList">
 				{certDetails.map((detail) => (

@@ -79,6 +79,10 @@ const sidebarDomains = Object.entries(cert.certification.domains).map(([id, d]) 
 	weight: d.weight,
 	href: `${base}study/${cert.slug}/#${id}`,
 }));
+const practiceDomain =
+	section.domain && cert.certification.domains[section.domain] ? section.domain : undefined;
+const practiceHref = `${base}${cert.quizPath}/?mode=practice${practiceDomain ? `&domain=${encodeURIComponent(practiceDomain)}` : ""}#session`;
+const practiceLabel = practiceDomain ? `Practice ${practiceDomain}` : `Practice ${cert.subtitle}`;
 ---
 
 <StudyLayout
@@ -122,7 +126,7 @@ const sidebarDomains = Object.entries(cert.certification.domains).map(([id, d]) 
 						Reinforce {section.title} with source-linked questions and immediate rationales.
 					</p>
 				</div>
-				<a class="primary" href={`${base}${cert.quizPath}/`}>Practice {cert.subtitle} →</a>
+				<a class="primary" href={practiceHref}>{practiceLabel} →</a>
 			</div>
 		</article>
 
