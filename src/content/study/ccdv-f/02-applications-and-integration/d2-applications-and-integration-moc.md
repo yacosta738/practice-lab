@@ -4,7 +4,7 @@ type: moc
 certification: CCDV-F
 status: verified
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-15'
+updated: '2026-11-24'
 tags:
 - certification/ccdv-f
 - domain/applications-integration
@@ -34,9 +34,13 @@ domain: D2
 - [Requirements and AI System Lifecycle](../requirements-and-ai-system-lifecycle/)
 - [Cloud Providers and Deployment Tradeoffs](../cloud-providers-and-deployment-tradeoffs/)
 
+## Applied workshop
+
+- [Application Integration Design Workshop](../application-integration-design-workshop/) — turn an interactive support scenario into API, reliability, configuration, and release decisions.
+
 ## Study strategy
 
-Priority A: practical hands-on API integration, tracing, auth boundaries and error recovery.
+Priority A: practical hands-on API integration, tracing, auth boundaries and error recovery. Complete the [Application Integration Design Workshop](../application-integration-design-workshop/) after reviewing the atomic notes; use its case to connect the six sub-objectives rather than memorizing each interface in isolation.
 
 ## Cross-domain navigation
 

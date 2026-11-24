@@ -28,6 +28,7 @@ tags:
 ## Navigate by purpose
 
 - **Plan:** [Study Roadmap](../study-roadmap/) and [Exam Blueprint and Coverage](../exam-blueprint-and-coverage/).
+- **Prepare:** [Learning Resources](../learning-resources/) and the [Exam Decision Guide](../exam-decision-guide/).
 - **Look up a concept:** [Exam Glossary](../exam-glossary/); each entry leads to its atomic note.
 - **Validate a source:** [Source Register](../source-register/) and [Course Access Coverage](../course-access-coverage/).
 - **Track incompleteness:** [Knowledge Gap Backlog](../knowledge-gap-backlog/).
@@ -42,6 +43,8 @@ tags:
 - [CCDV-F-Developer-Study-Guide-100-Questions](../ccdv-f-developer-study-guide-100-questions/) — unofficial 100-question bank.
 - [Interactive quiz HTML](https://drive.google.com/file/d/1ZEnvO9nZSFz61k3exGBMf1MMEISgzbHs/view).
 - [Exam Guide PDF](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view) — authoritative exam weights and format.
+- [Learning Resources](../learning-resources/) — official sources, AI Cert Guides, the recommended video, and independent practice.
+- [Exam Decision Guide](../exam-decision-guide/) — original decision patterns and distractor analysis.
 
 ## Provenance and accuracy
 

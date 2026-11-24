@@ -4,7 +4,7 @@ type: moc
 certification: CCDV-F
 status: verified
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-15'
+updated: '2026-11-24'
 tags:
 - certification/ccdv-f
 - domain/agents-workflows
@@ -28,9 +28,13 @@ domain: D1
 - [Memory Scopes and Persistence](../memory-scopes-and-persistence/)
 - [Agent SDK and Deployment Choices](../agent-sdk-and-deployment-choices/)
 
+## Applied workshop
+
+- [Agent Architecture Design Workshop](../agent-architecture-design-workshop/) — design a bounded support agent while keeping authorization and irreversible actions in trusted application code.
+
 ## Study strategy
 
-Use the concept notes, reproduce the failure examples, and complete an associated lab.
+Use the concept notes, reproduce the failure examples, and complete the [Agent Architecture Design Workshop](../agent-architecture-design-workshop/). Be ready to justify when a deterministic workflow is sufficient, what the agent may do, and how the harness detects completion or exhaustion.
 
 ## Cross-domain navigation
 

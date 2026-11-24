@@ -45,6 +45,16 @@ const totalSections = sections.length;
 					{cert.examGuide.label}
 				</a>
 			)}
+			{cert.learningResources && (
+				<a class="ghost ghostOnDark" href={`${base}${cert.learningResources.path}/`}>
+					{cert.learningResources.label}
+				</a>
+			)}
+			{cert.examDecisionGuide && (
+				<a class="ghost ghostOnDark" href={`${base}${cert.examDecisionGuide.path}/`}>
+					{cert.examDecisionGuide.label}
+				</a>
+			)}
 		</div>
 		<div class="pills">
 			<span class="pill">{totalNotes} notes</span>
