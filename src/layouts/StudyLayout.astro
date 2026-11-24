@@ -1,60 +1,39 @@
 ---
-import { base } from "../lib/base";
+import AppShell, { type SidebarDomain } from "../components/AppShell.astro";
 import Layout from "./Layout.astro";
+import "../styles/tokens.css";
 import "../styles/quiz.css";
 import "../styles/study.css";
 
 interface Props {
 	title: string;
 	description?: string;
+	activeCertSlug?: string;
+	activeCertCode?: string;
+	breadcrumb?: string;
+	domains?: SidebarDomain[];
 }
 
-const { title, description } = Astro.props;
+const {
+	title,
+	description,
+	activeCertSlug = "ccdv-f",
+	activeCertCode,
+	breadcrumb = title,
+	domains = [],
+} = Astro.props;
 ---
 
 <Layout title={`${title} · Study · Practice Lab`} description={description}>
-	<main class="studyMain">
-		<header>
-			<a class="brand" href={base}>
-				<div class="mark">S</div>
-				<span>
-					<strong>Study Library</strong>
-					<small>Practice Lab</small>
-				</span>
-			</a>
-			<nav class="studyNav" aria-label="Study navigation">
-				<a class="ghost" href={base}>Home</a>
-				<a class="ghost" href={`${base}study/`}>Study</a>
-				<a class="ghost" href={`${base}certifications/ccdv-f`}>Practice</a>
-				<button
-					type="button"
-					class="ghost"
-					data-action="theme"
-					aria-label="Theme: toggle light and dark appearance"
-				>
-					Theme
-				</button>
-			</nav>
-		</header>
-
+	<AppShell
+		activeNav="study"
+		activeCertSlug={activeCertSlug}
+		activeCertCode={activeCertCode}
+		breadcrumb={breadcrumb}
+		domains={domains}
+		footerText="Personal study notes · Independent study material"
+		wide={true}
+	>
 		<slot />
-
-		<footer>Personal study notes · Independent study material</footer>
-	</main>
+	</AppShell>
 </Layout>
-
-<script is:inline>
-document.addEventListener("click", (event) => {
-	const el = event.target.closest("[data-action]");
-	if (!el) return;
-	if (el.dataset.action === "theme") {
-		const meta = document.querySelector('meta[name="color-scheme"]');
-		if (meta) {
-			const isDark = meta.content === "dark";
-			const nextScheme = isDark ? "light" : "dark";
-			meta.content = nextScheme;
-			localStorage.setItem("practice-lab-theme", nextScheme);
-		}
-	}
-});
-</script>

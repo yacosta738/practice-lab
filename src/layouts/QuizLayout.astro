@@ -1,63 +1,49 @@
 ---
-import { base } from "../lib/base";
+import AppShell, { type SidebarDomain } from "../components/AppShell.astro";
 import Layout from "./Layout.astro";
+import "../styles/tokens.css";
 import "../styles/quiz.css";
 
 interface Props {
 	title: string;
 	subtitle: string;
+	slug: string;
 	description?: string;
 	studyHref?: string;
-	theme: {
+	domains?: SidebarDomain[];
+	theme?: {
 		brand: string;
 		brand2: string;
 		brandSoft: string;
 	};
 }
 
-const { title, subtitle, description, studyHref, theme } = Astro.props;
-
-// Astro does not interpolate expressions inside is:inline scripts, so the
-// theme values are injected through define:vars (object form) and applied as
-// inline custom properties, which win over the design tokens in quiz.css.
+const { title, subtitle, slug, description, domains = [] } = Astro.props;
 ---
 
 <Layout title={`${title} · Practice Lab`} description={description}>
-	<script define:vars={{ theme }} is:inline>
-	(function () {
-		const root = document.documentElement;
-		root.style.setProperty("--brand", theme.brand);
-		root.style.setProperty("--brand2", theme.brand2);
-		root.style.setProperty("--brandSoft", theme.brandSoft);
-	})();
-	</script>
-
-	<main>
-		<header>
-			<a class="brand" href={base} data-action="go-to-site-home">
-				<div class="mark">C</div>
-				<span>
-					<strong>{title}</strong>
-					<small>{subtitle}</small>
-				</span>
-			</a>
-			<div class="navActions">
-				{studyHref && (
-					<a class="ghost" href={studyHref}>
-						Study notes
-					</a>
-				)}
-				<button
-					type="button"
-					class="ghost"
-					data-action="theme"
-					aria-label="Theme: toggle light and dark appearance"
-				>
-					Theme
-				</button>
-			</div>
-		</header>
+	<AppShell
+		activeNav="practice"
+		activeCertSlug={slug}
+		activeCertCode={subtitle}
+		breadcrumb={title}
+		domains={domains}
+		footerText="Independent study material · Progress stays in your browser"
+	>
 		<div id="app" aria-live="polite"></div>
-		<footer>Independent study material · Progress stays in your browser</footer>
-	</main>
+	</AppShell>
+
+	<dialog
+		id="pl-confirm-dialog"
+		class="pl-confirm-dialog"
+		closedby="any"
+		aria-labelledby="pl-confirm-title"
+	>
+		<h1 id="pl-confirm-title">Confirm action</h1>
+		<p id="pl-confirm-message"></p>
+		<form method="dialog" class="pl-confirm-actions">
+			<button type="submit" value="cancel" class="ghost" autofocus>Cancel</button>
+			<button type="submit" value="confirm" id="pl-confirm-ok" class="primary">Continue</button>
+		</form>
+	</dialog>
 </Layout>

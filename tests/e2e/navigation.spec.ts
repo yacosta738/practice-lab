@@ -2,6 +2,28 @@ import { expect, test } from "@playwright/test";
 
 const BASE_PATH = "/practice-lab";
 
+test("mobile drawer closes for same-page navigation and stays open for a canceled click", async ({
+	page,
+}) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	const path = `${BASE_PATH}/certifications/ccdv-f/`;
+	await page.goto(path);
+	await page.getByRole("button", { name: "Open workspace navigation" }).click();
+
+	const drawer = page.getByRole("dialog", { name: "practice lab" });
+	const assess = drawer.getByRole("link", { name: "Assess · Mock exam" });
+	await assess.evaluate((link) =>
+		link.addEventListener("click", (event) => event.preventDefault(), { once: true }),
+	);
+	await assess.click();
+	await expect(drawer).toBeVisible();
+	await expect(page).toHaveURL(path);
+
+	await assess.press("Enter");
+	await expect(drawer).toBeHidden();
+	await expect(page).toHaveURL(`${path}#session`);
+});
+
 test("homepage certification link navigates under the GitHub Pages base path", async ({ page }) => {
 	await page.goto(`${BASE_PATH}/`);
 	await page.getByRole("link", { name: "Start practicing" }).click();

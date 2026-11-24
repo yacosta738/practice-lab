@@ -1,14 +1,54 @@
 ---
 import { getCollection } from "astro:content";
 import { getCertificationList, loadCertification } from "../certifications/index";
+import AppShell from "../components/AppShell.astro";
 import Layout from "../layouts/Layout.astro";
 import { base } from "../lib/base";
 import { groupNotes, toNoteMeta } from "../lib/study-groups";
 import { studyCerts } from "../study/registry";
+import "../styles/tokens.css";
 import "../styles/quiz.css";
 
 const studyEntries = await getCollection("study");
 const studyNotes = studyEntries.length;
+const studySlugs = new Set(studyCerts.map((c) => c.slug));
+
+const certConfigs = await getCertificationList();
+const certDetails = await Promise.all(
+	certConfigs.map(async (cfg) => {
+		const entry = await loadCertification(cfg.slug);
+		return {
+			config: cfg,
+			questionCount: entry?.questions.length ?? 0,
+			domainCount: Object.keys(cfg.domains).length,
+			hasStudyNotes: studySlugs.has(cfg.slug),
+		};
+	}),
+);
+
+const flagship = certDetails.find((c) => c.config.slug === "ccdv-f") ?? certDetails[0];
+const flagshipDomains = flagship
+	? Object.entries(flagship.config.domains)
+			.sort(([, a], [, b]) => b.weight - a.weight)
+			.slice(0, 4)
+			.map(([id, d]) => ({
+				id,
+				name: d.name,
+				weight: d.weight,
+				href: `${base}study/${flagship.config.slug}/#${id}`,
+			}))
+	: [];
+
+const sidebarDomains = flagship
+	? Object.entries(flagship.config.domains).map(([id, d]) => ({
+			id,
+			name: d.name,
+			weight: d.weight,
+			href: `${base}study/${flagship.config.slug}/#${id}`,
+		}))
+	: [];
+
+const totalQuestions = certDetails.reduce((acc, c) => acc + c.questionCount, 0);
 const studySections = studyCerts.reduce(
 	(total, cert) =>
 		total +
@@ -18,146 +58,123 @@ const studySections = studyCerts.reduce(
 		).length,
 	0,
 );
-
-// Load all certifications with their question counts
-const certConfigs = await getCertificationList();
-const certDetails = await Promise.all(
-	certConfigs.map(async (cfg) => {
-		const entry = await loadCertification(cfg.slug);
-		return {
-			config: cfg,
-			questionCount: entry?.questions.length ?? 0,
-			domainCount: Object.keys(cfg.domains).length,
-		};
-	}),
-);
 ---
 
 <Layout
 	title="Practice Lab"
-	description="Prepare for certifications with interactive practice quizzes"
+	description="Prepare for certifications with interactive practice quizzes and structured study notes"
 >
-	<main>
-		<header>
-			<a class="brand" href={base}>
-				<div class="mark">P</div>
-				<span>
-					<strong>Practice Lab</strong>
-					<small>Certification Prep</small>
-				</span>
-			</a>
-			<button
-				type="button"
-				class="ghost"
-				data-action="theme"
-				aria-label="Theme: toggle light and dark appearance"
-			>
-				Theme
-			</button>
-		</header>
-
-		<section class="hero">
-			<span class="eyebrow">Certification practice lab</span>
-			<h1>Practice with confidence.</h1>
-			<p class="lead">
-				Interactive quizzes built for real exam readiness. Study by domain, take timed mock exams,
-				and track your progress — all offline in your browser.
-			</p>
-			<div class="ctaRow">
-				<a class="primary" href={`${base}certifications/ccdv-f`}>Start practicing</a>
-				<a class="ghost ghostOnDark" href="#certifications">See the certifications</a>
-				<a class="ghost ghostOnDark" href={`${base}study/`}>Study the notes</a>
+	<AppShell
+		activeNav="overview"
+		activeCertSlug="ccdv-f"
+		breadcrumb="Overview"
+		domains={sidebarDomains}
+	>
+		<section class="wsHero">
+			<div class="wsHeroTop">
+				<div>
+					<h1>Practice with confidence.</h1>
+					<p class="lead">
+						Build knowledge, drill by exam domain, and measure readiness with timed mock exams — all
+						offline in your browser.
+					</p>
+				</div>
+				<div class="wsHeroActions">
+					<a class="primary" href={`${base}certifications/ccdv-f`}>Start practicing</a>
+					<a class="ghost" href={`${base}study/`}>Study the notes</a>
+				</div>
 			</div>
-			<div class="pills">
-				<span class="pill">Offline-first</span>
-				<span class="pill">Progress tracking</span>
-				<span class="pill">Timed mock exams</span>
-				<span class="pill">Domain-focused study</span>
+			<div class="wsPillarGrid">
+				<a class="wsPillar" href={`${base}study/ccdv-f/`}>
+					<span class="wsPillarMark" aria-hidden="true">L</span>
+					<strong>Learn</strong>
+					<p>
+						{studyNotes} domain-ordered study notes across {studySections} sections, labs, and
+						curated resources.
+					</p>
+					<span class="wsPillarCta">Open study library →</span>
+				</a>
+				<a class="wsPillar" href={`${base}certifications/ccdv-f/`}>
+					<span class="wsPillarMark" aria-hidden="true">P</span>
+					<strong>Practice</strong>
+					<p>
+						{totalQuestions} source-linked questions with instant rationales and keyboard shortcuts.
+					</p>
+					<span class="wsPillarCta">Start domain drill →</span>
+				</a>
+				<a class="wsPillar" href={`${base}certifications/ccdv-f/#session`}>
+					<span class="wsPillarMark" aria-hidden="true">A</span>
+					<strong>Assess</strong>
+					<p>Blueprint-proportioned timed mock exams with flag review and domain diagnostics.</p>
+					<span class="wsPillarCta">Launch mock exam →</span>
+				</a>
 			</div>
 		</section>
 
 		<section class="section" id="certifications">
 			<div class="sectionHead">
 				<h2>Available certifications</h2>
-				<span class="muted small">{certDetails.length} available</span>
+				<span class="muted small">{certDetails.length} tracks · offline progress</span>
 			</div>
-			{certDetails.map((detail) => (
-				<a class="certCard" href={`${base}certifications/${detail.config.slug}`}>
-					<div>
-						<span class="num">{detail.config.subtitle}</span>
-						<strong>{detail.config.title}</strong>
-						<p>
-							{detail.questionCount} questions across {detail.domainCount} domains. Timed mock exam
-							with {detail.config.totalQuestions} questions.
-						</p>
-						<span class="certCta">Open the practice lab →</span>
-					</div>
-					<dl class="certFacts">
-						<div>
-							<dt>Question bank</dt>
-							<dd>{detail.questionCount}</dd>
+			<div class="wsCertList">
+				{certDetails.map((detail) => (
+					<a class="wsCertRow" href={`${base}certifications/${detail.config.slug}`}>
+						<div class="wsCertMain">
+							<div class="wsCertMeta">
+								<span class="wsCode">{detail.config.subtitle}</span>
+								{detail.hasStudyNotes ? (
+									<span class="wsBadgeAccent">{studyNotes} study notes</span>
+								) : (
+									<span class="wsBadgeMuted">Practice bank</span>
+								)}
+							</div>
+							<strong>{detail.config.title}</strong>
+							<p>{detail.config.description}</p>
 						</div>
-						<div>
-							<dt>Exam domains</dt>
-							<dd>{detail.domainCount}</dd>
-						</div>
-						<div>
-							<dt>Mock exam</dt>
-							<dd>{detail.config.totalQuestions} questions</dd>
-						</div>
-					</dl>
-				</a>
-			))}
+						<dl class="wsCertStats">
+							<div>
+								<dt>Bank</dt>
+								<dd>{detail.questionCount} Qs</dd>
+							</div>
+							<div>
+								<dt>Domains</dt>
+								<dd>{detail.domainCount}</dd>
+							</div>
+							<div>
+								<dt>Mock</dt>
+								<dd>{detail.config.totalQuestions} Qs</dd>
+							</div>
+						</dl>
+						<span class="wsArrow" aria-hidden="true">
+							→
+						</span>
+					</a>
+				))}
+			</div>
 		</section>
 
-		<section class="section" id="study">
-			<div class="sectionHead">
-				<h2>Study library</h2>
-				<span class="muted small">{studyNotes} notes</span>
-			</div>
-			<a class="certCard" href={`${base}study/`}>
-				<div>
-					<span class="num">Study</span>
-					<strong>Knowledge base by certification</strong>
-					<p>
-						Personal study notes with domain ordering, labs, sources and cross-links, built from
-						Markdown.
-					</p>
-					<span class="certCta">Open the study library →</span>
+		{flagshipDomains.length > 0 && (
+			<section class="section" id="continue">
+				<div class="sectionHead">
+					<h2>Continue studying — highest exam weight</h2>
+					<a class="small wsTextLink" href={`${base}study/ccdv-f/`}>
+						View all {studyNotes} notes →
+					</a>
 				</div>
-				<dl class="certFacts">
-					<div>
-						<dt>Notes</dt>
-						<dd>{studyNotes}</dd>
-					</div>
-					<div>
-						<dt>Sections</dt>
-						<dd>{studySections}</dd>
-					</div>
-					<div>
-						<dt>Format</dt>
-						<dd>Markdown</dd>
-					</div>
-				</dl>
-			</a>
-		</section>
-
-		<footer>Independent study material · Progress stays in your browser</footer>
-	</main>
+				<div class="wsCompactList">
+					{flagshipDomains.map((d) => (
+						<a class="wsCompactRow" href={d.href}>
+							<span>
+								<strong>{d.id}</strong> · {d.name}
+							</span>
+							<span class="wsCompactRight">
+								<span class="wsCode">{d.weight}% weight</span>
+								<span aria-hidden="true">→</span>
+							</span>
+						</a>
+					))}
+				</div>
+			</section>
+		)}
+	</AppShell>
 </Layout>
-
-<script is:inline>
-document.addEventListener("click", (event) => {
-	const el = event.target.closest("[data-action]");
-	if (!el) return;
-	if (el.dataset.action === "theme") {
-		const meta = document.querySelector('meta[name="color-scheme"]');
-		if (meta) {
-			const isDark = meta.content === "dark";
-			const nextScheme = isDark ? "light" : "dark";
-			meta.content = nextScheme;
-			localStorage.setItem("practice-lab-theme", nextScheme);
-		}
-	}
-});
-</script>

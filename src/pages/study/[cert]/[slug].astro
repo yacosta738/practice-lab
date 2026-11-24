@@ -12,6 +12,8 @@ import {
 } from "../../../lib/study-groups";
 import { type StudyCert, studyCerts } from "../../../study/registry";
 
+export const prerender = true;
+
 interface NotePageProps {
 	cert: StudyCert;
 	section: StudySection;
@@ -70,9 +72,23 @@ const toc = headings.filter((heading) => heading.depth === 2);
 const description = note.kind
 	? `${note.kind} note on ${note.title} for ${cert.title}.`
 	: `Study note: ${note.title} for ${cert.title}.`;
+
+const sidebarDomains = Object.entries(cert.certification.domains).map(([id, d]) => ({
+	id,
+	name: d.name,
+	weight: d.weight,
+	href: `${base}study/${cert.slug}/#${id}`,
+}));
 ---
 
-<StudyLayout title={note.title} description={description}>
+<StudyLayout
+	title={note.title}
+	description={description}
+	activeCertSlug={cert.slug}
+	activeCertCode={cert.subtitle}
+	breadcrumb={note.title}
+	domains={sidebarDomains}
+>
 	<nav class="breadcrumb" aria-label="Breadcrumb">
 		<a href={base}>Home</a>
 		<span>/</span>
@@ -99,6 +115,15 @@ const description = note.kind
 				{note.updated && <span>Updated {note.updated}</span>}
 			</div>
 			<Content />
+			<div class="studyPracticeCta">
+				<div>
+					<strong>Test this topic in Practice Lab</strong>
+					<p class="small muted" style="margin:2px 0 0">
+						Reinforce {section.title} with source-linked questions and immediate rationales.
+					</p>
+				</div>
+				<a class="primary" href={`${base}${cert.quizPath}/`}>Practice {cert.subtitle} →</a>
+			</div>
 		</article>
 
 		{toc.length >= 2 && (

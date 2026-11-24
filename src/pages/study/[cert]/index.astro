@@ -5,6 +5,8 @@ import { base } from "../../../lib/base";
 import { groupNotes, toNoteMeta } from "../../../lib/study-groups";
 import { type StudyCert, studyCerts } from "../../../study/registry";
 
+export const prerender = true;
+
 export async function getStaticPaths() {
 	return studyCerts.map((cert) => ({
 		params: { cert: cert.slug },
@@ -20,11 +22,22 @@ const sections = groupNotes(notes, cert.certification.domains);
 
 const totalNotes = notes.length;
 const totalSections = sections.length;
+
+const sidebarDomains = Object.entries(cert.certification.domains).map(([id, d]) => ({
+	id,
+	name: d.name,
+	weight: d.weight,
+	href: `${base}study/${cert.slug}/#${id}`,
+}));
 ---
 
 <StudyLayout
 	title={cert.title}
 	description={`${cert.description} Personal study notes organised by exam domain.`}
+	activeCertSlug={cert.slug}
+	activeCertCode={cert.subtitle}
+	breadcrumb="Study Library"
+	domains={sidebarDomains}
 >
 	<nav class="breadcrumb" aria-label="Breadcrumb">
 		<a href={base}>Home</a>

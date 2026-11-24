@@ -1,9 +1,22 @@
-/* Study section — reuses design tokens from quiz.css */
+/* Study section — reuses design tokens from tokens.css */
 
 .studyMain {
 	max-width: 1080px;
 	margin: 0 auto;
 	padding: 0 24px 64px;
+}
+
+.studyPracticeCta {
+	margin-top: 32px;
+	padding: 18px 20px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	background: var(--surface);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
 }
 
 .studyNav {

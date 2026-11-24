@@ -32,6 +32,8 @@ for (const [path, mod] of Object.entries(questionsModules)) {
 // Slugs that have study notes
 const studySlugs = new Set(studyCerts.map((c) => c.slug));
 
+export const prerender = true;
+
 // getStaticPaths is extracted by Astro into a separate module, so it must
 // be fully self-contained — no references to frontmatter variables.
 export async function getStaticPaths() {
@@ -53,20 +55,28 @@ const questions = questionsMap[slug]?.questions ?? [];
 
 // Only pass studyHref when the certification actually has study notes
 const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
+const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
+	id,
+	name: d.name,
+	weight: d.weight,
+	href: studyHref ? `${studyHref}#${id}` : "#coverage",
+}));
 ---
 
 <QuizLayout
 	title={certConfig.title}
 	subtitle={certConfig.subtitle}
+	slug={certConfig.slug}
 	description={certConfig.description}
 	studyHref={studyHref}
+	domains={sidebarDomains}
 	theme={certConfig.theme}
 >
 	<!-- Quiz data passed inline -->
 </QuizLayout>
 
 <script
-	define:vars={{ cfg: certConfig, qs: questions, optionKeys: OPTION_SHORTCUT_KEYS }}
+	define:vars={{ cfg: certConfig, qs: questions, optionKeys: OPTION_SHORTCUT_KEYS, studyHref }}
 	is:inline
 >
 (function () {
@@ -96,6 +106,29 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 	const KEY = `${cfg.slug}-practice-lab-v2`;
 	const LETTERS = "ABCDE";
 	const app = document.getElementById("app");
+	let reviewFilter = "all";
+
+	// Native <dialog> confirmation helper (replaces window.confirm())
+	function confirmAction(title, message, okLabel, onConfirm) {
+		const dialog = document.getElementById("pl-confirm-dialog");
+		if (!dialog || typeof dialog.showModal !== "function") {
+			if (window.confirm(message)) onConfirm();
+			return;
+		}
+		const titleEl = document.getElementById("pl-confirm-title");
+		const msgEl = document.getElementById("pl-confirm-message");
+		const okBtn = document.getElementById("pl-confirm-ok");
+		if (titleEl) titleEl.textContent = title;
+		if (msgEl) msgEl.textContent = message;
+		if (okBtn) okBtn.textContent = okLabel;
+		const onClose = () => {
+			const val = dialog.returnValue;
+			dialog.returnValue = "";
+			if (val === "confirm") onConfirm();
+		};
+		dialog.addEventListener("close", onClose, { once: true });
+		dialog.showModal();
+	}
 
 	// Safe HTML renderer — uses Element.setHTML() with Sanitizer API when available,
 	// falls back to innerHTML for browsers without support (e.g. Safari).
@@ -306,12 +339,13 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		const mastered = values.filter((s) => s.attempts > 0 && !s.lastWrong).length;
 		const weak = getWeakCount();
 
+		const readinessPct = pct(mastered, qs.length);
 		const bpLabel = cfg.blueprintSource === "official" ? "Exam weight" : "Bank distribution";
 		const cards = Object.entries(cfg.domains)
 			.map(([d, domainConfig]) => {
 				const list = qs.filter((q) => q.domain === d);
 				const done = list.filter((q) => saved.stats[q.id]?.attempts);
-				return `<div class="panel domainRow"><span><strong>${d}</strong> ${esc(domainConfig.name)}<br><span class="muted">${bpLabel} ${domainConfig.weight}%</span></span><strong>${done.length}/${list.length}</strong></div>`;
+				return `<div class="domainRow"><span><strong>${d}</strong> ${esc(domainConfig.name)}<br><span class="muted small">${bpLabel} ${domainConfig.weight}%</span></span><strong>${done.length}/${list.length}</strong></div>`;
 			})
 			.join("");
 
@@ -320,54 +354,57 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 				<span class="eyebrow">${esc(cfg.subtitle)} · ${esc(cfg.title)}</span>
 				<h1>Know the platform.<br>Ship with confidence.</h1>
 				<p class="lead">${qs.length} source-linked practice questions across the ${Object.keys(cfg.domains).length} domains${cfg.examGuideNote ? ` mapped to ${cfg.examGuideNote} for the <strong>${esc(cfg.title)}</strong> certification` : ` for the <strong>${esc(cfg.title)}</strong> certification`}. Learn by doing, then test your readiness.</p>
+				<div class="readinessBar">
+					<div class="readinessMeta"><span>Study readiness · ${mastered} of ${qs.length} mastered</span><strong class="mono">${readinessPct}%</strong></div>
+					<progress class="progress" value="${mastered}" max="${qs.length}" aria-label="Certification readiness"></progress>
+				</div>
 				<div class="ctaRow">
 					${
 						session && !session.submitted
 							? `<button class="primary" data-action="resume">Resume ${session.mode === "exam" ? "mock exam" : "practice"} · ${session.currentIndex + 1}/${session.ids.length}</button>`
 							: `<a class="primary" href="#session">Choose a session</a>`
 					}
+					${studyHref ? `<a class="ghost ghostOnDark" href="${esc(studyHref)}" data-action="go-to-site-home">Open study notes</a>` : ""}
 					<a class="ghost ghostOnDark" href="#coverage">See your progress</a>
 				</div>
-				<div class="pills">
-				<span class="pill">${qs.length}-question bank</span>
-				<span class="pill">${cfg.totalQuestions}-question mock</span>
-				<span class="pill">${cfg.examMinutes ?? 120}-minute exam timer</span>
-				<span class="pill">Offline & private</span>
-			</div>
 			</div>
 			<section class="section" id="session">
 				<div class="sectionHead"><h2>Choose your session</h2><span class="muted small">Save & resume automatically</span></div>
+				<div class="config configTop">
+					<div>
+						<label class="small" for="domain">Practice focus</label>
+						<select class="select" id="domain">
+							<option value="all">All domains</option>
+							<optgroup label="Exam domains">
+								${Object.entries(cfg.domains)
+									.map(([id, d]) => `<option value="${id}">${id} · ${esc(d.name)}</option>`)
+									.join("")}
+							</optgroup>
+						</select>
+					</div>
+					<div>
+						<label class="small" for="amount">Questions</label>
+						<select class="select" id="amount">
+							<option value="10">10</option>
+							<option value="20" selected>20</option>
+							<option value="50">50</option>
+							<option value="${qs.length}">All available</option>
+						</select>
+					</div>
+				</div>
 				<div class="modes">
 					<button class="mode" data-action="start-practice">
 						<strong>Practice mode</strong>
 						<p>Instant feedback, explanations and links to primary documentation. Study by exam domain or focus on your weakest areas.</p>
 					</button>
-				<button class="mode" data-action="start-exam">
-					<strong>Mock exam</strong>
-					<p>${cfg.totalQuestions} questions proportioned to the ${cfg.blueprintSource === "official" ? "official blueprint" : "blueprint derived from the imported bank's domain distribution"}. ${cfg.examMinutes ?? 120} minutes. Answers revealed after submission.</p>
-				</button>
+					<button class="mode" data-action="start-exam">
+						<strong>Mock exam</strong>
+						<p>${cfg.totalQuestions} questions proportioned to the ${cfg.blueprintSource === "official" ? "official blueprint" : "blueprint derived from the imported bank's domain distribution"}. ${cfg.examMinutes ?? 120} minutes. Answers revealed after submission.</p>
+					</button>
 					<button class="mode" data-action="start-weak" ${weak ? "" : "disabled"}>
 						<strong>Review mistakes</strong>
 						<p>${weak ? `${weak} questions need another pass.` : "Complete a session to unlock targeted revision."} Retest only your latest missed questions.</p>
 					</button>
-				</div>
-				<div class="config">
-					<label class="small" for="domain">Practice focus</label>
-					<select class="select" id="domain">
-						<option value="all">All domains</option>
-						<optgroup label="Exam domains">
-							${Object.entries(cfg.domains)
-								.map(([id, d]) => `<option value="${id}">${id} · ${esc(d.name)}</option>`)
-								.join("")}
-						</optgroup>
-					</select>
-					<label class="small" for="amount">Questions</label>
-					<select class="select" id="amount">
-						<option value="10">10</option>
-						<option value="20" selected>20</option>
-					<option value="50">50</option>
-					<option value="${qs.length}">All available</option>
-				</select>
 				</div>
 			</section>
 			<section class="section" id="coverage">
@@ -426,18 +463,38 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 			.join("");
 
 		const src = x.source;
+		const domainStudyLink = studyHref ? `${studyHref}#${x.domain}` : "";
 		let fb = "";
 		if (checked)
 			fb = `<div class="feedback ${good ? "correct" : "wrong"}" role="status">
 			<strong>${good ? "Correct — well reasoned." : "Not quite — review the reasoning."}</strong>
 			<p>${esc(x.explanation)}</p>
 			${x.whyNot ? `<p class="small muted">Why not the others: ${esc(x.whyNot)}</p>` : ""}
-			${src.url ? `<a href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">Study source: ${esc(src.label)} ↗</a>` : `<span class="small muted">Study source: ${esc(src.label)}</span>`}
+			<div class="feedbackLinks">
+				${src.url ? `<a href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">Study source: ${esc(src.label)} ↗</a>` : `<span class="small muted">Study source: ${esc(src.label)}</span>`}
+				${domainStudyLink ? `<a href="${esc(domainStudyLink)}" data-action="go-to-site-home">Read ${x.domain} study notes →</a>` : ""}
+			</div>
 		</div>`;
 
-		const main = `<div class="qhead"><span>Question ${session.currentIndex + 1} of ${session.ids.length} · ${esc(session.mode.toUpperCase())}</span><span>${progress} answered</span></div>
-			<div class="progress" aria-label="Progress"><i style="width:${pct(session.currentIndex + 1, session.ids.length)}%"></i></div>
-			<div class="panel question" style="margin-top:16px">
+		const examBar = isExam
+			? `<div class="examBar" role="region" aria-label="Exam status">
+				<div class="examBarLeft">
+					<span class="badge">EXAM</span>
+					<strong class="mono">Q ${session.currentIndex + 1}/${session.ids.length}</strong>
+					<span class="small muted">${progress} answered · ${session.flags.length} flagged</span>
+				</div>
+				<div class="examBarRight">
+					<div id="clock" class="clock clockInline" aria-label="Time remaining">${clockText()}</div>
+					<button class="ghost small" data-action="finish">Submit exam</button>
+				</div>
+			</div>`
+			: "";
+
+		const main = `<h1 class="sr-only">${esc(cfg.title)} — ${isExam ? "Mock exam" : "Practice session"}</h1>
+			${examBar}
+			<div class="qhead"><span>Question ${session.currentIndex + 1} of ${session.ids.length} · ${esc(session.mode.toUpperCase())}</span><span class="qheadRight">${progress} answered · <span class="kbdHint">Keys 1–4 · Enter</span></span></div>
+			<progress class="progress" value="${session.currentIndex + 1}" max="${session.ids.length}" aria-label="Question progress"></progress>
+			<div class="panel question" style="margin-top:14px">
 				<span class="badge">${x.domain} · ${esc(domains[x.domain].name)}</span>
 				${x.topic ? `<span class="muted small" style="margin-left:8px">${esc(x.topic)}</span>` : ""}
 				<h2>${esc(x.question)}</h2>
@@ -464,10 +521,10 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 			.join("");
 
 		const side = `<aside class="panel side">
-			<h3>${isExam ? "Timed assessment" : "Study session"}</h3>
+			<h3>${isExam ? "Question navigator" : "Study session"}</h3>
 			${
 				isExam
-					? `<div id="clock" class="clock">${clockText()}</div><p class="small muted">Time remaining</p>`
+					? `<p class="small muted">Jump to any question. Flagged items are outlined.</p>`
 					: `<p class="small muted">Immediate rationale and primary-source references after each answer.</p>`
 			}
 			<div class="small muted">${progress}/${session.ids.length} answered · ${session.flags.length} flagged</div>
@@ -521,7 +578,7 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		let passingBandHtml = "";
 		if (cfg.passingScore) {
 			passingBandHtml = `
-				<div class="panel" style="margin:16px 0;padding:14px;border-left:4px solid #3b82f6">
+				<div class="infoCallout">
 					<strong>Reference passing threshold: ${cfg.passingScore} / 1,000</strong>
 					<p class="small muted" style="margin:4px 0 0">The official exam uses a scaled scoring model. This practice score is a raw percentage and cannot predict the scaled result.</p>
 				</div>`;
@@ -532,43 +589,60 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 				const list = ids.filter((id) => byId[id].domain === d);
 				if (!list.length) return "";
 				const ok = list.filter((id) => correct.includes(id)).length;
-				return `<div class="panel domainRow"><span>${d} · ${esc(domainConfig.name)}</span><strong>${ok}/${list.length} (${pct(ok, list.length)}%)</strong></div>`;
+				const domainPct = pct(ok, list.length);
+				const studyLink =
+					studyHref && domainPct < 80
+						? `<a class="small wsTextLink" href="${esc(studyHref)}#${d}" data-action="go-to-site-home">Study ${d} →</a>`
+						: "";
+				return `<div class="domainRow"><span><strong>${d}</strong> · ${esc(domainConfig.name)} ${studyLink}</span><strong>${ok}/${list.length} (${domainPct}%)</strong></div>`;
 			})
 			.join("");
 
-		const rev = ids
-			.map((id, k) => {
-				const q = byId[id];
-				const v = session.answers[id] || [];
-				const ok = accurate(id) && answered(id);
-				const { options: revOptions, correctAnswers: revCorrect } = getQuestionOptions(id);
-				return `<details class="panel review"><summary><span class="badge">${q.domain}</span> ${k + 1}. ${ok ? "✓" : "✕"} ${esc(q.question)}</summary>
-				<div class="small muted" style="margin:9px 0">Your selection: ${v.length ? v.map((n) => LETTERS[n]).join(", ") : "Unanswered"} · Correct: ${revCorrect.map((n) => LETTERS[n]).join(", ")}</div>
+		const missedCount = ids.filter((id) => !(answered(id) && accurate(id))).length;
+		const flaggedCount = session.flags.length;
+		const filteredIds = ids
+			.map((id, k) => ({ id, k }))
+			.filter(({ id }) => {
+				if (reviewFilter === "missed") return !(answered(id) && accurate(id));
+				if (reviewFilter === "flagged") return session.flags.includes(id);
+				return true;
+			});
+
+		const rev = filteredIds.length
+			? filteredIds
+					.map(({ id, k }) => {
+						const q = byId[id];
+						const v = session.answers[id] || [];
+						const ok = accurate(id) && answered(id);
+						const { options: revOptions, correctAnswers: revCorrect } = getQuestionOptions(id);
+						return `<details class="panel review"><summary><span class="badge">${q.domain}</span> ${k + 1}. ${ok ? "✓" : "✕"} ${esc(q.question)}</summary>
+				<div class="small muted" style="margin:9px 16px">Your selection: ${v.length ? v.map((n) => LETTERS[n]).join(", ") : "Unanswered"} · Correct: ${revCorrect.map((n) => LETTERS[n]).join(", ")}</div>
 				${revOptions.map((t, n) => `<div class="option${revCorrect.includes(n) ? " good" : v.includes(n) ? " bad" : ""}"><span class="letter">${LETTERS[n]}</span><span>${esc(t)}</span></div>`).join("")}
 				<p>${esc(q.explanation)}</p>
 				${q.whyNot ? `<p class="small muted">Why not the others: ${esc(q.whyNot)}</p>` : ""}
-				${q.source.url ? `<a href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">${esc(q.source.label)} ↗</a>` : `<span class="small muted">${esc(q.source.label)}</span>`}
+				${q.source.url ? `<a href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">${esc(q.source.label)} ↗</a>` : `<span class="small muted" style="display:inline-block;margin:0 16px 14px">${esc(q.source.label)}</span>`}
 			</details>`;
-			})
-			.join("");
+					})
+					.join("")
+			: `<p class="panel muted">No questions match this filter.</p>`;
 
 		setAppHTML(`
 			<div class="results">
 				<div class="panel padded">
-					<h2>${session.mode === "exam" ? "Mock exam results" : "Practice session results"}${session.timedOut ? " · time expired" : ""}</h2>
+					<h1>${session.mode === "exam" ? "Mock exam results" : "Practice session results"}${session.timedOut ? " · time expired" : ""}</h1>
 					<div class="score" style="margin:12px 0">
 						<div class="ring" style="--score:${score}%">
 							<span>${score}%</span>
 						</div>
 						<div>
-							<h1 style="font-size:36px;margin:0 0 6px">${correct.length} / ${ids.length} correct</h1>
+							<h2 class="scoreHeading">${correct.length} / ${ids.length} correct</h2>
 							<p class="muted" style="margin:0">Unofficial practice score · not equivalent to the scaled passing score.</p>
 						</div>
 					</div>
 					${passingBandHtml}
 					<div class="actions">
 						<button class="primary" data-action="home">Back to dashboard</button>
-						<button class="ghost" data-action="start-weak">Retake missed questions</button>
+						<button class="ghost" data-action="start-weak" ${getWeakCount() ? "" : "disabled"}>Retake missed questions</button>
 						<button class="ghost" data-action="start-exam">New mock exam</button>
 					</div>
 				</div>
@@ -577,8 +651,17 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 					<div class="domainGrid">${rows}</div>
 				</section>
 				<section class="section">
-					<h2>Review every answer</h2>
-					<p class="muted">Open an item to see the correct option, rationale and primary documentation.</p>
+					<div class="sectionHead">
+						<div>
+							<h2>Review every answer</h2>
+							<p class="muted small" style="margin:4px 0 0">Open an item to see the correct option, rationale and primary documentation.</p>
+						</div>
+						<div class="filterBar" role="group" aria-label="Filter reviewed answers">
+							<button type="button" class="filterBtn" data-action="filter-review" data-value="all" aria-pressed="${reviewFilter === "all"}">All (${ids.length})</button>
+							<button type="button" class="filterBtn" data-action="filter-review" data-value="missed" aria-pressed="${reviewFilter === "missed"}">Missed (${missedCount})</button>
+							<button type="button" class="filterBtn" data-action="filter-review" data-value="flagged" aria-pressed="${reviewFilter === "flagged"}">Flagged (${flaggedCount})</button>
+						</div>
+					</div>
 					${rev}
 				</section>
 			</div>`);
@@ -611,20 +694,10 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		if (!el) return;
 		const action = el.dataset.action;
 
-		// Allow site-home link to navigate normally (don't preventDefault)
-		if (action === "go-to-site-home") return;
+		// Allow site-home link and unified Layout theme toggle to handle their own events
+		if (action === "go-to-site-home" || action === "theme") return;
 		event.preventDefault();
 
-		if (action === "theme") {
-			const meta = document.querySelector('meta[name="color-scheme"]');
-			if (meta) {
-				const isDark = meta.content === "dark";
-				const nextScheme = isDark ? "light" : "dark";
-				meta.content = nextScheme;
-				localStorage.setItem("practice-lab-theme", nextScheme);
-			}
-			return;
-		}
 		if (action === "home") {
 			if (session?.submitted) session = null;
 			persist();
@@ -632,11 +705,25 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		}
 		if (action === "resume") return render();
 		if (action === "reset-stats") {
-			if (confirm("Reset all saved practice history?")) {
-				saved.stats = {};
-				persist();
-				home();
-			}
+			confirmAction(
+				"Reset saved practice history?",
+				"This clears your attempted, mastered, and weak-question statistics for this certification on this device.",
+				"Reset history",
+				() => {
+					saved.stats = {};
+					persist();
+					home();
+				},
+			);
+			return;
+		}
+		if (action === "filter-review") {
+			reviewFilter = el.dataset.value || "all";
+			results();
+			const activeBtn = app.querySelector(
+				`[data-action="filter-review"][data-value="${reviewFilter}"]`,
+			);
+			if (activeBtn instanceof HTMLElement) activeBtn.focus();
 			return;
 		}
 		if (action === "start-practice") {
@@ -703,7 +790,12 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 			return question();
 		}
 		if (action === "finish") {
-			if (confirm("Submit your mock exam and reveal the answers?")) finish(false);
+			confirmAction(
+				"Submit mock exam?",
+				"Your answers will be scored and rationales will be revealed immediately.",
+				"Submit and score",
+				() => finish(false),
+			);
 		}
 	});
 
@@ -725,6 +817,7 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 			e.altKey ||
 			e.metaKey ||
 			e.ctrlKey ||
+			document.querySelector("dialog[open]") ||
 			/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName || "")
 		)
 			return;
