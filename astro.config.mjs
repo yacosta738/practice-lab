@@ -26,4 +26,11 @@ export default defineConfig({
 	output: isVercel ? "server" : "static",
 	adapter,
 	integrations: [sitemap()],
+	vite: {
+		// LightningCSS cannot parse @container anchored() yet (lightningcss#1176).
+		// Use esbuild for CSS minification to support anchored container queries.
+		build: {
+			cssMinify: "esbuild",
+		},
+	},
 });

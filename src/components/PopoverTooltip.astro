@@ -1,0 +1,353 @@
+---
+// PopoverTooltip — Accessible popover tooltip using CSS Anchor Positioning.
+//
+// Uses the Popover API (`popover="hint"`) with `interestfor` for hover/focus
+// triggers and `popovertarget` for click/tap (toggletip pattern). Positioning
+// relies on CSS Anchor Positioning with progressive enhancement for browsers
+// that lack native support.
+//
+// Props:
+//   id — unique identifier for the tooltip (required)
+//   content — text or JSX content of the tooltip
+//   triggerLabel — accessible label for the trigger button
+//   triggerText — visible text inside the trigger (default: "?")
+//   isToggletip — when true, the button also opens on click (default: false)
+//   position — anchor position: "block-start" | "block-end" | "inline-start" | "inline-end"
+//              (default: "block-start")
+//
+// Modern Web Guidance references:
+//   - interest-triggered-tooltips
+//   - position-aware-tooltips
+//   - viewport-aware-dropdowns
+
+interface Props {
+	id: string;
+	content: string;
+	triggerLabel?: string;
+	triggerText?: string;
+	isToggletip?: boolean;
+	position?: "block-start" | "block-end" | "inline-start" | "inline-end";
+}
+
+const {
+	id,
+	content,
+	triggerLabel = `More info about ${content}`,
+	triggerText = "?",
+	isToggletip = false,
+	position = "block-start",
+} = Astro.props;
+
+// Position-area value with optional span for width matching
+const positionAreaMap: Record<string, string> = {
+	"block-start": "block-start span-inline-end",
+	"block-end": "block-end span-inline-end",
+	"inline-start": "span-block-end inline-start",
+	"inline-end": "span-block-end inline-end",
+};
+const positionArea = positionAreaMap[position] ?? positionAreaMap["block-start"];
+---
+
+<!-- Trigger button -->
+<button
+	class="tooltip-trigger"
+	type="button"
+	{...{ interestfor: id } as Record<string, string>}
+	{...{ popovertarget: id, popovertargetaction: "show" } as Record<string, string>}
+	aria-label={triggerLabel}
+	aria-describedby={id}
+>
+	{triggerText}
+</button>
+
+<!-- Tooltip popover -->
+<div
+	id={id}
+	{...{ popover: "hint" } as Record<string, string>}
+	class="popover-tooltip"
+	data-position={position}
+	role="tooltip"
+>
+	<div class="popover-tooltip__content">
+		{content}
+	</div>
+</div>
+
+<style>
+/* ===== Tooltip Trigger ===== */
+
+.tooltip-trigger {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	padding: 0;
+	font-size: 0.75rem;
+	font-weight: 600;
+	line-height: 1;
+	color: var(--ink-tertiary, #6b7280);
+	background: var(--raised, #f0ede6);
+	border: 1px solid var(--border, #e1ded7);
+	border-radius: var(--radius-full, 9999px);
+	cursor: pointer;
+	transition:
+		color 0.15s,
+		background-color 0.15s,
+		border-color 0.15s;
+}
+
+.tooltip-trigger:hover,
+.tooltip-trigger:focus-visible {
+	color: var(--brand-text, #b94d36);
+	background: var(--brand-soft, rgba(231, 111, 81, 0.08));
+	border-color: var(--brand, #e76f51);
+}
+
+.tooltip-trigger:focus-visible {
+	outline: 2px solid var(--brand, #e76f51);
+	outline-offset: 2px;
+}
+
+/* ===== Popover Tooltip Base ===== */
+
+.popover-tooltip {
+	/* Base tooltip styling — applies in all browsers */
+	max-width: 280px;
+	padding: 0.75rem 1rem;
+	font-size: var(--fs-small, 13px);
+	line-height: 1.5;
+	color: var(--ink, #14213d);
+	background: var(--surface, #ffffff);
+	border: 1px solid var(--border, #e1ded7);
+	border-radius: var(--radius, 8px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	z-index: 9999;
+
+	/* Smooth entry/exit animation */
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+/* ===== Arrow using anchored container queries (progressive enhancement) ===== */
+
+.popover-tooltip {
+	/* Enable anchored container queries for arrow direction */
+	container-type: anchored;
+}
+
+.popover-tooltip__content::before {
+	/* Default "down" arrow for block-start (tooltip above anchor) */
+	content: "";
+	position: absolute;
+	inset-block-end: -0.45rem;
+	inset-inline-start: 1rem;
+	border: 0.45rem solid transparent;
+	border-block-start-color: var(--surface, #ffffff);
+	filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.06));
+}
+
+/* Flip arrow to "up" when fallback flips to block-end */
+@container anchored (fallback: flip-block) {
+	.popover-tooltip__content::before {
+		inset-block-start: -0.45rem;
+		inset-block-end: auto;
+		border-block-start-color: transparent;
+		border-block-end-color: var(--surface, #ffffff);
+	}
+}
+
+/* ===== CSS Anchor Positioning — native support ===== */
+
+@supports (position-area: block-end) {
+	.popover-tooltip:is(:popover-open, .\:popover-open) {
+		/* Override UA popover centering so anchor positioning takes over */
+		inset: auto;
+		margin: 0;
+
+		/* Position relative to implicit anchor (set by interestfor/popovertarget) */
+		position-area: block-start span-inline-end;
+		position-try-fallbacks:
+			flip-block,
+			flip-inline,
+			flip-block flip-inline;
+
+		/* Animate into view */
+		opacity: 1;
+	}
+
+	/* Dynamic position-area based on data-position attribute */
+	.popover-tooltip[data-position="block-start"]:is(:popover-open, .\:popover-open) {
+		position-area: block-start span-inline-end;
+	}
+
+	.popover-tooltip[data-position="block-end"]:is(:popover-open, .\:popover-open) {
+		position-area: block-end span-inline-end;
+	}
+
+	.popover-tooltip[data-position="inline-start"]:is(:popover-open, .\:popover-open) {
+		position-area: span-block-end inline-start;
+	}
+
+	.popover-tooltip[data-position="inline-end"]:is(:popover-open, .\:popover-open) {
+		position-area: span-block-end inline-end;
+	}
+}
+
+/* ===== Fallback: browsers without anchor positioning ===== */
+
+@supports not (position-area: block-end) {
+	/* Without anchor positioning, keep the default centered popover placement.
+		   DO NOT set `inset: auto` here — it would break UA centering.
+		   The popover appears centered in the viewport, which is acceptable
+		   for a tooltip that the user can dismiss with Escape or light dismiss. */
+
+	.popover-tooltip:is(:popover-open, .\:popover-open) {
+		opacity: 1;
+	}
+
+	/* Hide the arrow in browsers without anchored container queries */
+	@supports not (container-type: anchored) {
+		.popover-tooltip__content::before {
+			content: none;
+		}
+	}
+}
+
+/* ===== Dark theme adjustments ===== */
+
+:root[data-theme="dark"] {
+	/* Arrow color adapts to dark surface */
+}
+
+:root[data-theme="dark"] .popover-tooltip {
+	color: var(--ink, #f7f4ee);
+	background: var(--surface, #192438);
+	border-color: var(--border, #344157);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme="dark"] .popover-tooltip__content::before {
+	border-block-start-color: var(--surface, #192438);
+}
+
+@container anchored (fallback: flip-block) {
+	:root[data-theme="dark"] .popover-tooltip__content::before {
+		border-block-start-color: transparent;
+		border-block-end-color: var(--surface, #192438);
+	}
+}
+
+/* ===== Reduced motion ===== */
+
+@media (prefers-reduced-motion: reduce) {
+	.popover-tooltip {
+		transition: none;
+	}
+}
+
+/* ===== Polyfill compatibility ===== */
+
+/* When @oddbird/popover-polyfill is active, :popover-open is not available.
+	   The polyfill adds a `.\:popover-open` class. Using :is() ensures both
+	   native and polyfilled states work. */
+
+@supports not selector(:popover-open) {
+	/* Hide popovers before polyfill loads to prevent flash */
+	[popover]:not(.\:popover-open) {
+		display: none;
+	}
+}
+</style>
+
+<!-- ===== Polyfill loading (client-side, conditional) ===== -->
+<script is:inline>
+// Feature-detect and conditionally load polyfills only when needed.
+// MANDATORY: Do NOT load polyfills unconditionally.
+
+(function () {
+	// 1. Popover API polyfill
+	if (!Object.hasOwn(HTMLElement.prototype, "popover")) {
+		import("https://unpkg.com/@oddbird/popover-polyfill@latest/dist/popover.min.js");
+	}
+
+	// 2. Anchor positioning polyfill
+	if (!CSS.supports("anchor-name: --a")) {
+		import("https://unpkg.com/@oddbird/css-anchor-positioning@latest");
+	}
+
+	// 3. Interest invoker polyfill (interestfor attribute)
+	if (!("interestForElement" in HTMLButtonElement.prototype)) {
+		import("https://unpkg.com/interestfor@latest");
+	}
+
+	// 4. Handle popover="hint" fallback for browsers that don't support it
+	// When hint is unsupported, it defaults to "manual". For toggletips,
+	// switch to "auto" in beforetoggle so light-dismiss still works.
+	const probe = document.createElement("div");
+	probe.popover = "hint";
+	if (probe.popover !== "hint") {
+		document.addEventListener(
+			"beforetoggle",
+			function (e) {
+				const target = e.target;
+				const newState = e.newState;
+				if (newState === "open" && target.getAttribute("popover") === "hint") {
+					const toggletip = document.querySelector(`[popovertarget="${CSS.escape(target.id)}"]`);
+					if (toggletip) {
+						target.popover = "auto";
+					}
+				}
+			},
+			true,
+		);
+	}
+
+	// 5. Wire ARIA attributes for screen readers
+	// interestfor is specified to handle semantics, but browsers don't yet
+	// expose this consistently. Add explicit ARIA as a safety net.
+	function wireTooltips() {
+		const triggers = document.querySelectorAll("[interestfor]");
+		triggers.forEach(function (trigger) {
+			const tooltipId = trigger.getAttribute("interestfor");
+			const tooltip = tooltipId ? document.getElementById(tooltipId) : null;
+			if (tooltip?.getAttribute("popover") !== "hint") return;
+
+			// Set role="tooltip" if not already set
+			if (!tooltip.getAttribute("role")) {
+				tooltip.setAttribute("role", "tooltip");
+			}
+
+			// Sync aria-expanded from popover toggle event (capture phase — toggle doesn't bubble)
+			if (trigger.hasAttribute("popovertarget")) {
+				if (!trigger.hasAttribute("aria-expanded")) {
+					trigger.setAttribute("aria-expanded", "false");
+				}
+			}
+		});
+	}
+
+	// Wire on DOM ready
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", wireTooltips);
+	} else {
+		wireTooltips();
+	}
+
+	// Keep aria-expanded in sync from toggle event (capture phase)
+	document.addEventListener(
+		"toggle",
+		function (e) {
+			const target = e.target;
+			if (target.getAttribute("popover") !== "hint") return;
+			const triggers = document.querySelectorAll(`[interestfor="${CSS.escape(target.id)}"]`);
+			triggers.forEach(function (trigger) {
+				if (trigger.hasAttribute("popovertarget")) {
+					trigger.setAttribute("aria-expanded", String(e.newState === "open"));
+				}
+			});
+		},
+		true,
+	);
+})();
+</script>

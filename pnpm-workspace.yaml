@@ -1,4 +1,5 @@
 allowBuilds:
+  esbuild: true
   lefthook: true
 # Project-level pnpm settings (pnpm v10+ reads them from this file,
 # not from .npmrc).
