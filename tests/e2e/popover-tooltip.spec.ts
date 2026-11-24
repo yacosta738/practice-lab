@@ -133,6 +133,37 @@ test("toggletip opens on click", async ({ page }) => {
 	// Wait for the popover to open
 	const popover = page.locator('[id="tooltip-shipping"]');
 	await expect(popover).toBeVisible();
+	await expect(trigger).toHaveAttribute("aria-expanded", "true");
+});
+
+test("fallback tooltips light-dismiss and keep the toggletip expanded state in sync", async ({
+	page,
+}) => {
+	await page.addInitScript(() => {
+		const popover = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "popover");
+		Object.defineProperty(HTMLElement.prototype, "popover", {
+			...popover,
+			get() {
+				const mode = popover?.get?.call(this);
+				return mode === "hint" ? "manual" : mode;
+			},
+		});
+	});
+	await page.goto(ROUTE);
+
+	const inline = page.locator("#tooltip-term");
+	await expect(inline).toHaveAttribute("popover", "auto");
+	await inline.evaluate((tooltip) => (tooltip as HTMLElement).showPopover());
+	await expect(inline).toBeVisible();
+	await page.getByRole("heading", { name: "Popover Tooltip Demo" }).click();
+	await expect(inline).toBeHidden();
+
+	const trigger = page.getByRole("button", { name: "More about shipping" });
+	await expect(trigger).toHaveAttribute("aria-expanded", "false");
+	await trigger.click();
+	await expect(trigger).toHaveAttribute("aria-expanded", "true");
+	await page.keyboard.press("Escape");
+	await expect(trigger).toHaveAttribute("aria-expanded", "false");
 });
 
 test("popover closes on Escape key", async ({ page }) => {
@@ -194,6 +225,7 @@ test("inline trigger has correct attributes", async ({ page }) => {
 	await page.waitForLoadState("networkidle");
 
 	const inlineTrigger = page.locator('[interestfor="tooltip-term"]');
+	await expect(inlineTrigger).toBeInViewport();
 	await expect(inlineTrigger).toHaveAttribute("aria-label", "Definition of important term");
 	await expect(inlineTrigger).toHaveAttribute("aria-describedby", "tooltip-term");
 });

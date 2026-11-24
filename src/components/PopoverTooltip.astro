@@ -279,40 +279,24 @@ const positionArea = positionAreaMap[position] ?? positionAreaMap["block-start"]
 		import("https://unpkg.com/interestfor@latest");
 	}
 
-	// 4. Handle popover="hint" fallback for browsers that don't support it
-	// When hint is unsupported, it defaults to "manual". For all managed
-	// hint tooltips (including interestfor-only tooltips without a
-	// popovertarget button), switch to "auto" in beforetoggle so
-	// light-dismiss still works. Native hint handling remains unchanged.
-	const probe = document.createElement("div");
-	probe.popover = "hint";
-	if (probe.popover !== "hint") {
-		document.addEventListener(
-			"beforetoggle",
-			function (e) {
-				const target = e.target;
-				const newState = e.newState;
-				if (
-					newState === "open" &&
-					target.getAttribute("popover") === "hint" &&
-					target.classList.contains("popover-tooltip")
-				) {
-					target.popover = "auto";
-				}
-			},
-			true,
-		);
-	}
-
-	// 5. Wire ARIA attributes for screen readers
+	// 4. Wire ARIA attributes for screen readers
 	// interestfor is specified to handle semantics, but browsers don't yet
 	// expose this consistently. Add explicit ARIA as a safety net.
 	function wireTooltips() {
+		// Normalize before opening so unsupported hint tooltips can light-dismiss.
+		const probe = document.createElement("div");
+		probe.setAttribute("popover", "hint");
+		if (probe.popover !== "hint") {
+			document.querySelectorAll('.popover-tooltip[popover="hint"]').forEach(function (tooltip) {
+				tooltip.setAttribute("popover", "auto");
+			});
+		}
+
 		const triggers = document.querySelectorAll("[interestfor]");
 		triggers.forEach(function (trigger) {
 			const tooltipId = trigger.getAttribute("interestfor");
 			const tooltip = tooltipId ? document.getElementById(tooltipId) : null;
-			if (tooltip?.getAttribute("popover") !== "hint") return;
+			if (!tooltip?.classList.contains("popover-tooltip")) return;
 
 			// Set role="tooltip" if not already set
 			if (!tooltip.getAttribute("role")) {
@@ -336,14 +320,11 @@ const positionArea = positionAreaMap[position] ?? positionAreaMap["block-start"]
 	}
 
 	// Keep aria-expanded in sync from toggle event (capture phase)
-	// Use the stable .popover-tooltip class to identify managed tooltips
-	// rather than the mutable popover value (which may change from "hint"
-	// to "auto" when the hint fallback runs).
 	document.addEventListener(
 		"toggle",
 		function (e) {
 			const target = e.target;
-			if (!target.classList.contains("popover-tooltip")) return;
+			if (!(target instanceof Element) || !target.classList.contains("popover-tooltip")) return;
 			const triggers = document.querySelectorAll(`[interestfor="${CSS.escape(target.id)}"]`);
 			triggers.forEach(function (trigger) {
 				if (trigger.hasAttribute("popovertarget")) {
