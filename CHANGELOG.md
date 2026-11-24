@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.5.0](https://github.com/yacosta738/practice-lab/compare/v0.4.0...v0.5.0) (2026-11-24)
+
+
+### Features
+
+* **ccdv-f:** add 9 Developer Foundations exam recall questions ([#38](https://github.com/yacosta738/practice-lab/issues/38)) ([ff2a56f](https://github.com/yacosta738/practice-lab/commit/ff2a56f5807327531bdc75b7410146a778771d18))
+* **ccdv-f:** add study resources and domain workshops ([#49](https://github.com/yacosta738/practice-lab/issues/49)) ([459564e](https://github.com/yacosta738/practice-lab/commit/459564e004949b0c4084831cd7ebd0f30b86c64f))
+* **deploy:** add Vercel deployment configuration ([de66a75](https://github.com/yacosta738/practice-lab/commit/de66a75f34e0878eda91b2a0b157979fec47484b))
+
+
+### Bug Fixes
+
+* address second audit findings ([#46](https://github.com/yacosta738/practice-lab/issues/46)) ([211e90e](https://github.com/yacosta738/practice-lab/commit/211e90e9128dbcc1a5e2d9fdd8f98eb72824b93e))
+* audit corrections and quiz engine unification ([#45](https://github.com/yacosta738/practice-lab/issues/45)) ([6702529](https://github.com/yacosta738/practice-lab/commit/6702529bf503968bf1f18a6111cb6fc3c8d1b761))
+* **ci:** pass GITHUB_TOKEN to the release please steps ([#44](https://github.com/yacosta738/practice-lab/issues/44)) ([b001692](https://github.com/yacosta738/practice-lab/commit/b001692c771a4bba1816d12be344770fdd2a9559))
+* **style:** format notify-vercel.yml with double quotes per Biome ([65b0fb4](https://github.com/yacosta738/practice-lab/commit/65b0fb4b6991e6ef6a376170b0ec3ab15d277193))
+* use static output locally so astro preview works with Playwright tests ([4b9302e](https://github.com/yacosta738/practice-lab/commit/4b9302e1c5b8b1bb3024bf9f0bc9249f670f5eaa))
+
 ## [0.4.0](https://github.com/yacosta738/practice-lab/compare/v0.3.0...v0.4.0) (2026-11-18)
 
 
