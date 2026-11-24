@@ -279,13 +279,6 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 	const searchResults = document.getElementById("pl-search-results");
 	const drawer = document.getElementById("pl-mobile-drawer");
 
-	function escHtml(s) {
-		return String(s).replace(
-			/[&<>"']/g,
-			(c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
-		);
-	}
-
 	function renderResults(query) {
 		if (!searchResults) return;
 		const q = query.trim().toLowerCase();
@@ -298,18 +291,29 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 				)
 			: searchItems.slice(0, 12);
 
+		searchResults.replaceChildren();
 		if (!filtered.length) {
-			searchResults.innerHTML =
-				'<div style="padding:20px;text-align:center;color:var(--ink-secondary);font-size:14px;">No matching notes or certifications.</div>';
+			const empty = document.createElement("div");
+			empty.style.cssText =
+				"padding:20px;text-align:center;color:var(--ink-secondary);font-size:14px;";
+			empty.textContent = "No matching notes or certifications.";
+			searchResults.append(empty);
 			return;
 		}
-		searchResults.innerHTML = filtered
-			.slice(0, 20)
-			.map(
-				(item) =>
-					`<a class="pl-search-result" href="${escHtml(item.href)}"><span>${escHtml(item.title)}</span><span class="pl-search-meta">${escHtml(item.badge || item.category)}</span></a>`,
-			)
-			.join("");
+		const frag = document.createDocumentFragment();
+		for (const item of filtered.slice(0, 20)) {
+			const link = document.createElement("a");
+			link.className = "pl-search-result";
+			link.setAttribute("href", item.href);
+			const titleSpan = document.createElement("span");
+			titleSpan.textContent = item.title;
+			const metaSpan = document.createElement("span");
+			metaSpan.className = "pl-search-meta";
+			metaSpan.textContent = item.badge || item.category;
+			link.append(titleSpan, metaSpan);
+			frag.append(link);
+		}
+		searchResults.append(frag);
 	}
 
 	function openSearch() {
