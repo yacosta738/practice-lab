@@ -4,6 +4,15 @@
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
 
 :root {
+	color-scheme: light dark;
+
+	&:has(> head > meta[name="color-scheme"][content="dark"]) {
+		color-scheme: dark;
+	}
+	&:has(> head > meta[name="color-scheme"][content="light"]) {
+		color-scheme: light;
+	}
+
 	/* Surface palette — light-dark() for dual-theme tokens */
 	--ground: light-dark(#f7f4ee, #101827);
 	--surface: light-dark(#ffffff, #192438);
@@ -54,6 +63,7 @@
 	--info: light-dark(#2f70bb, #7ca5e8);
 	--info-soft: light-dark(#e8f0fa, #141e2e);
 	--info-border: light-dark(#c5d9f0, #1e2e44);
+	--link-on-feedback: light-dark(#1d4ed8, #93c5fd);
 
 	/* Chart hues */
 	--chart-1: light-dark(#e76f51, #ff8a70);
@@ -157,6 +167,41 @@
 *:focus-visible {
 	outline: 2px solid var(--brand);
 	outline-offset: 2px;
+}
+
+:focus,
+:target {
+	scroll-margin-top: 72px;
+}
+
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+.skip-link {
+	position: absolute;
+	top: -100px;
+	left: 16px;
+	z-index: 1000;
+	background: var(--brand-strong);
+	color: var(--on-brand);
+	padding: 10px 16px;
+	border-radius: var(--radius-sm);
+	font-weight: 600;
+	font-size: var(--fs-small);
+	text-decoration: none;
+}
+
+.skip-link:focus-visible {
+	top: 12px;
 }
 
 * {
@@ -775,18 +820,30 @@ label.small {
 }
 
 .progress {
-	height: 2px;
-	background: var(--border);
+	display: block;
+	width: 100%;
+	height: 4px;
+	appearance: none;
+	border: 0 solid;
 	border-radius: 999px;
-	overflow: hidden;
+	background: var(--border);
+	overflow: clip;
 }
 
-.progress i {
-	display: block;
-	height: 100%;
+.progress::-webkit-progress-bar {
+	background: transparent;
+}
+
+.progress::-webkit-progress-value {
 	background: var(--brand);
 	border-radius: 999px;
-	transition: width 0.3s ease-out;
+	transition: inline-size 0.3s ease-out;
+}
+
+.progress::-moz-progress-bar {
+	background: var(--brand);
+	border-radius: 999px;
+	transition: inline-size 0.3s ease-out;
 }
 
 .question {
@@ -909,7 +966,11 @@ label.small {
 
 .option:disabled {
 	cursor: default;
-	opacity: 0.6;
+	opacity: 0.65;
+}
+
+.option:disabled:is(.good, .bad, .missing) {
+	opacity: 1;
 }
 
 /* Feedback */
@@ -947,7 +1008,11 @@ label.small {
 }
 
 .feedback a {
-	color: var(--info);
+	display: inline-flex;
+	align-items: center;
+	min-height: 28px;
+	padding: 4px 0;
+	color: var(--link-on-feedback);
 	text-decoration: underline;
 	text-underline-offset: 3px;
 	font-size: var(--fs-small);
@@ -1141,10 +1206,21 @@ label.small {
 	color: var(--ink-secondary);
 }
 
+.scoreHeading {
+	font-size: 36px;
+	line-height: 1.15;
+	margin: 0 0 6px;
+	letter-spacing: -0.02em;
+	font-weight: 600;
+}
+
 .review a {
-	display: inline-block;
+	display: inline-flex;
+	align-items: center;
+	min-height: 28px;
+	padding: 4px 0;
 	margin: 0 16px 14px;
-	color: var(--info);
+	color: var(--link-on-feedback);
 	text-decoration: underline;
 	text-underline-offset: 3px;
 	font-size: var(--fs-small);
@@ -1252,10 +1328,8 @@ footer {
 	.score {
 		gap: 16px;
 	}
-	/* The score heading carries an inline font-size; the override keeps it
-	   inside the panel on narrow screens. */
-	.score h1 {
-		font-size: 24px !important;
+	.score .scoreHeading {
+		font-size: 24px;
 	}
 	.ring {
 		width: 80px;

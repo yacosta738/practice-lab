@@ -37,7 +37,7 @@ const certDetails = await Promise.all(
 	title="Practice Lab"
 	description="Prepare for certifications with interactive practice quizzes"
 >
-	<main>
+	<main id="main-content" tabindex="-1">
 		<header>
 			<a class="brand" href={base}>
 				<div class="mark">P</div>
@@ -145,19 +145,3 @@ const certDetails = await Promise.all(
 		<footer>Independent study material · Progress stays in your browser</footer>
 	</main>
 </Layout>
-
-<script is:inline>
-document.addEventListener("click", (event) => {
-	const el = event.target.closest("[data-action]");
-	if (!el) return;
-	if (el.dataset.action === "theme") {
-		const meta = document.querySelector('meta[name="color-scheme"]');
-		if (meta) {
-			const isDark = meta.content === "dark";
-			const nextScheme = isDark ? "light" : "dark";
-			meta.content = nextScheme;
-			localStorage.setItem("practice-lab-theme", nextScheme);
-		}
-	}
-});
-</script>

@@ -13,7 +13,7 @@ const { title, description } = Astro.props;
 ---
 
 <Layout title={`${title} · Study · Practice Lab`} description={description}>
-	<main class="studyMain">
+	<main class="studyMain" id="main-content" tabindex="-1">
 		<header>
 			<a class="brand" href={base}>
 				<div class="mark">S</div>
@@ -42,19 +42,3 @@ const { title, description } = Astro.props;
 		<footer>Personal study notes · Independent study material</footer>
 	</main>
 </Layout>
-
-<script is:inline>
-document.addEventListener("click", (event) => {
-	const el = event.target.closest("[data-action]");
-	if (!el) return;
-	if (el.dataset.action === "theme") {
-		const meta = document.querySelector('meta[name="color-scheme"]');
-		if (meta) {
-			const isDark = meta.content === "dark";
-			const nextScheme = isDark ? "light" : "dark";
-			meta.content = nextScheme;
-			localStorage.setItem("practice-lab-theme", nextScheme);
-		}
-	}
-});
-</script>

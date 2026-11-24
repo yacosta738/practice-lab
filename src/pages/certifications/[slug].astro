@@ -32,6 +32,8 @@ for (const [path, mod] of Object.entries(questionsModules)) {
 // Slugs that have study notes
 const studySlugs = new Set(studyCerts.map((c) => c.slug));
 
+export const prerender = true;
+
 // getStaticPaths is extracted by Astro into a separate module, so it must
 // be fully self-contained — no references to frontmatter variables.
 export async function getStaticPaths() {
@@ -435,8 +437,9 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 			${src.url ? `<a href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">Study source: ${esc(src.label)} ↗</a>` : `<span class="small muted">Study source: ${esc(src.label)}</span>`}
 		</div>`;
 
-		const main = `<div class="qhead"><span>Question ${session.currentIndex + 1} of ${session.ids.length} · ${esc(session.mode.toUpperCase())}</span><span>${progress} answered</span></div>
-			<div class="progress" aria-label="Progress"><i style="width:${pct(session.currentIndex + 1, session.ids.length)}%"></i></div>
+		const main = `<h1 class="sr-only">${esc(cfg.title)} — ${isExam ? "Mock exam" : "Practice session"}</h1>
+			<div class="qhead"><span>Question ${session.currentIndex + 1} of ${session.ids.length} · ${esc(session.mode.toUpperCase())}</span><span>${progress} answered</span></div>
+			<progress class="progress" value="${session.currentIndex + 1}" max="${session.ids.length}" aria-label="Question progress"></progress>
 			<div class="panel question" style="margin-top:16px">
 				<span class="badge">${x.domain} · ${esc(domains[x.domain].name)}</span>
 				${x.topic ? `<span class="muted small" style="margin-left:8px">${esc(x.topic)}</span>` : ""}
@@ -555,13 +558,13 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		setAppHTML(`
 			<div class="results">
 				<div class="panel padded">
-					<h2>${session.mode === "exam" ? "Mock exam results" : "Practice session results"}${session.timedOut ? " · time expired" : ""}</h2>
+					<h1>${session.mode === "exam" ? "Mock exam results" : "Practice session results"}${session.timedOut ? " · time expired" : ""}</h1>
 					<div class="score" style="margin:12px 0">
 						<div class="ring" style="--score:${score}%">
 							<span>${score}%</span>
 						</div>
 						<div>
-							<h1 style="font-size:36px;margin:0 0 6px">${correct.length} / ${ids.length} correct</h1>
+							<h2 class="scoreHeading">${correct.length} / ${ids.length} correct</h2>
 							<p class="muted" style="margin:0">Unofficial practice score · not equivalent to the scaled passing score.</p>
 						</div>
 					</div>
@@ -611,20 +614,10 @@ const studyHref = studySlugs.has(slug) ? `${base}study/${slug}/` : undefined;
 		if (!el) return;
 		const action = el.dataset.action;
 
-		// Allow site-home link to navigate normally (don't preventDefault)
-		if (action === "go-to-site-home") return;
+		// Allow site-home link and unified Layout theme toggle to handle their own events
+		if (action === "go-to-site-home" || action === "theme") return;
 		event.preventDefault();
 
-		if (action === "theme") {
-			const meta = document.querySelector('meta[name="color-scheme"]');
-			if (meta) {
-				const isDark = meta.content === "dark";
-				const nextScheme = isDark ? "light" : "dark";
-				meta.content = nextScheme;
-				localStorage.setItem("practice-lab-theme", nextScheme);
-			}
-			return;
-		}
 		if (action === "home") {
 			if (session?.submitted) session = null;
 			persist();

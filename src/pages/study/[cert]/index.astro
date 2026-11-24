@@ -5,6 +5,8 @@ import { base } from "../../../lib/base";
 import { groupNotes, toNoteMeta } from "../../../lib/study-groups";
 import { type StudyCert, studyCerts } from "../../../study/registry";
 
+export const prerender = true;
+
 export async function getStaticPaths() {
 	return studyCerts.map((cert) => ({
 		params: { cert: cert.slug },
