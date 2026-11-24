@@ -77,7 +77,10 @@ const isDefaultImage = !ogImage;
 		(function () {
 			const stored = localStorage.getItem("practice-lab-theme");
 			if (stored === "dark" || stored === "light") {
-				document.documentElement.dataset.theme = stored;
+				const meta = document.querySelector('meta[name="color-scheme"]');
+				if (meta) {
+					meta.content = stored === "dark" ? "dark light" : "light dark";
+				}
 			}
 		})();
 		</script>

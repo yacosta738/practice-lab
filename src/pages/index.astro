@@ -151,8 +151,12 @@ document.addEventListener("click", (event) => {
 	const el = event.target.closest("[data-action]");
 	if (!el) return;
 	if (el.dataset.action === "theme") {
-		const dark = document.documentElement.dataset.theme === "dark";
-		document.documentElement.dataset.theme = dark ? "light" : "dark";
+		const meta = document.querySelector('meta[name="color-scheme"]');
+		if (meta) {
+			const isDark = meta.content.startsWith("dark");
+			meta.content = isDark ? "light dark" : "dark light";
+			localStorage.setItem("practice-lab-theme", isDark ? "light" : "dark");
+		}
 	}
 });
 </script>

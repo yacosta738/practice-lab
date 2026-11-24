@@ -216,25 +216,23 @@ const positionArea = positionAreaMap[position] ?? positionAreaMap["block-start"]
 
 /* ===== Dark theme adjustments ===== */
 
-:root[data-theme="dark"] {
-	/* Arrow color adapts to dark surface */
-}
+@media (prefers-color-scheme: dark) {
+	.popover-tooltip {
+		color: var(--ink, #f7f4ee);
+		background: var(--surface, #192438);
+		border-color: var(--border, #344157);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+	}
 
-:root[data-theme="dark"] .popover-tooltip {
-	color: var(--ink, #f7f4ee);
-	background: var(--surface, #192438);
-	border-color: var(--border, #344157);
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
+	.popover-tooltip__content::before {
+		border-block-start-color: var(--surface, #192438);
+	}
 
-:root[data-theme="dark"] .popover-tooltip__content::before {
-	border-block-start-color: var(--surface, #192438);
-}
-
-@container anchored (fallback: flip-block) {
-	:root[data-theme="dark"] .popover-tooltip__content::before {
-		border-block-start-color: transparent;
-		border-block-end-color: var(--surface, #192438);
+	@container anchored (fallback: flip-block) {
+		.popover-tooltip__content::before {
+			border-block-start-color: transparent;
+			border-block-end-color: var(--surface, #192438);
+		}
 	}
 }
 

@@ -4,71 +4,71 @@
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
 
 :root {
-	/* Surface palette — warm light (default) */
-	--ground: #f7f4ee;
-	--surface: #ffffff;
-	--raised: #f0ede6;
-	--raised-hover: #e8e4dc;
-	--active: #e8e4dc;
-	--overlay: #e1ded7;
+	/* Surface palette — light-dark() for dual-theme tokens */
+	--ground: light-dark(#f7f4ee, #101827);
+	--surface: light-dark(#ffffff, #192438);
+	--raised: light-dark(#f0ede6, #1e2d45);
+	--raised-hover: light-dark(#e8e4dc, #253550);
+	--active: light-dark(#e8e4dc, #253550);
+	--overlay: light-dark(#e1ded7, #344157);
 
-	/* Text — navy night for primary */
-	--ink: #14213d;
-	--ink-secondary: #4b5565;
-	--ink-tertiary: #6b7280;
-	--ink-disabled: #b0b2b4;
+	/* Text */
+	--ink: light-dark(#14213d, #f7f4ee);
+	--ink-secondary: light-dark(#4b5565, #b6c0d0);
+	--ink-tertiary: light-dark(#6b7280, #8a95a8);
+	--ink-disabled: light-dark(#b0b2b4, #555e6e);
 
 	/* Borders & dividers */
-	--border: #e1ded7;
-	--border-hover: #cdced1;
-	--border-subtle: #f0ede6;
+	--border: light-dark(#e1ded7, #344157);
+	--border-hover: light-dark(#cdced1, #4a5a72);
+	--border-subtle: light-dark(#f0ede6, #1e2d45);
 
 	/* Brand — coral accent for primary actions.
 	   --brand is decorative (borders, progress, rings).
 	   --brand-strong carries white text and guarantees 4.5:1 on filled controls. */
-	--brand: #e76f51;
-	--brand-hover: #d45a3d;
-	--brand-soft: rgba(231, 111, 81, 0.08);
-	--brand-soft-hover: rgba(231, 111, 81, 0.14);
-	--brand-text: #b94d36;
-	--brand-strong: #b94d36;
-	--brand-strong-hover: #9e412d;
-	--on-brand: #ffffff;
+	--brand: light-dark(#e76f51, #ff8a70);
+	--brand-hover: light-dark(#d45a3d, #ff9d87);
+	--brand-soft: light-dark(rgba(231, 111, 81, 0.08), rgba(255, 138, 112, 0.08));
+	--brand-soft-hover: light-dark(rgba(231, 111, 81, 0.14), rgba(255, 138, 112, 0.14));
+	--brand-text: light-dark(#b94d36, #ffaa96);
+	--brand-strong: light-dark(#b94d36, #ff8a70);
+	--brand-strong-hover: light-dark(#9e412d, #ff9d87);
+	--on-brand: light-dark(#ffffff, #14213d);
 
 	/* Hero — navy night panel with warm white type */
-	--hero-bg: #14213d;
-	--hero-border: rgba(247, 244, 238, 0.16);
+	--hero-bg: light-dark(#14213d, #1b2b47);
+	--hero-border: light-dark(rgba(247, 244, 238, 0.16), rgba(247, 244, 238, 0.18));
 	--hero-ink: #f7f4ee;
 	--hero-ink-soft: rgba(247, 244, 238, 0.78);
 	--hero-accent: #ff8a70;
 
 	/* Status — semantic green/red, distinct from brand */
-	--success: #176b4d;
-	--success-soft: #dcfae5;
-	--success-border: #b6f0d0;
-	--success-ink: #04250e;
-	--error: #b42332;
-	--error-soft: #ffedea;
-	--error-border: #f5d0cc;
-	--error-ink: #831c1e;
-	--info: #2f70bb;
-	--info-soft: #e8f0fa;
-	--info-border: #c5d9f0;
+	--success: light-dark(#176b4d, #67d6a7);
+	--success-soft: light-dark(#dcfae5, #172a1d);
+	--success-border: light-dark(#b6f0d0, #1f3a28);
+	--success-ink: light-dark(#04250e, #67d6a7);
+	--error: light-dark(#b42332, #ff7e88);
+	--error-soft: light-dark(#ffedea, #2c1a20);
+	--error-border: light-dark(#f5d0cc, #3d2228);
+	--error-ink: light-dark(#831c1e, #ff7e88);
+	--info: light-dark(#2f70bb, #7ca5e8);
+	--info-soft: light-dark(#e8f0fa, #141e2e);
+	--info-border: light-dark(#c5d9f0, #1e2e44);
 
 	/* Chart hues */
-	--chart-1: #e76f51;
+	--chart-1: light-dark(#e76f51, #ff8a70);
 	--chart-2: #14213d;
 	--chart-3: #a86f0c;
 
 	/* Pill status tokens */
-	--pill-positive-bg: #dcfae5;
-	--pill-positive-ink: #04250e;
-	--pill-negative-bg: #ffedea;
-	--pill-negative-ink: #831c1e;
-	--pill-warning-bg: #fffbeb;
-	--pill-warning-ink: #92400e;
-	--pill-neutral-bg: #e8e4dc;
-	--pill-neutral-ink: #353736;
+	--pill-positive-bg: light-dark(#dcfae5, #172a1d);
+	--pill-positive-ink: light-dark(#04250e, #67d6a7);
+	--pill-negative-bg: light-dark(#ffedea, #2c1a20);
+	--pill-negative-ink: light-dark(#831c1e, #ff7e88);
+	--pill-warning-bg: light-dark(#fffbeb, #2a2218);
+	--pill-warning-ink: light-dark(#92400e, #d4a04a);
+	--pill-neutral-bg: light-dark(#e8e4dc, #1e2d45);
+	--pill-neutral-ink: light-dark(#353736, #b6c0d0);
 
 	/* Radius — warm style */
 	--radius-sm: 6px;
@@ -90,58 +90,6 @@
 	--pad: 24px;
 	--control-height: 32px;
 	--row-height: 48px;
-}
-
-/* Dark theme — navy night alternative */
-:root[data-theme="dark"] {
-	--ground: #101827;
-	--surface: #192438;
-	--raised: #1e2d45;
-	--raised-hover: #253550;
-	--active: #253550;
-	--overlay: #344157;
-
-	--ink: #f7f4ee;
-	--ink-secondary: #b6c0d0;
-	--ink-tertiary: #8a95a8;
-	--ink-disabled: #555e6e;
-
-	--border: #344157;
-	--border-hover: #4a5a72;
-	--border-subtle: #1e2d45;
-
-	--brand: #ff8a70;
-	--brand-hover: #ff9d87;
-	--brand-soft: rgba(255, 138, 112, 0.08);
-	--brand-soft-hover: rgba(255, 138, 112, 0.14);
-	--brand-text: #ffaa96;
-	--brand-strong: #ff8a70;
-	--brand-strong-hover: #ff9d87;
-	--on-brand: #14213d;
-
-	--hero-bg: #1b2b47;
-	--hero-border: rgba(247, 244, 238, 0.18);
-
-	--success: #67d6a7;
-	--success-soft: #172a1d;
-	--success-border: #1f3a28;
-	--success-ink: #67d6a7;
-	--error: #ff7e88;
-	--error-soft: #2c1a20;
-	--error-border: #3d2228;
-	--error-ink: #ff7e88;
-	--info: #7ca5e8;
-	--info-soft: #141e2e;
-	--info-border: #1e2e44;
-
-	--pill-positive-bg: #172a1d;
-	--pill-positive-ink: #67d6a7;
-	--pill-negative-bg: #2c1a20;
-	--pill-negative-ink: #ff7e88;
-	--pill-warning-bg: #2a2218;
-	--pill-warning-ink: #d4a04a;
-	--pill-neutral-bg: #1e2d45;
-	--pill-neutral-ink: #b6c0d0;
 }
 
 /* Legacy token aliases for JS-rendered content */
@@ -180,22 +128,30 @@
 	color: var(--on-brand);
 }
 
-::-webkit-scrollbar {
-	width: 8px;
-	height: 8px;
+/* Scrollbars — standard scrollbar-color with WebKit fallback */
+
+@supports not (scrollbar-color: auto) {
+	::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+
+	::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	::-webkit-scrollbar-thumb {
+		background: var(--border);
+		border-radius: 4px;
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		background: var(--border-hover);
+	}
 }
 
-::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-	background: var(--border);
-	border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-	background: var(--border-hover);
+:root {
+	scrollbar-color: var(--border) transparent;
 }
 
 *:focus-visible {
