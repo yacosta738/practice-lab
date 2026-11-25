@@ -67,6 +67,7 @@ test("domain study notes preselect practice and invalid domains fall back safely
 	await page.goto(`${BASE_PATH}/study/ccdv-f/subagents-and-context-isolation/`);
 	const practiceLink = page.getByRole("link", { name: "Practice D1" });
 	await expect(practiceLink).toHaveAttribute("href", /mode=practice.*domain=D1/);
+	await expect(practiceLink).toHaveCSS("color", "rgb(255, 255, 255)");
 	await practiceLink.click();
 	await expect(page).toHaveURL(/mode=practice.*domain=D1/);
 	await expect(page.locator("#domain")).toHaveValue("D1");
@@ -119,6 +120,19 @@ test("starting a different session requires confirmation and preserves canceled 
 
 test("homepage accurately describes local progress storage", async ({ page }) => {
 	await page.goto(`${BASE_PATH}/`);
+	await expect
+		.soft(page)
+		.toHaveTitle("Practice Lab | Certification Practice Quizzes & Study Notes");
+	await expect
+		.soft(page.locator('meta[property="og:site_name"]'))
+		.toHaveAttribute("content", "Practice Lab");
+	await expect
+		.soft(page.locator('meta[property="og:image:width"]'))
+		.toHaveAttribute("content", "1200");
+	await expect
+		.soft(page.locator('meta[property="og:image:height"]'))
+		.toHaveAttribute("content", "630");
+
 	const brand = page.locator(".pl-sidebar-brand");
 	await expect(brand).toHaveText("PRACTICE LAB");
 	await expect(brand.locator("img")).toHaveAttribute("src", /brand\/practice-lab-mark\.png$/);

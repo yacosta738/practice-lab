@@ -17,7 +17,7 @@ const canonicalUrl = `${Astro.url.protocol}//${Astro.url.host}${Astro.url.pathna
 
 // Default OG image resolved against the site origin so og:image and twitter:image
 // always carry an absolute URL as required by the Open Graph protocol.
-const defaultOgImage = new URL(`${base}assets/practice-lab-confidence.png`, Astro.site).href;
+const defaultOgImage = new URL(`${base}assets/practice-lab-confidence-og.png`, Astro.site).href;
 const ogImageUrl = ogImage || defaultOgImage;
 const isDefaultImage = !ogImage;
 ---
@@ -66,13 +66,14 @@ const isDefaultImage = !ogImage;
 
 		<!-- Open Graph -->
 		<meta property="og:url" content={Astro.url}>
+		<meta property="og:site_name" content="Practice Lab">
 		<meta property="og:title" content={title}>
 		<meta property="og:description" content={description}>
 		<meta property="og:image" content={ogImageUrl}>
 		{isDefaultImage && (
 			<>
-				<meta property="og:image:width" content="1734">
-				<meta property="og:image:height" content="907">
+				<meta property="og:image:width" content="1200">
+				<meta property="og:image:height" content="630">
 			</>
 		)}
 		<meta
