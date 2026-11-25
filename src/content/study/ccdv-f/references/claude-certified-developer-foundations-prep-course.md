@@ -15,8 +15,6 @@ tags:
 > **Box**
 > 
 
-English 日本語
-
 ## Claude Certified Developer - Foundations Prep Course
 
 ## Learn to build production-grade applications, agents, and workflows on Claude, and to make engineering decisions that determine whether code holds up when real users are depending on it.

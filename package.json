@@ -30,6 +30,7 @@
 	},
 	"devDependencies": {
 		"@astrojs/check": "0.9.12",
+		"@astrojs/markdown-satteri": "0.4.10",
 		"@astrojs/partytown": "2.1.9",
 		"@astrojs/sitemap": "3.7.6",
 		"@astrojs/vercel": "11.0.22",
@@ -44,6 +45,7 @@
 		"esbuild": "0.28.2",
 		"fake-indexeddb": "6.2.8",
 		"lefthook": "2.2.2",
+		"satteri": "0.11.7",
 		"typescript": "6.0.3",
 		"vitest": "5.1.1"
 	}
