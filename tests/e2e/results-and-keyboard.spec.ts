@@ -62,6 +62,7 @@ test("CCDV-F practice mode shows results page after finishing questions", async 
 
 		// Check answer
 		await page.getByRole("button", { name: "Check answer" }).click();
+
 		// Verify feedback appears
 		await expect(page.locator(".feedback")).toBeVisible({ timeout: 5000 });
 
@@ -74,6 +75,7 @@ test("CCDV-F practice mode shows results page after finishing questions", async 
 			await expect(page.locator(".qhead")).not.toHaveText(questionProgress ?? "", {
 				timeout: 5000,
 			});
+			await page.waitForSelector("button.option", { state: "visible", timeout: 10000 });
 		}
 	}
 
@@ -81,7 +83,6 @@ test("CCDV-F practice mode shows results page after finishing questions", async 
 	const finishBtn = page.getByRole("button", { name: /Finish/i }).first();
 	await finishBtn.waitFor({ state: "visible", timeout: 10000 });
 	await finishBtn.click();
-	await page.waitForTimeout(500);
 
 	// Verify the results page is visible
 	await expect(page.locator(".results")).toBeVisible({ timeout: 10000 });
@@ -229,10 +230,11 @@ test("CCDV-F Next button moves to next question", async ({ page }) => {
 	await page.keyboard.press("Enter");
 
 	// Click Next button to move to next question
-	const nextBtn = page.getByRole("button", { name: /Next question/ });
+	const nextBtn = page.getByRole("button", { name: /Next question/i });
 	await expect(nextBtn).toBeVisible();
 	await expect(nextBtn).toBeEnabled();
 	await nextBtn.click({ timeout: 5000 });
+	await page.waitForSelector("button.option", { state: "visible", timeout: 10000 });
 
 	// Verify the question changed
 	await expect(page.locator("h2").first()).not.toHaveText(firstQuestion ?? "", { timeout: 5000 });

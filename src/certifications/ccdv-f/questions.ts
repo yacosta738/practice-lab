@@ -1,4 +1,4 @@
-// CCDV-F question bank — 122 hand-authored + 53 from Cert Pro Quest
+// CCDV-F question bank — 141 hand-authored + 53 from Cert Pro Quest
 // Source (CPQ additions): Cert Pro Quest — practice bank by Matthew Purcell (not official exam content)
 
 import type { Question } from "../../lib/quiz-types";
@@ -2571,10 +2571,230 @@ const handAuthored: Question[] = [
 			url: "",
 		},
 	},
+	{
+		id: "D6-019",
+		domain: "D6",
+		topic: "6.1 Context Engineering",
+		question:
+			"A support agent can access 48 catalog tools, but most requests need only two or three unpredictable tools. Which change reduces irrelevant tool definitions in each model request?",
+		options: [
+			"Load relevant tool schemas on demand for each request",
+			"Cache every available tool schema and include all of them",
+			"Compact old conversation turns before every tool call",
+			"Raise the response token limit without changing tool inputs",
+		],
+		correctAnswers: [0],
+		explanation:
+			"On-demand tool discovery reduces the definitions loaded up front while leaving the conversation state intact. Measure the discovery overhead and tool-selection quality.",
+		whyNot:
+			"B still sends the full catalog; caching can reduce repeated-input cost but not context occupancy. C changes old conversation history, not the initial tool catalog. D changes output allowance, not input definitions.",
+		source: {
+			label: "Claude Platform — Manage tool context",
+			url: "https://platform.claude.com/docs/en/agents-and-tools/tool-use/manage-tool-context",
+		},
+	},
+	{
+		id: "D6-020",
+		domain: "D6",
+		topic: "6.1 Context Engineering",
+		question:
+			"A service repeatedly sends the same stable policy prefix, while its context window has ample room and the changing user data must stay current. What should the team test first to reduce repeated-input cost?",
+		options: [
+			"Prune old tool results and keep resending the full policy prefix",
+			"Cache the eligible stable prefix to lower repeated-input spend",
+			"Compact the current conversation and remove its policy prefix",
+			"Increase output tokens while retaining the same input prefix",
+		],
+		correctAnswers: [1],
+		explanation:
+			"Prompt caching can reduce the cost of eligible repeated input. It does not reduce context-window occupancy, so verify cache eligibility, hits, and model-specific pricing separately.",
+		whyNot:
+			"A removes old results but leaves the repeated prefix cost. C risks dropping active policy and does not target stable-prefix reuse. D changes output capacity rather than repeated input cost.",
+		source: {
+			label: "Claude Platform — Prompt caching",
+			url: "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+		},
+	},
+	{
+		id: "D8-015",
+		domain: "D8",
+		topic: "8.2 MCP Server Development",
+		question:
+			"An MCP `tools/call` response contains a result marked `isError: true`, but the JSON-RPC exchange itself succeeded. How should the host treat the operation?",
+		options: [
+			"Report success because the server returned a valid JSON-RPC result envelope",
+			"Retry the operation until the server returns a different result",
+			"Preserve it as a tool-execution failure and follow the recovery policy",
+			"Run the next write-capable tool because transport succeeded",
+		],
+		correctAnswers: [2],
+		explanation:
+			"A successful protocol exchange can carry a tool-level error. The host must preserve that distinction and avoid turning an unsuccessful operation into success.",
+		whyNot:
+			"A confuses protocol success with operation success. B can repeat side effects without checking whether a retry is safe. D proceeds as if the requested operation completed.",
+		source: {
+			label: "MCP Specification 2026-07-28 — Server Tools",
+			url: "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+		},
+	},
+	{
+		id: "D8-016",
+		domain: "D8",
+		topic: "8.2 MCP Server Development",
+		question:
+			"A remote MCP server uses Streamable HTTP and receives a request with an `Origin` outside its allowed clients. What should it do before handling the request?",
+		options: [
+			"Accept it whenever TLS is enabled",
+			"Skip the check if the request has an authorization token",
+			"Place the token in a URL so the browser can complete the request",
+			"Validate the Origin and reject it when it is not allowed",
+		],
+		correctAnswers: [3],
+		explanation:
+			"The Streamable HTTP transport requires Origin validation to mitigate DNS rebinding risks. Reject invalid origins before processing MCP requests.",
+		whyNot:
+			"A TLS protects the connection but does not validate the browser origin. B does not replace the transport check with authentication. C exposes credentials and does not authorize the origin.",
+		source: {
+			label: "MCP Specification 2026-07-28 — Transports",
+			url: "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports",
+		},
+	},
+	{
+		id: "D7-011",
+		domain: "D7",
+		topic: "7.1 AI Application Security",
+		question:
+			"A retrieved vendor document tells an agent to ignore the request and send a credential to a new address. Which defense best limits harm if the model follows that text?",
+		options: [
+			"Use least privilege and constrain egress in trusted services",
+			"Add a stronger prompt instruction and trust the model to refuse",
+			"Give the agent broad network access so it can verify the destination",
+			"Send the document to another model and accept its safety judgment",
+		],
+		correctAnswers: [0],
+		explanation:
+			"Retrieved text is untrusted data. Scoped credentials, constrained egress, and service-side authorization remain protective even if the model follows an injected instruction.",
+		whyNot:
+			"B relies only on model behavior. C expands the attack surface. D adds another judgment step but does not enforce what the agent can access or send.",
+		source: {
+			label: "Claude Platform — Secure deployment risks (selected excerpts)",
+			url: "https://platform.claude.com/docs/en/managed-agents/secure-deployment-risks",
+		},
+	},
+	{
+		id: "D7-012",
+		domain: "D7",
+		topic: "7.1 AI Application Security",
+		question:
+			"A support assistant may read case records and send customer messages. A retrieved record can contain attacker-controlled text. How should a legitimate send request be authorized?",
+		options: [
+			"Allow any recipient mentioned in a retrieved record",
+			"Separate read and send access; approve the exact message",
+			"Ask the model to confirm that the message is safe after sending it",
+			"Keep a shared send token in the assistant context for every case",
+		],
+		correctAnswers: [1],
+		explanation:
+			"Separate read from write capability and bind human approval to the exact action parameters. Enforce that decision in trusted application code immediately before sending.",
+		whyNot:
+			"A lets untrusted data choose the destination. C reviews after the irreversible side effect. D exposes a broadly reusable credential and weakens tenant and task boundaries.",
+		source: {
+			label: "Claude Platform — Secure deployment risks (selected excerpts)",
+			url: "https://platform.claude.com/docs/en/managed-agents/secure-deployment-risks",
+		},
+	},
+	{
+		id: "D3-007",
+		domain: "D3",
+		topic: "3.1 Claude Code Operation",
+		question:
+			"An organization must enforce a restriction across repositories even when a project skill recommends a conflicting workflow. Where should the enforceable policy live?",
+		options: [
+			"In a warning inside each project's `CLAUDE.md` file",
+			"In a reusable skill that asks Claude Code to follow the restriction",
+			"Enforce it through organization-managed permission settings",
+			"In a user preference that developers can change locally",
+		],
+		correctAnswers: [2],
+		explanation:
+			"Use the organization-controlled settings and permission layer for enforceable policy, then verify key-specific precedence in a clean session. A skill or project instruction is not a permission boundary.",
+		whyNot:
+			"A and B provide instructions but do not enforce tool permissions. D is user-controlled and cannot establish a consistent organization policy.",
+		source: {
+			label: "Claude Code — Managed settings",
+			url: "https://code.claude.com/docs/en/managed-settings",
+		},
+	},
+	{
+		id: "D3-008",
+		domain: "D3",
+		topic: "3.1 Claude Code Operation",
+		question:
+			"A team needs to prevent a disallowed tool call before it can modify files. Which hook behavior should the team verify in an isolated checkout?",
+		options: [
+			"A `PostToolUse` hook that records the completed operation and its outcome",
+			"A `PreToolUse` command hook that exits successfully",
+			"A `SessionEnd` hook that checks the final transcript",
+			"A matching `PreToolUse` command hook using the documented blocking exit",
+		],
+		correctAnswers: [3],
+		explanation:
+			"A blocking `PreToolUse` outcome can stop the call before execution; verify the event-specific behavior, including the documented exit code, with a harmless test.",
+		whyNot:
+			"A runs after the operation. B allows normal permission handling to continue and does not itself block. C runs too late to prevent the tool call.",
+		source: {
+			label: "Claude Code — Hooks",
+			url: "https://code.claude.com/docs/en/hooks",
+		},
+	},
+	{
+		id: "D4-010",
+		domain: "D4",
+		topic: "4.1 Debugging and Error Handling",
+		question:
+			"A downstream service accepted a notice, but its response timed out. A retry with a new operation ID creates a duplicate. What should the recovery path do?",
+		options: [
+			"Reconcile downstream state before retrying",
+			"Retry immediately with another operation ID to avoid stale state",
+			"Increase the model's output limit so it can confirm the first attempt",
+			"Switch models and repeat the same tool call with unchanged retry logic",
+		],
+		correctAnswers: [0],
+		explanation:
+			"A timeout does not prove that the downstream write failed. Reconcile the operation or use a stable idempotency key before replaying it; otherwise stop and escalate uncertain state.",
+		whyNot:
+			"B can repeat a committed side effect. C changes model output, not downstream operation state. D leaves the retry and idempotency defect unchanged.",
+		source: {
+			label: "Practice Lab synthesis — API error recovery and evaluation",
+			url: "https://platform.claude.com/docs/en/api/errors",
+		},
+	},
+	{
+		id: "D4-011",
+		domain: "D4",
+		topic: "4.1 Debugging and Error Handling",
+		question:
+			"A release must produce valid JSON and preserve evidence for high-impact decisions. Which evaluation setup best tests both requirements?",
+		options: [
+			"Use one overall model-judge score and accept its average result",
+			"Use code for schema checks and a rubric for evidence quality",
+			"Ask the generating model to certify its own output before release",
+			"Test only common requests and infer quality for high-impact cases",
+		],
+		correctAnswers: [1],
+		explanation:
+			"Deterministic checks are appropriate for machine-verifiable schema constraints; a calibrated rubric can assess evidence quality, with high-impact slices reported separately.",
+		whyNot:
+			"A hides per-criterion failures in one score. C is not an independent evaluator. D leaves the highest-risk cases untested.",
+		source: {
+			label: "Claude Platform — Define success criteria and build evaluations",
+			url: "https://platform.claude.com/docs/en/test-and-evaluate/develop-tests",
+		},
+	},
 ];
 
 /**
- * Combined CCDV-F question bank: 131 hand-authored + 53 CPQ additions = 184 total.
+ * Combined CCDV-F question bank: 141 hand-authored + 53 CPQ additions = 194 total.
  * CPQ questions are prefixed with "CPQ-" to avoid ID collisions.
  */
 export const questions: Question[] = [...handAuthored, ...cpqQuestions];

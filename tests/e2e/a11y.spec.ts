@@ -16,6 +16,11 @@ const ROUTES = [
 	"/practice-lab/study/ccdv-f/application-integration-design-workshop/",
 	"/practice-lab/study/ccdv-f/model-selection-and-optimization-workshop/",
 	"/practice-lab/study/ccdv-f/agent-architecture-design-workshop/",
+	"/practice-lab/study/ccdv-f/prompt-and-context-engineering-workshop/",
+	"/practice-lab/study/ccdv-f/tools-and-mcp-integration-workshop/",
+	"/practice-lab/study/ccdv-f/security-and-safety-workshop/",
+	"/practice-lab/study/ccdv-f/claude-code-operations-workshop/",
+	"/practice-lab/study/ccdv-f/eval-debugging-and-recovery-workshop/",
 	"/practice-lab/study/ccdv-f/workflows-versus-agents/",
 ];
 

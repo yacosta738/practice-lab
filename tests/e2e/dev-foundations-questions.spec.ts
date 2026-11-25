@@ -28,7 +28,7 @@ const _RECALL_QUESTION_SNIPPETS: Record<string, string> = {
 	"D3-006": "CLAUDE.md",
 };
 
-test("CCDV-F practice mode renders single- and multi-select questions correctly", async ({
+test("CCDV-F practice mode renders and checks single- and multi-select questions", async ({
 	page,
 }) => {
 	// Clear any persisted session so we start fresh
@@ -64,15 +64,22 @@ test("CCDV-F practice mode renders single- and multi-select questions correctly"
 	const letters = await letterSpans.allTextContents();
 	expect(letters.length).toBe(optionCount);
 
-	// Verify hint is present
+	// Read the selection requirement; practice mode shuffles single- and multi-select questions.
 	const hintText = await page.locator(".hint").first().textContent();
-	expect(hintText).toMatch(/Select/i);
+	expect(hintText).toMatch(/Select (?:ONE answer|exactly \d+ answers)/i);
+	const selectCountMatch = hintText?.match(/Select exactly (\d+) answers/i);
+	const selectCount = selectCountMatch ? Number.parseInt(selectCountMatch[1], 10) : 1;
+	expect(selectCount).toBeGreaterThan(0);
+	expect(selectCount).toBeLessThanOrEqual(optionCount);
 
-	// Select the required number of options for this randomized question
-	const exactMatch = hintText?.match(/Select exactly (\d+) answers/i);
-	const needed = exactMatch ? Number.parseInt(exactMatch[1], 10) : 1;
-	for (let i = 0; i < needed; i++) await optionButtons.nth(i).click();
+	// The check button stays disabled until the required number of choices is selected.
 	const checkBtn = page.getByRole("button", { name: "Check answer" });
+	for (let index = 0; index < selectCount; index++) {
+		await optionButtons.nth(index).click();
+		if (index < selectCount - 1) {
+			await expect(checkBtn).toBeDisabled();
+		}
+	}
 	await expect(checkBtn).toBeEnabled();
 	await checkBtn.click();
 	await page.waitForLoadState("networkidle");
@@ -108,8 +115,8 @@ test("CCDV-F practice mode shows correct question count", async ({ page }) => {
 	const totalMatch = qHeadText?.match(/Question \d+ of (\d+)/);
 	const totalQuestions = totalMatch ? Number.parseInt(totalMatch[1], 10) : -1;
 
-	// CCDV-F has 184 questions total (131 hand-authored + 53 CPQ)
-	expect(totalQuestions).toBe(184);
+	// CCDV-F has 194 questions total (141 hand-authored + 53 CPQ)
+	expect(totalQuestions).toBe(194);
 });
 
 test("CCDV-F exam mode follows blueprint", async ({ page }) => {
