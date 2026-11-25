@@ -114,7 +114,6 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 	const app = document.getElementById("app");
 	let reviewFilter = "all";
 	const params = new URLSearchParams(window.location.search);
-	const requestedMode = params.get("mode") === "assess" ? "assess" : "practice";
 	const rawDomain = params.get("domain");
 	const requestedDomain = rawDomain && Object.hasOwn(cfg.domains, rawDomain) ? rawDomain : "all";
 	let examNavigatorExpanded = !window.matchMedia("(max-width: 860px)").matches;
@@ -390,7 +389,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		const attempted = values.filter((s) => s.attempts > 0).length;
 		const mastered = values.filter((s) => s.attempts > 0 && !s.lastWrong).length;
 		const weak = getWeakCount();
-		const assessSetup = requestedMode === "assess";
+		const assessSetup = new URLSearchParams(window.location.search).get("mode") === "assess";
 
 		const readinessPct = pct(mastered, qs.length);
 		const bpLabel = cfg.blueprintSource === "official" ? "Exam weight" : "Bank distribution";

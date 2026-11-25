@@ -19,7 +19,7 @@ Interactive practice platform for certification preparation. Study by domain, ta
 - **Exam mode** — timed mock exam with 53 questions distributed by domain.
 - **Weaknesses mode** — focus on the questions you got wrong.
 - **Progress tracking** — statistics and active sessions persist in browser `localStorage`; the site itself needs an internet connection to load.
-- **Full-text search** — search certification, domain, and study-note content from the accessible search dialog.
+- **Search** — the accessible search dialog matches result metadata by title, category, and badge; full-text study-note content search is deferred.
 - **Study library** — per-certification study notes rendered from Markdown, organised by exam domain with a table of contents and cross-links.
 
 ## Content Sources and Attribution
