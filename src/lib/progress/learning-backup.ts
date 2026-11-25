@@ -63,17 +63,22 @@ export async function createLearningBackup(
 		sourceOrigin,
 		data,
 	};
-	const recordCount = countLearningRecords(data);
+	const recordCount = countLearningRecordsForRestoreExport(data, legacyRecords.length);
 	if (recordCount > MAX_LEARNING_BACKUP_RECORDS) {
 		throw new ProgressValidationError("The learning backup contains too many records to export.");
 	}
-	if (new TextEncoder().encode(JSON.stringify(payload)).byteLength > MAX_LEARNING_BACKUP_SIZE) {
+	const encoder = new TextEncoder();
+	const envelope: LearningBackup = {
+		...payload,
+		integrity: { algorithm: "SHA-256", digest: "0".repeat(64) },
+	};
+	if (encoder.encode(JSON.stringify(envelope)).byteLength > MAX_LEARNING_BACKUP_SIZE) {
 		throw new ProgressValidationError(
 			"The learning backup is too large to export (50 MB maximum).",
 		);
 	}
 	return {
-		...payload,
+		...envelope,
 		integrity: { algorithm: "SHA-256", digest: await digest(payload) },
 	};
 }
@@ -157,7 +162,7 @@ export async function parseLearningBackup(
 			validateLegacyStorageRecord,
 		),
 	};
-	const recordCount = countLearningRecords(data);
+	const recordCount = countLearningRecordsForRestoreExport(data, knownCertificationIds.length);
 	if (recordCount > MAX_LEARNING_BACKUP_RECORDS) {
 		throw new ProgressValidationError("The learning backup contains too many records to restore.");
 	}
@@ -186,10 +191,10 @@ export async function parseLearningBackup(
 		);
 	}
 	validateCertificationData(data, knownCertificationIds, backup.exportedAt);
+	const normalizedPayload = { ...payload, data };
 	return {
-		...payload,
-		data,
-		integrity: { algorithm: "SHA-256", digest: integrity.digest },
+		...normalizedPayload,
+		integrity: { algorithm: "SHA-256", digest: await digest(normalizedPayload) },
 	};
 }
 
@@ -222,6 +227,11 @@ function validateCertificationData(
 		const attempts = attemptsBySession.get(attempt.sessionId) ?? [];
 		attempts.push(attempt);
 		attemptsBySession.set(attempt.sessionId, attempts);
+	}
+	for (const progress of data.questionProgress) {
+		if (!knownIds.has(progress.certificationId)) {
+			throw new ProgressValidationError("Question progress refers to an unknown certification.");
+		}
 	}
 	const snapshots = knownCertificationIds.map((certificationId) => ({
 		certificationId,
@@ -272,6 +282,16 @@ function validateCertificationData(
 		}
 		provenanceKeys.add(provenance.key);
 		validateLegacyMetadata(provenance.key, provenance.value, knownIds);
+	}
+	const provenanceByKey = new Map(data.legacyProvenance.map(({ key, value }) => [key, value]));
+	for (const provenance of data.legacyProvenance) {
+		if (!provenance.key.startsWith("migration:legacy-v2:")) continue;
+		const certificationId = provenance.key.slice("migration:legacy-v2:".length);
+		if (!provenanceByKey.has(`legacy-backup:${certificationId}`)) {
+			throw new ProgressValidationError(
+				"A legacy migration marker is missing its matching per-certification backup.",
+			);
+		}
 	}
 	const latestArchive = data.legacyProvenance.find(
 		({ key }) => key === "legacy-backup:latest",
@@ -330,6 +350,18 @@ function countLearningRecords(data: LearningDataRestoreData): number {
 		return total + (isLegacyRecordsBackup(provenance.value) ? provenance.value.records.length : 0);
 	}, 0);
 	return directCount + archivedLegacyCount;
+}
+
+export function countLearningRecordsForRestoreExport(
+	data: LearningDataRestoreData,
+	certificationCount: number,
+): number {
+	const archiveRecords = data.legacyRecords.length > 0 ? 1 : 0;
+	const latestArchiveRecord =
+		archiveRecords > 0 && !data.legacyProvenance.some(({ key }) => key === "legacy-backup:latest")
+			? 1
+			: 0;
+	return countLearningRecords(data) + certificationCount + archiveRecords + latestArchiveRecord;
 }
 
 function isLegacyMigrationResult(
@@ -403,6 +435,9 @@ function isLegacyRecordsBackup(value: unknown): value is LegacyRecordsBackup {
 
 function validateSessionShape(value: unknown): asserts value is ProgressSession {
 	const session = asRecord(value, "A session record is invalid.");
+	if (typeof session.id !== "string") {
+		throw new ProgressValidationError("A session ID must be a string.");
+	}
 	assertExactKeys(
 		session,
 		[
@@ -633,7 +668,7 @@ function stableStringify(value: unknown): string {
 	if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
 	if (value !== null && typeof value === "object") {
 		return `{${Object.entries(value)
-			.sort(([a], [b]) => a.localeCompare(b))
+			.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
 			.map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`)
 			.join(",")}}`;
 	}

@@ -3,6 +3,12 @@ import { expect, type Page, test } from "@playwright/test";
 
 const DATA_MANAGEMENT_URL = "/practice-lab/data-management/";
 
+declare global {
+	interface Window {
+		__releaseBackupFileText?: () => void;
+	}
+}
+
 async function downloadText(page: Page) {
 	const downloadPromise = page.waitForEvent("download");
 	await page.getByRole("button", { name: "Download full backup" }).click();
@@ -154,6 +160,40 @@ test("exports a full backup and cancellation after preview changes nothing", asy
 	await expect(page.locator("#backup-summary")).toContainText("Current data: 0 sessions");
 });
 
+test("binds an open restore review to the selected backup", async ({ page }) => {
+	await page.goto(DATA_MANAGEMENT_URL);
+	await expect(page.getByRole("status")).toContainText("ready");
+	const earlierBackup = await downloadText(page);
+	await addStudyProgress(page, "ccdv-f/reviewed-backup");
+	const laterBackup = await downloadText(page);
+
+	await page.locator("#backup-file").setInputFiles({
+		name: "earlier-learning-backup.json",
+		mimeType: "application/json",
+		buffer: Buffer.from(earlierBackup),
+	});
+	await expect(page.locator("#restore-summary")).toContainText("0 study records");
+	await page.getByRole("button", { name: "Review replacement" }).click();
+	const dialog = page.getByRole("dialog", { name: "Replace current learning data?" });
+	await expect(dialog).toBeVisible();
+
+	await page.locator("#backup-file").setInputFiles({
+		name: "later-learning-backup.json",
+		mimeType: "application/json",
+		buffer: Buffer.from(laterBackup),
+	});
+	await expect(dialog).toBeHidden();
+	await expect(page.locator("#restore-summary")).toContainText("1 study records");
+	await page.getByRole("button", { name: "Review replacement" }).click();
+	await expect(dialog).toBeVisible();
+	await dialog.locator("#confirm-restore-check").check();
+	await dialog.getByRole("button", { name: "Replace learning data" }).click();
+
+	expect((await readStudyProgress(page)).map(({ noteId }) => noteId)).toEqual([
+		"ccdv-f/reviewed-backup",
+	]);
+});
+
 test("rejects an invalid backup without changing stored data", async ({ page }) => {
 	await page.goto(DATA_MANAGEMENT_URL);
 	await expect(page.getByRole("status")).toContainText("ready");
@@ -191,6 +231,15 @@ test("restores a valid full backup as a replacement across all learning stores",
 	await expect(page.locator("#backup-summary")).toContainText("Current data: 0 sessions");
 	await expect(page.locator("#backup-summary")).toContainText("0 study records");
 	expect(await readStudyProgress(page)).toEqual([]);
+	const reexported = JSON.parse(await downloadText(page)) as {
+		data: { legacyRecords: Array<{ rawValue: string | null }> };
+	};
+	const certificationCount = await page.locator(".dataManager").evaluate((element) => {
+		const data = (element as HTMLElement).dataset.certificationIds ?? "[]";
+		return (JSON.parse(data) as string[]).length;
+	});
+	expect(reexported.data.legacyRecords).toHaveLength(certificationCount);
+	expect(reexported.data.legacyRecords.every(({ rawValue }) => rawValue === null)).toBe(true);
 });
 
 test("rejects a stale restore after preview without partially replacing learning data", async ({
@@ -210,6 +259,10 @@ test("rejects a stale restore after preview without partially replacing learning
 	await addStudyProgress(page, "ccdv-f/changed-after-preview");
 	await page.getByRole("button", { name: "Review replacement" }).click();
 	const dialog = page.getByRole("dialog", { name: "Replace current learning data?" });
+	const preRestoreDownload = page.waitForEvent("download");
+	await dialog.getByRole("button", { name: "Download a backup of current data first" }).click();
+	await preRestoreDownload;
+	await expect(dialog.locator("#confirm-restore-check")).toBeChecked();
 	await dialog.locator("#confirm-restore-check").check();
 	await dialog.getByRole("button", { name: "Replace learning data" }).click();
 	await expect(page.locator("#restore-dialog-status")).toContainText(
@@ -219,6 +272,82 @@ test("rejects a stale restore after preview without partially replacing learning
 		"ccdv-f/changed-after-preview",
 		"ccdv-f/initial",
 	]);
+});
+
+test("keeps the reviewed fingerprint when downloading current data before restore", async ({
+	page,
+}) => {
+	await page.goto(DATA_MANAGEMENT_URL);
+	await expect(page.getByRole("status")).toContainText("ready");
+	const emptyBackup = await downloadText(page);
+	await addStudyProgress(page, "ccdv-f/initial");
+	await page.reload();
+
+	await page.locator("#backup-file").setInputFiles({
+		name: "empty-learning-backup.json",
+		mimeType: "application/json",
+		buffer: Buffer.from(emptyBackup),
+	});
+	await expect(page.getByRole("status")).toContainText("Backup validated.");
+	await addStudyProgress(page, "ccdv-f/changed-after-review");
+	await page.getByRole("button", { name: "Review replacement" }).click();
+	const dialog = page.getByRole("dialog", { name: "Replace current learning data?" });
+	const downloadPromise = page.waitForEvent("download");
+	await dialog.locator("#download-before-restore").click();
+	await downloadPromise;
+	await dialog.locator("#confirm-restore-check").check();
+	await dialog.getByRole("button", { name: "Replace learning data" }).click();
+
+	await expect(page.locator("#restore-dialog-status")).toContainText(
+		/changed while the restore was being reviewed/i,
+	);
+	expect((await readStudyProgress(page)).map(({ noteId }) => noteId).sort()).toEqual([
+		"ccdv-f/changed-after-review",
+		"ccdv-f/initial",
+	]);
+});
+
+test("clears the previous preview and disables review while a new file is checked", async ({
+	page,
+}) => {
+	await page.goto(DATA_MANAGEMENT_URL);
+	await expect(page.getByRole("status")).toContainText("ready");
+	const currentBackup = await downloadText(page);
+	await addStudyProgress(page, "ccdv-f/kept");
+	await page.reload();
+	await page.locator("#backup-file").setInputFiles({
+		name: "valid-learning-backup.json",
+		mimeType: "application/json",
+		buffer: Buffer.from(currentBackup),
+	});
+	await expect(page.getByRole("status")).toContainText("Backup validated.");
+	await page.getByRole("button", { name: "Review replacement" }).click();
+	const dialog = page.getByRole("dialog", { name: "Replace current learning data?" });
+	await expect(dialog).toBeVisible();
+
+	await page.evaluate(() => {
+		const nativeText = File.prototype.text;
+		let release: (() => void) | undefined;
+		window.__releaseBackupFileText = () => release?.();
+		File.prototype.text = function (): Promise<string> {
+			return new Promise<string>((resolve, reject) => {
+				release = () => {
+					void nativeText.call(this).then(resolve, reject);
+				};
+			});
+		};
+	});
+	await page.locator("#backup-file").setInputFiles({
+		name: "invalid-learning-backup.json",
+		mimeType: "application/json",
+		buffer: Buffer.from("{"),
+	});
+	await expect(dialog).toBeHidden();
+	await expect(page.locator("#restore-preview")).toBeHidden();
+	await expect(page.locator("#review-restore")).toBeDisabled();
+	await page.evaluate(() => window.__releaseBackupFileText?.());
+	await expect(page.getByRole("status")).toContainText(/not valid JSON/i);
+	expect((await readStudyProgress(page)).map(({ noteId }) => noteId)).toEqual(["ccdv-f/kept"]);
 });
 
 test("resets only the selected certification, including its active session", async ({ page }) => {

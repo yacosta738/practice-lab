@@ -1,12 +1,17 @@
 import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+	type BrowserProgressOptions,
+	BrowserProgressService,
+} from "../../src/lib/progress/browser-service";
 import { openProgressDatabase } from "../../src/lib/progress/database";
 import { createProgressRepository } from "../../src/lib/progress/indexeddb-repository";
 import {
 	createInitialSession,
 	createQuestionAttempt,
 	type LearningDataRestoreData,
+	type LegacyProgressMigrationInput,
 	type ProgressSession,
 } from "../../src/lib/progress/model";
 import type { ProgressRepository } from "../../src/lib/progress/repository-port";
@@ -161,6 +166,19 @@ describe("global learning data repository operations", () => {
 	});
 
 	it("replaces all learning stores atomically and suppresses future legacy import", async () => {
+		for (const certificationId of CERTIFICATION_IDS) {
+			const sessionId = `00000000-0000-4000-8000-${certificationId === "ccdv-f" ? "000000000001" : "000000000002"}`;
+			await repository.createSession(makeSession(sessionId, certificationId));
+		}
+		await seedAdditionalRecords(CERTIFICATION_IDS);
+		const previousTokens = Object.fromEntries(
+			await Promise.all(
+				CERTIFICATION_IDS.map(async (certificationId) => [
+					certificationId,
+					await repository.getDataGenerationToken(certificationId),
+				]),
+			),
+		);
 		const before = await repository.getLearningDataSnapshot();
 		const importedSession = makeSession("00000000-0000-4000-8000-000000000003", "ccdv-f");
 		const data: LearningDataRestoreData = {
@@ -185,14 +203,26 @@ describe("global learning data repository operations", () => {
 				},
 			],
 			legacyProvenance: [{ key: "legacy-backup:ccdv-f", value: { rawValue: "archived" } }],
-			legacyRecords: [
-				{
-					certificationId: "ccdv-f",
-					storageKey: "ccdv-f-practice-lab-v2",
-					rawValue: "legacy-raw-value",
-				},
-			],
+			legacyRecords: CERTIFICATION_IDS.map((certificationId) => ({
+				certificationId,
+				storageKey: `${certificationId}-practice-lab-v2`,
+				rawValue: null,
+			})),
 		};
+		const invalidData = {
+			...data,
+			studyProgress: [...data.studyProgress, ...data.studyProgress],
+		};
+
+		await expect(
+			repository.replaceLearningData(invalidData, CERTIFICATION_IDS, before.fingerprint),
+		).rejects.toThrow();
+		expect(await repository.getLearningDataSnapshot()).toEqual(before);
+		for (const certificationId of CERTIFICATION_IDS) {
+			expect(await repository.getDataGenerationToken(certificationId)).toBe(
+				previousTokens[certificationId],
+			);
+		}
 
 		const tokens = await repository.replaceLearningData(
 			data,
@@ -204,6 +234,10 @@ describe("global learning data repository operations", () => {
 		expect(after.sessions).toEqual([importedSession]);
 		expect(after.studyProgress).toEqual(data.studyProgress);
 		expect(after.learningGoals).toEqual(data.learningGoals);
+		const archivedLegacy = after.legacyProvenance.find(({ key }) =>
+			key.startsWith("legacy-backup:archive:"),
+		);
+		expect(archivedLegacy?.value).toMatchObject({ records: data.legacyRecords });
 		expect(after.legacyProvenance).toEqual(
 			expect.arrayContaining([
 				{ key: "legacy-backup:ccdv-f", value: { rawValue: "archived" } },
@@ -214,6 +248,124 @@ describe("global learning data repository operations", () => {
 		expect(tokens).toHaveProperty("ccao-f");
 		expect(await repository.getMetadata("legacy-import-suppressed:ccdv-f")).toBe(true);
 		expect(await repository.getMetadata("legacy-import-suppressed:ccao-f")).toBe(true);
+	});
+
+	it("changes the restore fingerprint when a reset changes generation state", async () => {
+		await repository.getDataGenerationToken("ccdv-f");
+		const reviewed = await repository.getLearningDataSnapshot();
+
+		await repository.resetLearningData("ccdv-f", CERTIFICATION_IDS);
+
+		const afterReset = await repository.getLearningDataSnapshot();
+		expect(afterReset.fingerprint).not.toBe(reviewed.fingerprint);
+		await expect(
+			repository.replaceLearningData(emptyRestoreData(), CERTIFICATION_IDS, reviewed.fingerprint),
+		).rejects.toThrow(/changed while the restore was being reviewed/i);
+	});
+
+	it("does not change the restore fingerprint when only the backup timestamp changes", async () => {
+		const reviewed = await repository.getLearningDataSnapshot();
+
+		await repository.markSuccessfulBackup(300);
+
+		const afterBackup = await repository.getLearningDataSnapshot();
+		expect(afterBackup.lastBackupAt).toBe(300);
+		expect(afterBackup.fingerprint).toBe(reviewed.fingerprint);
+	});
+
+	it("rejects an oversized legacy archive before clearing current learning data", async () => {
+		const existingSession = makeSession("00000000-0000-4000-8000-000000000004", "ccdv-f");
+		await repository.createSession(existingSession);
+		const generationToken = await repository.getDataGenerationToken("ccdv-f");
+		const before = await repository.getLearningDataSnapshot();
+		const archivedRecord = {
+			certificationId: "ccdv-f",
+			storageKey: "ccdv-f-practice-lab-v2",
+			rawValue: null,
+		};
+		const oversizedData: LearningDataRestoreData = {
+			...emptyRestoreData(),
+			legacyProvenance: [
+				{
+					key: "legacy-backup:archive:00000000-0000-4000-8000-000000000001",
+					value: {
+						format: "practice-lab-legacy-export",
+						version: 1,
+						exportedAt: 300,
+						records: new Array(249_995).fill(archivedRecord),
+					},
+				},
+			],
+			legacyRecords: CERTIFICATION_IDS.map((certificationId) => ({
+				certificationId,
+				storageKey: `${certificationId}-practice-lab-v2`,
+				rawValue: null,
+			})),
+		};
+
+		await expect(
+			repository.replaceLearningData(oversizedData, CERTIFICATION_IDS, before.fingerprint),
+		).rejects.toThrow(/too many records to restore/i);
+		expect(await repository.getLearningDataSnapshot()).toEqual(before);
+		expect(await repository.getDataGenerationToken("ccdv-f")).toBe(generationToken);
+	});
+
+	it("does not migrate legacy progress after a reset suppresses future imports", async () => {
+		await repository.resetLearningData("ccdv-f", CERTIFICATION_IDS);
+		const migration: LegacyProgressMigrationInput = {
+			certificationId: "ccdv-f",
+			legacyStorageKey: "ccdv-f-practice-lab-v2",
+			rawValue: '{"stats":{"question-one":{"attempts":1,"correct":1,"lastWrong":false}}}',
+			migratedAt: 300,
+			baselines: [
+				{
+					questionId: "question-one",
+					baseline: { attempts: 1, correct: 1, lastWrong: false },
+				},
+			],
+			warnings: [],
+		};
+
+		await expect(repository.migrateLegacyData(migration)).rejects.toThrow(/suppressed/i);
+		expect(await repository.getQuestionProgress("ccdv-f", "question-one")).toBeUndefined();
+		expect(await repository.getMetadata("migration:legacy-v2:ccdv-f")).toBeUndefined();
+		expect(await repository.getMetadata("legacy-backup:ccdv-f")).toBeUndefined();
+	});
+
+	it("ignores legacy storage events only for certifications with import suppression", async () => {
+		await repository.resetLearningData("ccdv-f", CERTIFICATION_IDS);
+		const options = (certificationId: string): BrowserProgressOptions => ({
+			certificationId,
+			config: {} as BrowserProgressOptions["config"],
+			questions: [],
+			knownCertificationIds: CERTIFICATION_IDS,
+		});
+		const changedStorage = {
+			key: "ccdv-f-practice-lab-v2",
+			newValue: "changed-by-legacy-tab",
+		} as StorageEvent;
+		const suppressedService = new BrowserProgressService(options("ccdv-f"));
+		await (
+			suppressedService as unknown as {
+				onStorageChange(event: StorageEvent): Promise<void>;
+			}
+		).onStorageChange(changedStorage);
+		expect(
+			(suppressedService as unknown as { legacyWriteDetected: boolean }).legacyWriteDetected,
+		).toBe(false);
+
+		const unsuppressedService = new BrowserProgressService(options("ccao-f"));
+		await (
+			unsuppressedService as unknown as {
+				onStorageChange(event: StorageEvent): Promise<void>;
+			}
+		).onStorageChange({
+			...changedStorage,
+			key: "ccao-f-practice-lab-v2",
+		} as StorageEvent);
+		expect(
+			(unsuppressedService as unknown as { legacyWriteDetected: boolean }).legacyWriteDetected,
+		).toBe(true);
 	});
 
 	it("rejects a stale restore fingerprint without replacing current records", async () => {

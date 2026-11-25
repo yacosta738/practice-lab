@@ -367,6 +367,7 @@ const restoreSummary = document.getElementById("restore-summary");
 const restoreDialog = document.getElementById("restore-dialog") as HTMLDialogElement | null;
 const restoreCheck = document.getElementById("confirm-restore-check") as HTMLInputElement | null;
 const restoreConfirm = document.getElementById("confirm-restore") as HTMLButtonElement | null;
+const restoreReview = document.getElementById("review-restore") as HTMLButtonElement | null;
 const restoreDialogStatus = document.getElementById("restore-dialog-status");
 const resetDialog = document.getElementById("reset-dialog") as HTMLDialogElement | null;
 const resetDialogSummary = document.getElementById("reset-dialog-summary");
@@ -378,9 +379,17 @@ const certificationIds = page?.dataset.certificationIds
 	? (JSON.parse(page.dataset.certificationIds) as string[])
 	: [];
 const service = new DataManagementService(certificationIds);
-let currentFingerprint: string | undefined;
-let pendingBackup: Awaited<ReturnType<typeof service.validateBackup>> | undefined;
+type ReviewedBackup = {
+	backup: Awaited<ReturnType<typeof service.validateBackup>>;
+	fingerprint: string;
+	fileSelection: number;
+};
+let pendingBackup: ReviewedBackup | undefined;
+let dialogBackup: ReviewedBackup | undefined;
+let fileSelection = 0;
 let pendingReset: string | null | undefined;
+
+if (restoreReview) restoreReview.disabled = true;
 
 function showStatus(message: string, isError = false) {
 	if (!status) return;
@@ -412,7 +421,6 @@ function formatCounts(counts: Record<string, number>): string {
 
 async function refreshSummary() {
 	const snapshot = await service.getSnapshot();
-	currentFingerprint = snapshot.fingerprint;
 	const counts = {
 		sessions: snapshot.sessions.length,
 		questionAttempts: snapshot.questionAttempts.length,
@@ -491,11 +499,18 @@ document.getElementById("download-backup")?.addEventListener("click", () => {
 });
 
 backupFile?.addEventListener("change", async () => {
+	const selection = ++fileSelection;
 	const file = backupFile.files?.[0];
+	pendingBackup = undefined;
+	dialogBackup = undefined;
+	if (restoreDialog?.open) restoreDialog.close();
+	if (restoreReview) restoreReview.disabled = true;
+	if (restoreCheck) restoreCheck.checked = false;
+	if (restoreConfirm) restoreConfirm.disabled = true;
+	if (restorePreview) restorePreview.hidden = true;
+	showStatus(file ? "Validating the selected backup…" : "");
 	if (!file) return;
 	if (file.size > MAX_LEARNING_BACKUP_SIZE) {
-		pendingBackup = undefined;
-		if (restorePreview) restorePreview.hidden = true;
 		showStatus("The selected backup is larger than 50 MB. No data was changed.", true);
 		return;
 	}
@@ -504,8 +519,8 @@ backupFile?.addEventListener("change", async () => {
 		const raw = await file.text();
 		const parsed = await service.validateBackup(raw);
 		const snapshot = await service.getSnapshot();
-		pendingBackup = parsed;
-		currentFingerprint = snapshot.fingerprint;
+		if (selection !== fileSelection) return;
+		pendingBackup = { backup: parsed, fingerprint: snapshot.fingerprint, fileSelection: selection };
 		const counts = {
 			sessions: parsed.data.sessions.length,
 			questionAttempts: parsed.data.questionAttempts.length,
@@ -520,17 +535,19 @@ backupFile?.addEventListener("change", async () => {
 		showStatus(
 			"Backup validated. Review the summary; selecting the file has not changed saved data.",
 		);
+		if (restoreReview) restoreReview.disabled = false;
 	} catch (error) {
+		if (selection !== fileSelection) return;
 		pendingBackup = undefined;
-		if (restorePreview) restorePreview.hidden = true;
 		showStatus(error instanceof Error ? error.message : "The backup could not be validated.", true);
 	} finally {
-		backupFile.disabled = false;
+		if (selection === fileSelection) backupFile.disabled = false;
 	}
 });
 
-document.getElementById("review-restore")?.addEventListener("click", () => {
-	if (!pendingBackup || !restoreDialog) return;
+restoreReview?.addEventListener("click", () => {
+	if (!pendingBackup || pendingBackup.fileSelection !== fileSelection || !restoreDialog) return;
+	dialogBackup = pendingBackup;
 	if (restoreCheck) restoreCheck.checked = false;
 	if (restoreConfirm) restoreConfirm.disabled = true;
 	showDialogStatus(restoreDialogStatus, "");
@@ -538,8 +555,16 @@ document.getElementById("review-restore")?.addEventListener("click", () => {
 });
 
 document.getElementById("download-before-restore")?.addEventListener("click", () => {
+	const reviewed = dialogBackup;
 	void createAndDownloadBackup().then((created) => {
-		if (created && restoreCheck) {
+		if (
+			created &&
+			reviewed &&
+			reviewed === dialogBackup &&
+			reviewed === pendingBackup &&
+			reviewed.fileSelection === fileSelection &&
+			restoreCheck
+		) {
 			restoreCheck.checked = true;
 			if (restoreConfirm) restoreConfirm.disabled = false;
 		}
@@ -547,21 +572,49 @@ document.getElementById("download-before-restore")?.addEventListener("click", ()
 });
 
 restoreCheck?.addEventListener("change", () => {
-	if (restoreConfirm) restoreConfirm.disabled = !restoreCheck.checked;
+	if (restoreConfirm) {
+		restoreConfirm.disabled =
+			!restoreCheck.checked ||
+			!dialogBackup ||
+			dialogBackup !== pendingBackup ||
+			dialogBackup.fileSelection !== fileSelection;
+	}
 });
 
 restoreConfirm?.addEventListener("click", async () => {
-	if (!pendingBackup || !currentFingerprint || !restoreCheck?.checked) return;
+	const reviewed = dialogBackup;
+	if (
+		!reviewed ||
+		reviewed !== pendingBackup ||
+		reviewed.fileSelection !== fileSelection ||
+		!restoreCheck?.checked
+	) {
+		return;
+	}
 	restoreConfirm.disabled = true;
 	try {
-		await service.restoreBackup(pendingBackup, currentFingerprint);
+		await service.restoreBackup(reviewed.backup, reviewed.fingerprint);
 		pendingBackup = undefined;
+		dialogBackup = undefined;
+		fileSelection += 1;
+		if (restoreReview) restoreReview.disabled = true;
 		restoreDialog?.close();
 		if (restorePreview) restorePreview.hidden = true;
 		if (backupFile) backupFile.value = "";
 		await refreshSummary();
 		showStatus("Learning data was restored. Other open quiz tabs were notified to reload.");
 	} catch (error) {
+		if (
+			error instanceof Error &&
+			/changed while the restore was being reviewed/i.test(error.message)
+		) {
+			pendingBackup = undefined;
+			dialogBackup = undefined;
+			fileSelection += 1;
+			if (restoreReview) restoreReview.disabled = true;
+			if (backupFile) backupFile.value = "";
+			if (restorePreview) restorePreview.hidden = true;
+		}
 		showDialogStatus(
 			restoreDialogStatus,
 			error instanceof Error
@@ -576,7 +629,11 @@ restoreConfirm?.addEventListener("click", async () => {
 			true,
 		);
 	} finally {
-		restoreConfirm.disabled = !restoreCheck?.checked;
+		restoreConfirm.disabled =
+			!restoreCheck?.checked ||
+			!dialogBackup ||
+			dialogBackup !== pendingBackup ||
+			dialogBackup.fileSelection !== fileSelection;
 	}
 });
 
@@ -604,6 +661,11 @@ document.getElementById("confirm-reset")?.addEventListener("click", async () => 
 		resetDialog?.close();
 		pendingReset = undefined;
 		pendingBackup = undefined;
+		dialogBackup = undefined;
+		fileSelection += 1;
+		if (backupFile) backupFile.value = "";
+		if (restoreDialog?.open) restoreDialog.close();
+		if (restoreReview) restoreReview.disabled = true;
 		if (restorePreview) restorePreview.hidden = true;
 		await refreshSummary();
 		showStatus("Learning data was reset. Other open quiz tabs were notified to reload.");
