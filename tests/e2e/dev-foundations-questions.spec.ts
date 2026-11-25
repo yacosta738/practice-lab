@@ -115,8 +115,8 @@ test("CCDV-F practice mode shows correct question count", async ({ page }) => {
 	const totalMatch = qHeadText?.match(/Question \d+ of (\d+)/);
 	const totalQuestions = totalMatch ? Number.parseInt(totalMatch[1], 10) : -1;
 
-	// CCDV-F has 194 questions total (141 hand-authored + 53 CPQ)
-	expect(totalQuestions).toBe(194);
+	// CCDV-F has 199 questions total (146 hand-authored + 53 CPQ)
+	expect(totalQuestions).toBe(199);
 });
 
 test("CCDV-F exam mode follows blueprint", async ({ page }) => {
