@@ -41,7 +41,7 @@ const assessHref = `${base}certifications/${activeCertSlug}/?mode=assess#session
 const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 ---
 
-<div class="pl-shell">
+<div class="pl-shell" data-exam-focus="false">
 	<aside class="pl-sidebar" aria-label="Workspace navigation">
 		<a class="pl-sidebar-brand" href={base} data-action="go-to-site-home">
 			<img class="pl-mark" src={`${base}brand/practice-lab-mark.png`} alt="" width="32" height="32">
@@ -141,7 +141,7 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 							<span aria-hidden="true"> / </span>
 						</>
 					) : null}
-					<strong>{breadcrumb}</strong>
+					<strong data-pl-workspace-breadcrumb>{breadcrumb}</strong>
 				</div>
 			</div>
 
@@ -332,7 +332,26 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 		searchResults.append(frag);
 	}
 
+	function updateWorkspaceMode() {
+		if (!window.location.pathname.includes("/certifications/")) return;
+		const mode =
+			new URLSearchParams(window.location.search).get("mode") === "assess" ? "assess" : "practice";
+		const breadcrumb = document.querySelector("[data-pl-workspace-breadcrumb]");
+		if (breadcrumb)
+			breadcrumb.textContent = mode === "assess" ? "Assess · Mock exam" : "Practice · Questions";
+		for (const link of document.querySelectorAll("[data-workspace-mode]")) {
+			if (link.getAttribute("data-workspace-mode") === mode)
+				link.setAttribute("aria-current", "page");
+			else link.removeAttribute("aria-current");
+		}
+	}
+
+	function isExamFocusActive() {
+		return document.querySelector('.pl-shell[data-exam-focus="true"]') !== null;
+	}
+
 	function openSearch() {
+		if (isExamFocusActive()) return;
 		if (!searchDialog || typeof searchDialog.showModal !== "function") return;
 		if (!searchDialog.open) {
 			searchDialog.showModal();
@@ -403,5 +422,8 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 			});
 		}
 	}
+	updateWorkspaceMode();
+	window.addEventListener("popstate", updateWorkspaceMode);
+	window.addEventListener("practice-lab:workspace-mode-change", updateWorkspaceMode);
 })();
 </script>

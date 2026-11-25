@@ -145,6 +145,23 @@ dialog::backdrop {
 	color: var(--ink);
 }
 
+.pl-shell[data-exam-focus="true"] {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.pl-shell[data-exam-focus="true"] .pl-sidebar,
+.pl-shell[data-exam-focus="true"] .pl-topbar-right,
+.pl-shell[data-exam-focus="true"] .pl-menu-btn,
+.pl-shell[data-exam-focus="true"] ~ .pl-bottom-nav,
+.pl-shell[data-exam-focus="true"] ~ .pl-drawer,
+.pl-shell[data-exam-focus="true"] ~ .pl-dialog {
+	display: none !important;
+}
+
+.pl-shell[data-exam-focus="true"] .pl-content {
+	max-width: 1240px;
+}
+
 .pl-sidebar {
 	position: sticky;
 	top: 0;
@@ -173,23 +190,33 @@ dialog::backdrop {
 }
 
 .pl-mark {
-	width: 26px;
-	height: 26px;
-	border-radius: 6px;
-	background: var(--brand-strong);
-	color: var(--on-brand);
-	display: grid;
-	place-items: center;
-	font-weight: 700;
-	font-size: 13px;
+	width: 32px;
+	height: 32px;
+	object-fit: contain;
 	flex-shrink: 0;
 }
 
 .pl-brand-title {
-	font-size: 14.5px;
-	font-weight: 600;
-	letter-spacing: -0.015em;
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
 	line-height: 1.2;
+}
+
+.pl-drawer-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 4px 6px;
+}
+
+.pl-drawer-brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 15px;
+	margin: 0;
 }
 
 .pl-nav-section {
