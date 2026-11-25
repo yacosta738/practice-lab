@@ -3,7 +3,7 @@ import { decodeHTMLAttribute } from "entities";
 const htmlTagPattern = /<([a-z][a-z0-9:-]*)\b(?:"[^"]*"|'[^']*'|[^'">])*?>/gi;
 const htmlAttributePattern = /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/gy;
 
-function htmlAttributes(tag) {
+export function htmlAttributes(tag) {
 	const tagName = tag.match(/^<[a-z][a-z0-9:-]*\b/i)?.[0] ?? "";
 	const source = tag.slice(tagName.length, -1);
 	const attributes = [];

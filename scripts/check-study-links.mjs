@@ -2,7 +2,7 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { hasHtmlFragment } from "./lib/study-links.mjs";
+import { hasHtmlFragment, htmlAttributes } from "./lib/study-links.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distRoot = path.join(projectRoot, "dist");
@@ -169,9 +169,12 @@ async function main() {
 			continue;
 		}
 
-		for (const anchor of article[1].matchAll(/<a\b[^>]*\bhref\s*=\s*(["'])(.*?)\1[^>]*>/gis)) {
-			const tag = anchor[0];
-			const href = anchor[2].replaceAll("&amp;", "&").trim();
+		for (const [tag] of article[1].matchAll(/<a(?=[\t\n\f\r />])(?:"[^"]*"|'[^']*'|[^'">])*>/gi)) {
+			const attributes = htmlAttributes(tag);
+			const href = attributes.find(([name]) => name === "href")?.[1].trim();
+			if (!href) {
+				continue;
+			}
 			let url;
 			try {
 				url = new URL(href, configuredSiteOrigin);
@@ -186,9 +189,9 @@ async function main() {
 			}
 			checkedExternalMarkdownLinks++;
 
-			const target = tag.match(/\btarget\s*=\s*(["'])(.*?)\1/i)?.[2];
-			const rel = tag
-				.match(/\brel\s*=\s*(["'])(.*?)\1/i)?.[2]
+			const target = attributes.find(([name]) => name === "target")?.[1];
+			const rel = attributes
+				.find(([name]) => name === "rel")?.[1]
 				?.toLowerCase()
 				.split(/\s+/);
 			if (target !== "_blank") {
