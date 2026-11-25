@@ -1,4 +1,6 @@
 ---
+import Analytics from "@vercel/analytics/astro";
+import AhrefsAnalytics from "../components/Analytics.astro";
 import { base } from "../lib/base";
 
 interface Props {
@@ -81,6 +83,8 @@ const isDefaultImage = !ogImage;
 
 		<!-- Referrer policy hint (server header is preferred) -->
 		<meta name="referrer" content="strict-origin-when-cross-origin">
+		<Analytics />
+		<AhrefsAnalytics />
 	</head>
 	<body>
 		<a class="skip-link" href="#main-content">Skip to main content</a>

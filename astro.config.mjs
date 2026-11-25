@@ -1,7 +1,8 @@
 // @ts-check
 
+import partytown from "@astrojs/partytown";
 import sitemap from "@astrojs/sitemap";
-import { defineConfig } from "astro/config";
+import { defineConfig, envField } from "astro/config";
 
 // https://astro.build/config
 
@@ -25,7 +26,16 @@ export default defineConfig({
 	base: isVercel ? "/" : "/practice-lab",
 	output: isVercel ? "server" : "static",
 	adapter,
-	integrations: [sitemap()],
+	env: {
+		schema: {
+			AHREFS_KEY: envField.string({
+				context: "client",
+				access: "public",
+				optional: true,
+			}),
+		},
+	},
+	integrations: [partytown(), sitemap()],
 	vite: {
 		// LightningCSS cannot parse @container anchored() yet (lightningcss#1176).
 		// Use esbuild for CSS minification to support anchored container queries.
