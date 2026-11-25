@@ -100,9 +100,9 @@ test("imported multi-select questions render five options and honor selectCount"
 		await checkBtn.click();
 		await page.waitForLoadState("networkidle");
 
-		// Move to next question — wait for the button to appear
+		// Move to the next question after the feedback panel settles.
 		const nextBtn = page.getByRole("button", { name: /Next question|Finish session/i });
-		await expect(nextBtn).toBeVisible();
+		await expect(nextBtn).toBeVisible({ timeout: 5000 });
 		await expect(nextBtn).toBeEnabled();
 		await nextBtn.click();
 	}
