@@ -68,7 +68,7 @@ test("CCDV-F practice mode shows results page after finishing questions", async 
 
 		// Move to next question (unless this is the last one)
 		if (i < 9) {
-			const nextBtn = page.getByRole("button", { name: /Next/i }).first();
+			const nextBtn = page.getByRole("button", { name: "Next question →", exact: true });
 			await expect(nextBtn).toBeVisible();
 			await expect(nextBtn).toBeEnabled();
 			await nextBtn.click({ timeout: 5000 });
@@ -230,7 +230,7 @@ test("CCDV-F Next button moves to next question", async ({ page }) => {
 	await page.keyboard.press("Enter");
 
 	// Click Next button to move to next question
-	const nextBtn = page.getByRole("button", { name: /Next question/i });
+	const nextBtn = page.getByRole("button", { name: "Next question →", exact: true });
 	await expect(nextBtn).toBeVisible();
 	await expect(nextBtn).toBeEnabled();
 	await nextBtn.click({ timeout: 5000 });
