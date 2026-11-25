@@ -1,6 +1,6 @@
 # Practice Lab
 
-Interactive practice platform for certification preparation. Study by domain, take timed mock exams, and track your progress — all offline in your browser.
+Interactive practice platform for certification preparation. Study by domain, take timed mock exams, and track your progress. Practice progress is saved locally in your browser; the site itself needs an internet connection to load.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -18,8 +18,8 @@ Interactive practice platform for certification preparation. Study by domain, ta
 - **Practice mode** — study question by question with explanations and sources.
 - **Exam mode** — timed mock exam with 53 questions distributed by domain.
 - **Weaknesses mode** — focus on the questions you got wrong.
-- **Progress tracking** — persistent statistics in `localStorage`.
-- **Works offline after first load** — no server required. Note: Google Fonts are loaded from CDN on first visit.
+- **Progress tracking** — statistics and active sessions persist in browser `localStorage`; the site itself needs an internet connection to load.
+- **Full-text search** — search certification, domain, and study-note content from the accessible search dialog.
 - **Study library** — per-certification study notes rendered from Markdown, organised by exam domain with a table of contents and cross-links.
 
 ## Content Sources and Attribution

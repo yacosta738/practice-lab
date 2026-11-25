@@ -28,7 +28,9 @@ const _RECALL_QUESTION_SNIPPETS: Record<string, string> = {
 	"D3-006": "CLAUDE.md",
 };
 
-test("CCDV-F practice mode renders single-select questions correctly", async ({ page }) => {
+test("CCDV-F practice mode renders single- and multi-select questions correctly", async ({
+	page,
+}) => {
 	// Clear any persisted session so we start fresh
 	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
 	await page.waitForLoadState("networkidle");
@@ -66,8 +68,10 @@ test("CCDV-F practice mode renders single-select questions correctly", async ({ 
 	const hintText = await page.locator(".hint").first().textContent();
 	expect(hintText).toMatch(/Select/i);
 
-	// Select an option and check answer
-	await optionButtons.first().click();
+	// Select the required number of options for this randomized question
+	const exactMatch = hintText?.match(/Select exactly (\d+) answers/i);
+	const needed = exactMatch ? Number.parseInt(exactMatch[1], 10) : 1;
+	for (let i = 0; i < needed; i++) await optionButtons.nth(i).click();
 	const checkBtn = page.getByRole("button", { name: "Check answer" });
 	await expect(checkBtn).toBeEnabled();
 	await checkBtn.click();
@@ -109,17 +113,14 @@ test("CCDV-F practice mode shows correct question count", async ({ page }) => {
 });
 
 test("CCDV-F exam mode follows blueprint", async ({ page }) => {
-	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
+	await page.goto(`${BASE_PATH}/certifications/ccdv-f/?mode=assess#session`);
 	await page.waitForLoadState("networkidle");
 	await page.evaluate(() => localStorage.clear());
 	await page.reload();
 	await page.waitForLoadState("networkidle");
 
-	// Wait for the home page to render
-	await page.waitForSelector("#amount", { state: "visible", timeout: 10000 });
-
-	// Start mock exam mode (no amount selection needed)
-	await page.getByRole("button", { name: "Mock exam" }).click();
+	// Start the explicit mock exam setup
+	await page.getByRole("button", { name: "Start mock exam" }).click();
 
 	// Wait for the first question to render
 	await page.waitForSelector("button.option", { state: "visible", timeout: 10000 });

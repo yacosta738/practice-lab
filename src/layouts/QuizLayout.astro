@@ -19,14 +19,16 @@ interface Props {
 }
 
 const { title, subtitle, slug, description, domains = [] } = Astro.props;
+const activeNav = Astro.url.searchParams.get("mode") === "assess" ? "assess" : "practice";
+const breadcrumb = activeNav === "assess" ? "Assess · Mock exam" : "Practice · Questions";
 ---
 
 <Layout title={`${title} · Practice Lab`} description={description}>
 	<AppShell
-		activeNav="practice"
+		activeNav={activeNav}
 		activeCertSlug={slug}
 		activeCertCode={subtitle}
-		breadcrumb={title}
+		breadcrumb={breadcrumb}
 		domains={domains}
 		footerText="Independent study material · Progress stays in your browser"
 	>

@@ -29,8 +29,12 @@ for (const { slug, heading } of CERTIFICATIONS) {
 		// Verify Practice mode button is present
 		await expect(page.getByRole("button", { name: "Practice mode" })).toBeVisible();
 
-		// Verify Mock exam button is present
-		await expect(page.getByRole("button", { name: "Mock exam" })).toBeVisible();
+		// Assess opens a distinct, explicit mock exam setup
+		const assessLink = page.locator('.pl-sidebar [data-workspace-mode="assess"]');
+		await expect(assessLink).toHaveAttribute("href", /mode=assess/);
+		await assessLink.click();
+		await expect(page.getByRole("heading", { name: "Mock exam setup" })).toBeVisible();
+		await expect(page.getByRole("button", { name: "Start mock exam" })).toBeVisible();
 	});
 }
 

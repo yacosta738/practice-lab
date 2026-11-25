@@ -21,7 +21,7 @@ test("mobile drawer closes for same-page navigation and stays open for a cancele
 
 	await assess.press("Enter");
 	await expect(drawer).toBeHidden();
-	await expect(page).toHaveURL(`${path}#session`);
+	await expect(page).toHaveURL(`${path}?mode=assess#session`);
 });
 
 test("homepage certification link navigates under the GitHub Pages base path", async ({ page }) => {
