@@ -435,8 +435,14 @@ dialog::backdrop {
 	border-bottom: 1px solid var(--border);
 }
 
+.pl-search-field {
+	flex: 1;
+	min-width: 0;
+}
+
 .pl-dialog-input {
 	flex: 1;
+	width: 100%;
 	background: transparent;
 	border: 0;
 	color: var(--ink);
@@ -468,11 +474,46 @@ dialog::backdrop {
 	background: var(--raised);
 }
 
+.pl-search-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.pl-search-list li + li {
+	border-top: 1px solid var(--border-subtle);
+}
+
+.pl-search-result {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: start;
+}
+
+.pl-search-title {
+	font-weight: 600;
+}
+
 .pl-search-meta {
 	font-size: 12px;
 	color: var(--ink-tertiary);
 	font-family: var(--font-mono);
 	flex-shrink: 0;
+}
+
+.pl-search-excerpt {
+	grid-column: 1 / -1;
+	font-size: 13px;
+	line-height: 1.45;
+	color: var(--ink-secondary);
+}
+
+.pl-search-empty {
+	padding: 20px;
+	margin: 0;
+	text-align: center;
+	color: var(--ink-secondary);
+	font-size: 14px;
 }
 
 .pl-confirm-dialog {
