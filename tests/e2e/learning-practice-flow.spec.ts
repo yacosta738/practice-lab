@@ -123,9 +123,11 @@ test("homepage accurately describes local progress storage", async ({ page }) =>
 	await expect(brand).toHaveText("PRACTICE LAB");
 	await expect(brand.locator("img")).toHaveAttribute("src", /brand\/practice-lab-mark\.png$/);
 	await expect(brand.locator("img")).toHaveJSProperty("naturalWidth", 32);
-	await expect(page.getByText("Practice progress is saved locally in your browser.")).toBeVisible();
+	await expect(page.getByText(/Progress stays in this browser\./)).toBeVisible();
 	await expect(
-		page.getByText("The site itself needs an internet connection to load."),
+		page.getByText(
+			/Install Practice Lab to reopen cached pages offline; pages you haven't visited still need a connection\./,
+		),
 	).toBeVisible();
 	await expect(page.getByText(/all offline in your browser/i)).toHaveCount(0);
 	await expect(page.getByRole("link", { name: /Launch mock exam/ })).toHaveAttribute(

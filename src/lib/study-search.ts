@@ -13,7 +13,7 @@ export interface RankedSearchItem extends SearchItem {
 
 function isAnswerSectionHeading(title: string): boolean {
 	const normalizedTitle = title.replace(/[`*_~]/g, "").trim();
-	return /^(?:answer\s+keys?|answers?(?:\s+(?:and|&)\s+(?:rationales?|explanations?))?|rationales?(?:\s+(?:and|&)\s+answers?)?|solutions?)(?:\s*(?:[,;:–—-].*|and\b.*))?$/i.test(
+	return /^(?:answer\s+keys?(?:\s*(?:[,;:–—-].*|and\b.*))?|answers?\s+(?:and|&)\s+(?:rationales?|explanations?)(?:\s*[,;:–—-].*)?|rationales?\s+(?:and|&)\s+answers?(?:\s*[,;:–—-].*)?)$/i.test(
 		normalizedTitle,
 	);
 }
@@ -38,30 +38,55 @@ function isAnswerRationale(block: string): boolean {
 	);
 }
 
+function isQuestionPrompt(block: string): boolean {
+	const firstLine = block
+		.trimStart()
+		.split(/\r?\n/, 1)[0]
+		.replace(/[`*_~]/g, "");
+	return /^(?:question(?:\s+\d+)?|scenario|check your understanding)(?:\s*[:.)]|\s|$)/i.test(
+		firstLine,
+	);
+}
+
 function excludeAssessmentAnswers(markdown: string): string {
 	const output: string[] = [];
 	let answerSectionLevel: number | undefined;
 	let previousBlockHasOptions = false;
+	let skippingRationaleContinuation = false;
 	let block: string[] = [];
 	let fence: { marker: string; length: number } | undefined;
 
 	const flushBlock = () => {
 		if (!block.length) return;
 		const currentBlock = block.join("\n");
-		if (previousBlockHasOptions && isAnswerRationale(currentBlock)) {
-			previousBlockHasOptions = false;
-		} else {
-			output.push(currentBlock);
-			previousBlockHasOptions = isMultipleChoiceOptions(currentBlock);
-		}
 		block = [];
+		if (previousBlockHasOptions && isAnswerRationale(currentBlock)) {
+			skippingRationaleContinuation = true;
+			previousBlockHasOptions = false;
+			return;
+		}
+		if (
+			skippingRationaleContinuation &&
+			!isMultipleChoiceOptions(currentBlock) &&
+			!isQuestionPrompt(currentBlock)
+		) {
+			previousBlockHasOptions = false;
+			return;
+		}
+		skippingRationaleContinuation = false;
+		output.push(currentBlock);
+		previousBlockHasOptions = isMultipleChoiceOptions(currentBlock);
 	};
 
 	for (const line of markdown.split(/\r?\n/)) {
 		const fenceMarker = line.match(/^\s{0,3}(`{3,}|~{3,})/);
 		if (fence) {
 			if (answerSectionLevel === undefined) block.push(line);
-			if (fenceMarker?.[1][0] === fence.marker && fenceMarker[1].length >= fence.length)
+			const closingFenceMarker = line.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/);
+			if (
+				closingFenceMarker?.[1][0] === fence.marker &&
+				closingFenceMarker[1].length >= fence.length
+			)
 				fence = undefined;
 			continue;
 		}
@@ -73,7 +98,10 @@ function excludeAssessmentAnswers(markdown: string): string {
 
 		const heading = line.match(/^ {0,3}(#{1,6})\s+(.+?)\s*#*\s*$/);
 		if (heading) {
-			if (answerSectionLevel === undefined) flushBlock();
+			if (answerSectionLevel === undefined) {
+				flushBlock();
+				skippingRationaleContinuation = false;
+			}
 			const headingLevel = heading[1].length;
 			if (answerSectionLevel !== undefined) {
 				if (headingLevel > answerSectionLevel) continue;
