@@ -61,3 +61,12 @@ test("has no WCAG A/AA violations during active practice quiz and feedback", asy
 	const feedbackResults = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
 	expect(feedbackResults.violations).toEqual([]);
 });
+
+test("has no WCAG A/AA violations in the search dialog", async ({ page }) => {
+	await page.goto("/practice-lab/");
+	await page.getByRole("button", { name: /Search/ }).click();
+	await expect(page.getByRole("dialog", { name: "Search Practice Lab" })).toBeVisible();
+
+	const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+	expect(results.violations).toEqual([]);
+});

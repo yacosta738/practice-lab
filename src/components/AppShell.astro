@@ -1,7 +1,6 @@
 ---
 import { getCertificationList } from "../certifications/index";
 import { base } from "../lib/base";
-import { getSearchIndex } from "../lib/search-index";
 import { studyCerts } from "../study/registry";
 
 export interface SidebarDomain {
@@ -32,7 +31,6 @@ const {
 } = Astro.props;
 
 const certs = await getCertificationList();
-const searchItems = await getSearchIndex();
 const studySlugs = new Set(studyCerts.map((c) => c.slug));
 const hasStudyForCert = studySlugs.has(activeCertSlug);
 const learnHref = hasStudyForCert ? `${base}study/${activeCertSlug}/` : `${base}study/`;
@@ -146,7 +144,13 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 			</div>
 
 			<div class="pl-topbar-right">
-				<button type="button" class="pl-search-trigger" data-pl-open-search>
+				<button
+					type="button"
+					class="pl-search-trigger"
+					data-pl-open-search
+					aria-haspopup="dialog"
+					aria-controls="pl-search-dialog"
+				>
 					<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<circle cx="7" cy="7" r="4.8" stroke="currentColor" stroke-width="1.5" />
 						<path
@@ -217,9 +221,10 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 
 <!-- Mobile Navigation Drawer (native <dialog closedby="any">) -->
 <dialog id="pl-mobile-drawer" class="pl-drawer" closedby="any" aria-labelledby="pl-drawer-title">
-	<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px;">
-		<h1 id="pl-drawer-title" class="pl-brand-title" style="margin:0;font-size:15px;">
-			practice lab
+	<div class="pl-drawer-head">
+		<h1 id="pl-drawer-title" class="pl-drawer-brand">
+			<img class="pl-mark" src={`${base}brand/practice-lab-mark.png`} alt="" width="32" height="32">
+			<span class="pl-brand-title">PRACTICE LAB</span>
 		</h1>
 		<form method="dialog">
 			<button type="submit" class="ghost" style="min-height:32px;padding:4px 10px;">Close</button>
@@ -271,14 +276,22 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 			<circle cx="7" cy="7" r="4.8" stroke="currentColor" stroke-width="1.5" />
 			<path d="M10.7 10.7L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
 		</svg>
-		<input
-			id="pl-search-input"
-			class="pl-dialog-input"
-			type="search"
-			placeholder="Search certifications, domains, study notes…"
-			aria-label="Search certifications, domains, and study notes"
-			autofocus
-		>
+		<search class="pl-search-field">
+			<label class="sr-only" for="pl-search-input"
+				>Search certifications, domains, and study notes</label
+			>
+			<input
+				id="pl-search-input"
+				class="pl-dialog-input"
+				type="search"
+				placeholder="Search certifications, domains, study notes…"
+				aria-controls="pl-search-results"
+				autocapitalize="none"
+				spellcheck={false}
+				enterkeyhint="search"
+				autofocus
+			>
+		</search>
 		<form method="dialog">
 			<button type="submit" class="ghost" style="min-height:30px;padding:2px 10px;font-size:12px;">
 				Esc
@@ -286,68 +299,115 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 		</form>
 	</div>
 	<section id="pl-search-results" class="pl-dialog-body" aria-label="Search results"></section>
+	<p id="pl-search-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
 </dialog>
 
-<script define:vars={{ searchItems }} is:inline>
+<script>
+import { base } from "../lib/base";
+import { rankSearchItems, type SearchItem } from "../lib/study-search";
+
 (function () {
-	const searchDialog = document.getElementById("pl-search-dialog");
-	const searchInput = document.getElementById("pl-search-input");
+	const searchDialog = document.getElementById("pl-search-dialog") as HTMLDialogElement | null;
+	const searchInput = document.getElementById("pl-search-input") as HTMLInputElement | null;
 	const searchResults = document.getElementById("pl-search-results");
-	const drawer = document.getElementById("pl-mobile-drawer");
+	const searchStatus = document.getElementById("pl-search-status");
+	const drawer = document.getElementById("pl-mobile-drawer") as HTMLDialogElement | null;
+	let searchItems: SearchItem[] = [];
+	let searchIndexPromise: Promise<SearchItem[]> | undefined;
+	let searchStatusTimeout: number | undefined;
 
-	function renderResults(query) {
-		if (!searchResults) return;
-		const q = query.trim().toLowerCase();
-		const filtered = q
-			? searchItems.filter(
-					(item) =>
-						item.title.toLowerCase().includes(q) ||
-						item.category.toLowerCase().includes(q) ||
-						item.badge?.toLowerCase().includes(q),
-				)
-			: searchItems.slice(0, 12);
-
-		searchResults.replaceChildren();
-		if (!filtered.length) {
-			const empty = document.createElement("div");
-			empty.style.cssText =
-				"padding:20px;text-align:center;color:var(--ink-secondary);font-size:14px;";
-			empty.textContent = "No matching notes or certifications.";
-			searchResults.append(empty);
-			return;
-		}
-		const frag = document.createDocumentFragment();
-		for (const item of filtered.slice(0, 20)) {
-			const link = document.createElement("a");
-			link.className = "pl-search-result";
-			link.setAttribute("href", item.href);
-			const titleSpan = document.createElement("span");
-			titleSpan.textContent = item.title;
-			const metaSpan = document.createElement("span");
-			metaSpan.className = "pl-search-meta";
-			metaSpan.textContent = item.badge || item.category;
-			link.append(titleSpan, metaSpan);
-			frag.append(link);
-		}
-		searchResults.append(frag);
+	function announceSearchStatus(message: string) {
+		window.clearTimeout(searchStatusTimeout);
+		searchStatusTimeout = window.setTimeout(() => {
+			if (searchDialog?.open && searchStatus) searchStatus.textContent = message;
+		}, 180);
 	}
 
 	function updateWorkspaceMode() {
-		if (!window.location.pathname.includes("/certifications/")) return;
+		if (!window.location.pathname.includes(`${base}certifications/`)) return;
 		const mode =
 			new URLSearchParams(window.location.search).get("mode") === "assess" ? "assess" : "practice";
 		const breadcrumb = document.querySelector("[data-pl-workspace-breadcrumb]");
 		if (breadcrumb)
 			breadcrumb.textContent = mode === "assess" ? "Assess · Mock exam" : "Practice · Questions";
 		for (const link of document.querySelectorAll("[data-workspace-mode]")) {
-			if (link.getAttribute("data-workspace-mode") === mode)
+			if (link.getAttribute("data-workspace-mode") === mode) {
 				link.setAttribute("aria-current", "page");
-			else link.removeAttribute("aria-current");
+			} else {
+				link.removeAttribute("aria-current");
+			}
 		}
 	}
 
 	function isExamFocusActive() {
 		return document.querySelector('.pl-shell[data-exam-focus="true"]') !== null;
+	}
+
+	function loadSearchIndex() {
+		if (searchItems.length) return Promise.resolve(searchItems);
+		if (!searchIndexPromise) {
+			searchIndexPromise = fetch(`${base}search-index.json`)
+				.then((response) => {
+					if (!response.ok) throw new Error("Search index request failed");
+					return response.json() as Promise<SearchItem[]>;
+				})
+				.then((items) => {
+					searchItems = items;
+					return items;
+				})
+				.catch((error) => {
+					searchIndexPromise = undefined;
+					throw error;
+				});
+		}
+		return searchIndexPromise;
+	}
+
+	function renderResults(query: string) {
+		if (!searchResults) return;
+		const q = query.trim();
+		const filtered = q
+			? rankSearchItems(q, searchItems)
+			: searchItems
+					.slice(0, 12)
+					.map((item) => ({ ...item, excerpt: item.text?.slice(0, 160) ?? "", score: 0 }));
+
+		searchResults.replaceChildren();
+		if (!filtered.length) {
+			const empty = document.createElement("div");
+			empty.className = "pl-search-empty";
+			empty.textContent = q
+				? `No results for “${q}”.`
+				: "No certifications or study notes are available.";
+			searchResults.append(empty);
+			announceSearchStatus(q ? `No results for “${q}”.` : "No search results available.");
+			return;
+		}
+		const list = document.createElement("ul");
+		list.className = "pl-search-list";
+		for (const item of filtered.slice(0, 20)) {
+			const row = document.createElement("li");
+			const link = document.createElement("a");
+			link.className = "pl-search-result";
+			link.setAttribute("href", item.href);
+			const titleSpan = document.createElement("span");
+			titleSpan.className = "pl-search-title";
+			titleSpan.textContent = item.title;
+			const metaSpan = document.createElement("span");
+			metaSpan.className = "pl-search-meta";
+			metaSpan.textContent = item.badge || item.category;
+			link.append(titleSpan, metaSpan);
+			if (item.excerpt) {
+				const excerpt = document.createElement("span");
+				excerpt.className = "pl-search-excerpt";
+				excerpt.textContent = item.excerpt;
+				link.append(excerpt);
+			}
+			row.append(link);
+			list.append(row);
+		}
+		searchResults.append(list);
+		announceSearchStatus(`${filtered.length} search result${filtered.length === 1 ? "" : "s"}.`);
 	}
 
 	function openSearch() {
@@ -357,10 +417,33 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 			searchDialog.showModal();
 			if (searchInput) {
 				searchInput.value = "";
-				renderResults("");
 				searchInput.focus();
 			}
+			loadSearchIndex()
+				.then(() => renderResults(searchInput?.value ?? ""))
+				.catch(() => {
+					if (searchResults) {
+						const message = document.createElement("p");
+						message.className = "pl-search-empty";
+						message.textContent = "Search is unavailable right now. Try again later.";
+						searchResults.replaceChildren(message);
+					}
+					announceSearchStatus("Search is unavailable right now.");
+				});
 		}
+	}
+
+	function moveSearchFocus(direction: number) {
+		const links = [
+			...(searchResults?.querySelectorAll<HTMLAnchorElement>("a.pl-search-result") ?? []),
+		];
+		const currentIndex = links.indexOf(document.activeElement as HTMLAnchorElement);
+		const nextIndex = currentIndex + direction;
+		if (nextIndex < 0) {
+			if (direction < 0) searchInput?.focus();
+			return;
+		}
+		if (nextIndex < links.length) links[nextIndex].focus();
 	}
 
 	document.addEventListener("click", (event) => {
@@ -396,18 +479,42 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 	});
 
 	searchInput?.addEventListener("input", () => renderResults(searchInput.value));
+	searchDialog?.addEventListener("close", () => {
+		window.clearTimeout(searchStatusTimeout);
+		searchStatusTimeout = undefined;
+	});
+	searchDialog?.addEventListener("keydown", (event) => {
+		if (event.key === "ArrowDown" && event.target === searchInput) {
+			event.preventDefault();
+			moveSearchFocus(1);
+		} else if (
+			event.key === "ArrowDown" &&
+			(event.target as Element).closest("a.pl-search-result")
+		) {
+			event.preventDefault();
+			moveSearchFocus(1);
+		} else if (event.key === "ArrowUp" && (event.target as Element).closest("a.pl-search-result")) {
+			event.preventDefault();
+			moveSearchFocus(-1);
+		}
+	});
 
 	// Cmd/Ctrl+K shortcut
 	document.addEventListener("keydown", (e) => {
 		if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
 			e.preventDefault();
+			if (isExamFocusActive()) return;
 			openSearch();
 		}
 	});
 
+	updateWorkspaceMode();
+	window.addEventListener("popstate", updateWorkspaceMode);
+	window.addEventListener("practice-lab:workspace-mode-change", updateWorkspaceMode);
+
 	// Fallback light-dismiss for browsers without native <dialog closedby="any"> (Safari)
 	if (!("closedBy" in HTMLDialogElement.prototype)) {
-		const outside = (e, dialog) => {
+		const outside = (e: PointerEvent, dialog: HTMLDialogElement) => {
 			const r = dialog.getBoundingClientRect();
 			return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
 		};
@@ -422,8 +529,5 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 			});
 		}
 	}
-	updateWorkspaceMode();
-	window.addEventListener("popstate", updateWorkspaceMode);
-	window.addEventListener("practice-lab:workspace-mode-change", updateWorkspaceMode);
 })();
 </script>
