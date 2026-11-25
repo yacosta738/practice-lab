@@ -15,11 +15,6 @@ for (const { slug, heading } of CERTIFICATIONS) {
 		await page.goto(`${BASE_PATH}/certifications/${slug}/`);
 		await page.waitForLoadState("networkidle");
 
-		// Clear localStorage for a fresh experience
-		await page.evaluate(() => localStorage.clear());
-		await page.reload();
-		await page.waitForLoadState("networkidle");
-
 		// Verify the heading is visible
 		await expect(page.getByRole("heading", { name: heading })).toBeVisible();
 
@@ -40,9 +35,6 @@ for (const { slug, heading } of CERTIFICATIONS) {
 
 test("CCAO-F practice mode starts and renders questions", async ({ page }) => {
 	await page.goto(`${BASE_PATH}/certifications/ccao-f/`);
-	await page.waitForLoadState("networkidle");
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
 	await page.waitForLoadState("networkidle");
 
 	// Wait for the home page to render
@@ -70,9 +62,6 @@ test("CCAO-F practice mode starts and renders questions", async ({ page }) => {
 test("CCAR-P practice mode starts and renders questions", async ({ page }) => {
 	await page.goto(`${BASE_PATH}/certifications/ccar-p/`);
 	await page.waitForLoadState("networkidle");
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
-	await page.waitForLoadState("networkidle");
 
 	// Wait for the home page to render
 	await page.waitForSelector("#amount", { state: "visible", timeout: 10000 });
@@ -93,9 +82,6 @@ test("CCAR-P practice mode starts and renders questions", async ({ page }) => {
 
 test("CCAR-F practice mode starts and renders questions", async ({ page }) => {
 	await page.goto(`${BASE_PATH}/certifications/ccar-f/`);
-	await page.waitForLoadState("networkidle");
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
 	await page.waitForLoadState("networkidle");
 
 	// Wait for the home page to render

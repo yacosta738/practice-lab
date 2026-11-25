@@ -1,3 +1,4 @@
+export { parseProgressBackup } from "./backup-restore";
 export type { ProgressStorageErrorCode } from "./errors";
 export {
 	ProgressConflictError,
@@ -7,6 +8,7 @@ export {
 } from "./errors";
 export { createProgressRepository } from "./indexeddb-repository";
 export type {
+	CertificationProgressRestoreSnapshot,
 	CheckpointSessionInput,
 	ContentProvenance,
 	CreateSessionInput,

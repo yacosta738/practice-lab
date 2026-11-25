@@ -1,4 +1,4 @@
-const CACHE_NAME = "practice-lab-v1";
+const CACHE_NAME = "practice-lab-v2";
 const APP_SCOPE = new URL(self.registration.scope);
 const OFFLINE_URL = new URL("./", self.location.href).href;
 

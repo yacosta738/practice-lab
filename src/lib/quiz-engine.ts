@@ -31,7 +31,8 @@ export function shuffleQuestionOptions(question: Question): ShuffledQuestionOpti
 	const shuffled = shuffle(indices);
 	const newOptions = shuffled.map((i) => question.options[i]);
 	const newCorrect = question.correctAnswers.map((origIdx) => shuffled.indexOf(origIdx));
-	return { options: newOptions, correctAnswers: newCorrect };
+	const optionIds = shuffled.map((index) => `${question.id}:option:${index}`);
+	return { options: newOptions, correctAnswers: newCorrect, optionIds };
 }
 
 /** Return the effective options and correct answers for a question, preferring session shuffled data. */
