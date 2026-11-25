@@ -1,8 +1,10 @@
 // @ts-check
 
+import { satteri } from "@astrojs/markdown-satteri";
 import partytown from "@astrojs/partytown";
 import sitemap from "@astrojs/sitemap";
 import { defineConfig, envField } from "astro/config";
+import { createExternalLinksPlugin } from "./src/hast/external-links.mjs";
 
 // https://astro.build/config
 
@@ -11,6 +13,7 @@ import { defineConfig, envField } from "astro/config";
 // - GitHub Pages: subpath ("/practice-lab")
 // Note: `import.meta.env` is not available in astro.config.mjs. Use `process.env` instead.
 const isVercel = process.env.VERCEL === "1";
+const site = isVercel ? "https://certificate-nine-phi.vercel.app" : "https://yacosta738.github.io";
 
 // On Vercel, use server output with the Vercel adapter for SSR.
 // Locally (and for GitHub Pages), use static output so that `astro preview` works
@@ -22,10 +25,15 @@ if (isVercel) {
 }
 
 export default defineConfig({
-	site: isVercel ? "https://certificate-nine-phi.vercel.app" : "https://yacosta738.github.io",
+	site,
 	base: isVercel ? "/" : "/practice-lab",
 	output: isVercel ? "server" : "static",
 	adapter,
+	markdown: {
+		processor: satteri({
+			hastPlugins: [createExternalLinksPlugin(site)],
+		}),
+	},
 	env: {
 		schema: {
 			AHREFS_KEY: envField.string({

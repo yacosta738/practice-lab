@@ -2,7 +2,7 @@ import { defineCollection, z } from "astro:content";
 import { glob } from "astro/loaders";
 
 const study = defineCollection({
-	loader: glob({ pattern: "**/*.md", base: "./src/content/study" }),
+	loader: glob({ pattern: "**/*.md", base: "./src/content/study", deferRender: true }),
 	schema: z.looseObject({
 		title: z.string(),
 		domain: z.string().optional(),

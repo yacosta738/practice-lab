@@ -8,12 +8,17 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const distRoot = path.join(projectRoot, "dist");
 const studyRoot = path.join(distRoot, "study");
 const siteOrigin = "https://practice-lab.invalid";
+const configuredSiteOrigin =
+	process.env.VERCEL === "1"
+		? "https://certificate-nine-phi.vercel.app"
+		: "https://yacosta738.github.io";
 const basePath = process.env.VERCEL === "1" ? "/" : "/practice-lab/";
 // Certification fragment targets are inserted by the client app after static HTML is parsed.
 const clientRenderedCertificationPrefix = new URL(`${basePath}certifications/`, siteOrigin)
 	.pathname;
 const errors = [];
 const htmlCache = new Map();
+let checkedExternalMarkdownLinks = 0;
 
 async function findHtmlFiles(directory) {
 	const files = [];
@@ -153,6 +158,50 @@ async function main() {
 				}
 			}
 		}
+
+		const article = html.match(
+			/<article\b[^>]*\bclass="[^"]*\bstudyProse\b[^"]*"[^>]*>([\s\S]*?)<\/article>/i,
+		);
+		if (!article) {
+			if (route.split("/").filter(Boolean).length >= 3) {
+				errors.push(`${route}: generated study article was not found`);
+			}
+			continue;
+		}
+
+		for (const anchor of article[1].matchAll(/<a\b[^>]*\bhref\s*=\s*(["'])(.*?)\1[^>]*>/gis)) {
+			const tag = anchor[0];
+			const href = anchor[2].replaceAll("&amp;", "&").trim();
+			let url;
+			try {
+				url = new URL(href, configuredSiteOrigin);
+			} catch {
+				continue;
+			}
+			if (
+				(url.protocol !== "http:" && url.protocol !== "https:") ||
+				url.origin === configuredSiteOrigin
+			) {
+				continue;
+			}
+			checkedExternalMarkdownLinks++;
+
+			const target = tag.match(/\btarget\s*=\s*(["'])(.*?)\1/i)?.[2];
+			const rel = tag
+				.match(/\brel\s*=\s*(["'])(.*?)\1/i)?.[2]
+				?.toLowerCase()
+				.split(/\s+/);
+			if (target !== "_blank") {
+				errors.push(
+					`${route}: external Markdown link ${JSON.stringify(href)} must use target="_blank"`,
+				);
+			}
+			if (!rel?.includes("noopener") || !rel.includes("noreferrer")) {
+				errors.push(
+					`${route}: external Markdown link ${JSON.stringify(href)} must use rel="noopener noreferrer"`,
+				);
+			}
+		}
 	}
 
 	if (errors.length > 0) {
@@ -165,7 +214,7 @@ async function main() {
 	}
 
 	console.log(
-		`Checked ${pages.length} generated study pages under base path ${basePath}; all internal links resolve.`,
+		`Checked ${pages.length} generated study pages and ${checkedExternalMarkdownLinks} external Markdown links under base path ${basePath}; internal links resolve and external links use safe new-tab attributes.`,
 	);
 }
 
