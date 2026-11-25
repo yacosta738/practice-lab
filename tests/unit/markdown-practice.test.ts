@@ -91,4 +91,95 @@ Choose the best response.
 			/expected options A, B, C, and D/i,
 		);
 	});
+
+	it("includes indented continuation text in its option", () => {
+		const markdown = `
+## Original practice question
+
+Choose the best response.
+
+- A. A concise answer
+  with important qualification.
+- B. Another response.
+- C. A third response.
+- D. A fourth response.
+
+**Best answer: B.** Explanation.
+`;
+
+		expect(parseMarkdownPracticeQuestions(markdown, "continued-option.md")[0].options[0]).toBe(
+			"A concise answer with important qualification.",
+		);
+	});
+
+	it("rejects unsupported option labels instead of silently dropping them", () => {
+		const markdown = `
+## Original practice question
+
+Choose the best response.
+
+- A. First option.
+- B. Second option.
+- C. Third option.
+- D. Fourth option.
+- F. Unsupported option.
+
+**Best answer: B.** Explanation.
+`;
+
+		expect(() => parseMarkdownPracticeQuestions(markdown, "unsupported-option.md")).toThrow(
+			/unsupported option label F/i,
+		);
+	});
+
+	it("continues to accept five-option A–E blocks", () => {
+		const markdown = `
+## Original practice question
+
+Choose the best response.
+
+- A. First option.
+- B. Second option.
+- C. Third option.
+- D. Fourth option.
+- E. Fifth option.
+
+**Best answer: E.** Explanation.
+`;
+
+		expect(parseMarkdownPracticeQuestions(markdown, "five-options.md")[0].options).toHaveLength(5);
+	});
+
+	it("ignores question content and answer markers inside fenced examples", () => {
+		const fence = "`".repeat(3);
+		const markdown = `
+${fence}markdown
+#### D1.01 · Example only
+
+- A. Example option.
+- B. Example option.
+- C. Example option.
+- D. Example option.
+**Best answer: A.** Not a real answer.
+- **D1.01 — B.** Not a real answer key entry.
+${fence}
+
+#### D1.01 · Actual question
+
+Choose the best response.
+
+- A. First option.
+- B. Second option.
+- C. Third option.
+- D. Fourth option.
+
+## Answer key
+
+- **D1.01 — C.** Actual explanation.
+`;
+
+		const questions = parseMarkdownPracticeQuestions(markdown, "fenced-example.md");
+		expect(questions).toHaveLength(1);
+		expect(questions[0].answers).toEqual(["C"]);
+	});
 });
