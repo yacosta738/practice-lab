@@ -1,13 +1,13 @@
-# Issue #62 / PR #63 verification
+# Issue #62 / review follow-up PR #66 verification
 
 Date: 2026-11-25
 
 ## Scope and provenance
 
 - Issue: [#62 — accessible question navigator and study-answer exclusion](https://github.com/yacosta738/practice-lab/issues/62).
-- Review follow-up to [PR #63](https://github.com/yacosta738/practice-lab/pull/63), which is merged into `main` as `5e65b49`. This successor branch is based on that exact tree; the separate `/Users/acosta/Dev/certificate` checkout was not modified.
+- Review follow-up to [PR #63](https://github.com/yacosta738/practice-lab/pull/63), which is merged into `main` as `5e65b49`; published in successor [PR #66](https://github.com/yacosta738/practice-lab/pull/66) from `fix/issue-62-review-followup` at `cfb8ca3`. The separate `/Users/acosta/Dev/certificate` checkout was not modified.
 - Pinned visual baseline: [Vercel deployment](https://project-lab-git-fix-issue-62-accessible-se-7e7127-yuniel-acosta.vercel.app), revision `aa32145650899d33992e94f4d368c4eb62f69ad6`. This is the pre-follow-up PR deployment and is protected by Vercel authentication.
-- The [CI workflow](https://github.com/yacosta738/practice-lab/actions/workflows/ci.yml) pins that baseline URL/revision, seeds the exam order, and uploads `tmp/issue-62-visual-evidence/` after a successful accessibility job. The artifact name includes the Actions run ID and commit SHA; retention is 7 days. Baseline capture requires `VERCEL_AUTOMATION_BYPASS_SECRET`; without it, that capture is explicitly skipped so protected deployment access does not time out the full suite.
+- The [CI workflow](https://github.com/yacosta738/practice-lab/actions/workflows/ci.yml) pins that baseline URL/revision, seeds the exam order, and uploads `tmp/issue-62-visual-evidence/` after a successful accessibility job. [Run 45644970654](https://github.com/yacosta738/practice-lab/actions/runs/45644970654) passed all required checks and published artifact `issue-62-visual-evidence-45644970654-b79db394453fc23fb4cc0b6ffde72a3dcce9a427`, retained through 2026-12-02. Baseline capture requires `VERCEL_AUTOMATION_BYPASS_SECRET`; without it, that capture is explicitly skipped so protected deployment access does not time out the full suite.
 - Screenshot files remain under the Git-ignored `tmp/issue-62-visual-evidence/`; no PNGs are committed.
 
 ## Implementation and source policy
@@ -23,7 +23,8 @@ Date: 2026-11-25
 - `pnpm test:a11y`: 82 Playwright tests passed; the pinned-deployment screenshot test was skipped because the Vercel baseline requires an unavailable bypass credential. The suite built and previewed the Astro site.
 - `pnpm check:study-links`: all 125 generated study pages under `/practice-lab/` passed.
 - Targeted focus/navigation tests: 9 passed, including focus after answer selection, flag toggling, question navigation, feedback, and both-theme focus distinction.
-- `VERCEL_SMOKE_BASE_URL=<pinned-preview> pnpm test:vercel-smoke`: attempted, 0/5 passed. The protected preview returned the Vercel sign-in page instead of application content; this was not a smoke test of the uncommitted follow-up implementation.
+- `VERCEL_SMOKE_BASE_URL=<pinned-preview> pnpm test:vercel-smoke`: attempted against the original PR #63 deployment, 0/5 passed. The protected preview returned the Vercel sign-in page instead of application content; this was not a smoke test of PR #66's implementation preview.
+- The same 5 smoke tests were attempted against [PR #66's Vercel preview](https://project-lab-git-fix-issue-62-review-followup-yuniel-acosta.vercel.app), 0/5 passed because it returned “Log in to Vercel”. The deployment's application routes could not be verified without access.
 - The successful local visual-evidence run captured after-state screens in light/dark themes at 1440×900, 768×1024, and 390×844. The before-state could not be captured locally due to preview protection; CI can access it when `VERCEL_AUTOMATION_BYPASS_SECRET` is configured.
 
 ## Manual accessibility checks and remaining limitations
@@ -36,6 +37,6 @@ Date: 2026-11-25
 
 ## Remaining verification
 
-- Publish these changes as a successor PR so Vercel can create a preview of this exact implementation; then rerun the smoke suite and link the successful CI/artifact run.
+- Configure Vercel preview access, then rerun the smoke suite against PR #66's preview.
 - Configure the Vercel bypass secret to capture the pinned before-state in CI; until then, only after-state screenshots are available in the artifact.
 - Complete and record manual 200% zoom/reflow and screen-reader verification (for example, VoiceOver on macOS).
