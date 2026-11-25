@@ -2,12 +2,15 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { hasHtmlFragment } from "./lib/study-links.mjs";
+
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distRoot = path.join(projectRoot, "dist");
 const studyRoot = path.join(distRoot, "study");
 const siteOrigin = "https://practice-lab.invalid";
 const basePath = process.env.VERCEL === "1" ? "/" : "/practice-lab/";
 const errors = [];
+const htmlCache = new Map();
 
 async function findHtmlFiles(directory) {
 	const files = [];
@@ -28,6 +31,13 @@ async function isFile(filePath) {
 	} catch {
 		return false;
 	}
+}
+
+async function htmlForFile(filePath) {
+	if (!htmlCache.has(filePath)) {
+		htmlCache.set(filePath, await readFile(filePath, "utf8"));
+	}
+	return htmlCache.get(filePath);
 }
 
 function routeForHtmlFile(filePath) {
@@ -83,7 +93,7 @@ async function main() {
 
 	for (const pagePath of pages) {
 		const route = routeForHtmlFile(pagePath);
-		const html = await readFile(pagePath, "utf8");
+		const html = await htmlForFile(pagePath);
 		const pageUrl = new URL(`${basePath}${route.slice(1)}`, siteOrigin);
 		const anchors = html.matchAll(/<a\b[^>]*\bhref\s*=\s*(["'])(.*?)\1[^>]*>/gis);
 
@@ -113,9 +123,13 @@ async function main() {
 			}
 
 			let targetExists = false;
+			let targetHtmlPath;
 			for (const candidate of candidates) {
 				if (await isFile(candidate)) {
 					targetExists = true;
+					if (path.extname(candidate).toLowerCase() === ".html") {
+						targetHtmlPath = candidate;
+					}
 					break;
 				}
 			}
@@ -123,6 +137,13 @@ async function main() {
 				errors.push(
 					`${route}: ${JSON.stringify(href)} does not resolve to a generated page or asset`,
 				);
+			} else if (url.hash && targetHtmlPath) {
+				const targetHtml = await htmlForFile(targetHtmlPath);
+				if (!hasHtmlFragment(targetHtml, url.hash)) {
+					errors.push(
+						`${route}: ${JSON.stringify(href)} points to a missing HTML fragment ${JSON.stringify(url.hash.slice(1))}`,
+					);
+				}
 			}
 		}
 	}

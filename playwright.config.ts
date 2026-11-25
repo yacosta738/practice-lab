@@ -4,7 +4,7 @@ import { defineConfig, devices } from "@playwright/test";
 // The site is served under the GitHub Pages project subpath, so the suite
 // exercises the same URLs that production serves.
 const BASE_PATH = "/practice-lab";
-const PORT = 4321;
+const PORT = Number(process.env.PLAYWRIGHT_PORT ?? 4321);
 const ORIGIN = `http://127.0.0.1:${PORT}`;
 
 export default defineConfig({
