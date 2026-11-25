@@ -96,8 +96,9 @@ test("CCDV-F practice mode shows results page after finishing questions", async 
 	}
 
 	// After the last question, the Finish button should appear
-	const finishBtn = page.getByRole("button", { name: /Finish/i }).first();
+	const finishBtn = page.getByRole("button", { name: "Finish session", exact: true });
 	await finishBtn.waitFor({ state: "visible", timeout: 10000 });
+	await expect(finishBtn).toBeEnabled();
 	await finishBtn.click();
 
 	// Verify the results page is visible
