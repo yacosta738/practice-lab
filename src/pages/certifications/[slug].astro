@@ -75,20 +75,60 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 	<!-- Quiz data passed inline -->
 </QuizLayout>
 
-<script
-	define:vars={{
+<div
+	id="quiz-bootstrap"
+	data-bootstrap={JSON.stringify({
 		cfg: certConfig,
 		qs: questions,
 		optionKeys: OPTION_SHORTCUT_KEYS,
 		studyHref,
 		base,
-	}}
-	is:inline
->
-(function () {
-	// cfg and qs are provided by define:vars above
-	if (!cfg || !qs) return;
+		knownCertifications: Object.keys(configMap),
+	})}
+	hidden
+></div>
 
+<script>
+// @ts-nocheck — this legacy UI script is runtime-validated; progress modules remain strictly typed.
+import { parseProgressBackup } from "../../lib/progress/backup-restore";
+import { createBrowserProgressService } from "../../lib/progress/browser-service";
+
+const app = document.getElementById("app");
+function showProgressFailure(error) {
+	const message = error instanceof Error ? error.message : String(error);
+	if (app) {
+		const safeMessage = message.replace(
+			/[&<>"']/g,
+			(char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char],
+		);
+		app.innerHTML = `<section class="panel padded" role="alert"><h1>Progress storage unavailable</h1><p>${safeMessage}</p><p>Your existing data has not been replaced by browser-only fallback state.</p><button class="primary" data-storage-action="retry">Retry storage</button><button class="ghost" data-storage-action="backup">Download recovery backup</button></section>`;
+	}
+}
+document.addEventListener("click", (event) => {
+	const action = event.target.closest("[data-storage-action]")?.dataset.storageAction;
+	if (action === "retry") window.location.reload();
+	if (action === "backup") {
+		event.preventDefault();
+		window.practiceLabProgressService?.downloadLocalLegacyBackup().catch(() => {});
+	}
+});
+
+(async function () {
+	const bootstrapElement = document.getElementById("quiz-bootstrap");
+	if (!bootstrapElement) return;
+	const { cfg, qs, optionKeys, studyHref, base, knownCertifications } = JSON.parse(
+		bootstrapElement.dataset.bootstrap || "{}",
+	);
+	if (!cfg || !qs) return;
+	const progressService = createBrowserProgressService({
+		certificationId: cfg.slug,
+		config: cfg,
+		questions: qs,
+		knownCertificationIds: knownCertifications,
+	});
+	window.practiceLabProgressService = progressService;
+	window.addEventListener("pagehide", () => progressService.close(), { once: true });
+	let progressState = await progressService.initialize();
 	// Build lookup maps
 	const byId = {};
 	for (const q of qs) {
@@ -106,12 +146,11 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		const shuffled = shuffle(indices);
 		const newOptions = shuffled.map((i) => q.options[i]);
 		const newCorrect = q.correctAnswers.map((origIdx) => shuffled.indexOf(origIdx));
-		return { options: newOptions, correctAnswers: newCorrect };
+		const optionIds = shuffled.map((index) => `${q.id}:option:${index}`);
+		return { options: newOptions, correctAnswers: newCorrect, optionIds };
 	}
 
-	const KEY = `${cfg.slug}-practice-lab-v2`;
 	const LETTERS = "ABCDE";
-	const app = document.getElementById("app");
 	let reviewFilter = "all";
 	const params = new URLSearchParams(window.location.search);
 	const rawDomain = params.get("domain");
@@ -120,9 +159,14 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 
 	// Native <dialog> confirmation helper (replaces window.confirm())
 	function confirmAction(title, message, okLabel, onConfirm) {
+		const invoke = () => {
+			Promise.resolve()
+				.then(onConfirm)
+				.catch((error) => setPersistenceError(error, () => window.location.reload()));
+		};
 		const dialog = document.getElementById("pl-confirm-dialog");
 		if (!dialog || typeof dialog.showModal !== "function") {
-			if (window.confirm(message)) onConfirm();
+			if (window.confirm(message)) invoke();
 			return;
 		}
 		const titleEl = document.getElementById("pl-confirm-title");
@@ -134,7 +178,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		const onClose = () => {
 			const val = dialog.returnValue;
 			dialog.returnValue = "";
-			if (val === "confirm") onConfirm();
+			if (val === "confirm") invoke();
 		};
 		dialog.addEventListener("close", onClose, { once: true });
 		dialog.showModal();
@@ -145,17 +189,48 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 	// The quiz content is trusted (from the question bank), so the sanitizer allows
 	// data-* attributes required for event delegation.
 	function setAppHTML(html, focusTarget) {
+		const notices = [];
+		if (restoreMessage) {
+			notices.push(
+				`<section class="panel padded" role="alert"><strong>Progress backup could not be restored.</strong><p>${esc(restoreMessage)}</p></section>`,
+			);
+		}
+		if (invalidationMessage) {
+			notices.push(
+				`<section class="panel padded" role="alert"><strong>Progress changed elsewhere.</strong><p>${esc(invalidationMessage)}</p><button class="ghost" data-action="reload-progress">Reload progress</button></section>`,
+			);
+		}
+		if (progressState.legacyWriteDetected) {
+			notices.push(
+				`<section class="panel padded" role="alert"><strong>Legacy progress changed in an older tab.</strong><p>Its counts will not be merged automatically. Download the current record and IndexedDB progress, then explicitly archive the legacy copy to keep this IndexedDB history.</p><div class="actions"><button class="ghost" data-action="download-backup">Download data backup</button><button class="primary" data-action="reconcile-legacy" ${progressState.reconciliationBackupReady ? "" : "disabled"}>Keep IndexedDB and archive legacy copy</button><button class="ghost" data-action="reload-progress">Reload progress</button></div></section>`,
+			);
+		}
+		if (progressState.migrationPending) {
+			notices.push(
+				`<section class="panel padded" role="status"><h2>Legacy progress is ready to import</h2><p>Download a versioned backup of all known certification records before importing. The original browser keys will remain untouched; reverting to an older app will not include progress created after migration.</p>${migrationNoticeList(progressState.migrationWarnings)}<div class="actions"><button class="ghost" data-action="download-backup">Download data backup</button><button class="primary" data-action="migrate-progress" ${progressState.backupReady ? "" : "disabled"}>Import saved progress</button></div></section>`,
+			);
+		} else if (progressState.migrationWarnings.length) {
+			notices.push(
+				`<section class="panel padded" role="status"><strong>Legacy recovery notes</strong>${migrationNoticeList(progressState.migrationWarnings)}<p class="small muted">Download a fresh backup at any time. The original v2 browser record was not deleted.</p></section>`,
+			);
+		}
+		if (persistenceError) {
+			notices.push(
+				`<section class="panel padded" role="alert"><strong>Progress could not be saved.</strong><p>${esc(persistenceError)}</p><div class="actions"><button class="primary" data-action="retry-storage">Retry save</button><button class="ghost" data-action="download-recovery">Download recovery backup</button></div></section>`,
+			);
+		}
+		const content = `${notices.join("")}${html}`;
 		if ("setHTML" in Element.prototype && typeof Sanitizer !== "undefined") {
 			try {
 				const sanitizer = new Sanitizer({
 					allowDataAttributes: true,
 				});
-				app.setHTML(html, { sanitizer });
+				app.setHTML(content, { sanitizer });
 			} catch (_) {
-				app.innerHTML = html;
+				app.innerHTML = content;
 			}
 		} else {
-			app.innerHTML = html;
+			app.innerHTML = content;
 		}
 		syncFocusMode();
 		if (focusTarget) {
@@ -172,75 +247,181 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		const shell = document.querySelector(".pl-shell");
 		if (!shell) return;
 		const active =
-			session?.mode === "exam" &&
-			!session.submitted &&
+			activeSession?.mode === "exam" &&
+			activeSession.progress.status === "in_progress" &&
 			new URLSearchParams(window.location.search).get("resume") === "1";
 		shell.setAttribute("data-exam-focus", active ? "true" : "false");
 	}
 
-	// --- Storage ---
-	function getSaved() {
-		try {
-			const x = JSON.parse(localStorage.getItem(KEY));
-			return x && typeof x === "object" ? x : { stats: {}, session: null };
-		} catch {
-			return { stats: {}, session: null };
-		}
-	}
-	let saved = getSaved();
-	if (!saved.stats || typeof saved.stats !== "object") saved.stats = {};
+	// --- IndexedDB-backed progress ---
+	let saved = { stats: progressState.stats };
+	let session = null;
+	let activeSession = null;
+	let sessionQuestionsById = {};
+	let sessionDomainsById = {};
+	let persistenceError = null;
+	let restoreMessage = "";
+	let retryPersistence = null;
+	let invalidationMessage = "";
+	let finishing = false;
+	let checking = false;
+	let checkpointQueue = Promise.resolve();
 
-	// A restored session may come from an older schema, from a hand-edited
-	// record, or from a question bank that no longer holds some of its ids.
-	// Validate it before use so a stale record degrades into a fresh session
-	// instead of a permanently blank page.
-	function restoreSession(raw) {
-		if (!raw || typeof raw !== "object") return null;
-		if (!["practice", "exam", "weak"].includes(raw.mode)) return null;
-		if (!Array.isArray(raw.ids)) return null;
-		const ids = raw.ids.filter((id) => byId[id]);
-		if (!ids.length) return null;
-		const answers = raw.answers && typeof raw.answers === "object" ? raw.answers : {};
-		const checked = raw.checked && typeof raw.checked === "object" ? raw.checked : {};
-		const flags = Array.isArray(raw.flags) ? raw.flags.filter((id) => byId[id]) : [];
-		const index =
-			Number.isInteger(raw.currentIndex) && raw.currentIndex >= 0 && raw.currentIndex < ids.length
-				? raw.currentIndex
-				: 0;
-		// Restore shuffledOptions so saved answer indexes remain meaningful.
-		// For legacy sessions without shuffledOptions, answers were recorded
-		// against the original option order, so grading falls back to that.
-		const shuffledOptions =
-			raw.shuffledOptions && typeof raw.shuffledOptions === "object"
-				? raw.shuffledOptions
-				: undefined;
+	function applyProgressSession(progressSession, { display = true, trackActive = true } = {}) {
+		const hydrated = progressService.hydrateSession(progressSession);
+		const hydratedDomains = {};
+		for (const snapshot of progressSession.content.questions) {
+			hydratedDomains[snapshot.domainId] = {
+				name: snapshot.domainName || snapshot.domainId,
+				weight: progressSession.scoring.domainWeights[snapshot.domainId] || 0,
+			};
+		}
+		Object.defineProperty(hydrated.session, "questionsById", {
+			value: hydrated.questionsById,
+			configurable: true,
+		});
+		Object.defineProperty(hydrated.session, "domainsById", {
+			value: hydratedDomains,
+			configurable: true,
+		});
+		if (trackActive) {
+			activeSession = progressSession.status === "in_progress" ? hydrated.session : null;
+		}
+		if (display) {
+			session = hydrated.session;
+			sessionQuestionsById = hydrated.questionsById;
+			sessionDomainsById = hydratedDomains;
+		}
+		return hydrated.session;
+	}
+
+	function getQuestion(id) {
+		return sessionQuestionsById[id] || byId[id];
+	}
+
+	function getDomain(id) {
+		const question = getQuestion(id);
+		return (
+			sessionDomainsById[question?.domain] ||
+			domains[question?.domain] || { name: question?.domain || "Unknown domain", weight: 0 }
+		);
+	}
+
+	function sessionCheckpoint() {
+		const selectedOptionIdsByQuestion = {};
+		for (const id of session.ids) {
+			const selected = session.answers[id] || [];
+			const optionIds = session.shuffledOptions?.[id]?.optionIds;
+			if (selected.length && optionIds)
+				selectedOptionIdsByQuestion[id] = selected.map((index) => optionIds[index]);
+		}
 		return {
-			mode: raw.mode,
-			ids,
-			currentIndex: index,
-			answers,
-			checked,
-			flags,
-			created: Number.isFinite(raw.created) ? raw.created : Date.now(),
-			deadline: Number.isFinite(raw.deadline) ? raw.deadline : null,
-			submitted: raw.submitted === true,
-			timedOut: raw.timedOut === true,
-			finished: Number.isFinite(raw.finished) ? raw.finished : undefined,
-			shuffledOptions,
+			currentQuestionId: session.ids[session.currentIndex] ?? null,
+			deadlineAt: session.deadline,
+			selectedOptionIdsByQuestion,
+			checkedQuestionIds: session.ids.filter((id) => session.checked[id]),
+			flaggedQuestionIds: [...session.flags],
 		};
 	}
 
-	let session = restoreSession(saved.session);
-	saved.session = session;
-
-	function persist() {
-		saved.session = session;
-		try {
-			localStorage.setItem(KEY, JSON.stringify(saved));
-		} catch {}
+	async function persist() {
+		const write = checkpointQueue.then(async () => {
+			if (!session?.progress)
+				throw new Error("This session is not connected to durable progress storage.");
+			const sessionId = session.progress.id;
+			const updated = await progressService.checkpointSession({
+				sessionId,
+				expectedRevision: session.progress.revision,
+				checkpoint: sessionCheckpoint(),
+			});
+			if (session?.progress.id === sessionId) {
+				session.progress.revision = updated.revision;
+				session.progress.status = updated.status;
+			}
+			return updated;
+		});
+		checkpointQueue = write.then(
+			() => undefined,
+			() => undefined,
+		);
+		return write;
 	}
 
-	persist();
+	function setPersistenceError(error, retry) {
+		persistenceError = error instanceof Error ? error.message : String(error);
+		retryPersistence = retry;
+		render();
+	}
+
+	document.addEventListener("change", async (event) => {
+		const input = event.target;
+		if (!(input instanceof HTMLInputElement) || input.id !== "progress-restore-file") return;
+		const file = input.files?.[0];
+		input.value = "";
+		if (!file) return;
+		try {
+			if (file.size > 50 * 1024 * 1024) {
+				throw new Error("The selected backup is too large to restore (50 MB maximum).");
+			}
+			const rawJson = await file.text();
+			const snapshots = parseProgressBackup(rawJson, knownCertifications);
+			if (!snapshots.some(({ certificationId }) => certificationId === cfg.slug)) {
+				throw new Error(`The selected backup does not contain ${cfg.slug} progress.`);
+			}
+			restoreMessage = "";
+			confirmAction(
+				"Restore progress from backup?",
+				`This replaces quiz progress and session history for ${cfg.title} with the data in this file. Other certifications will not change.`,
+				"Restore progress",
+				async () => {
+					try {
+						await progressService.restoreProgressBackup(rawJson);
+						window.location.reload();
+					} catch (error) {
+						restoreMessage = error instanceof Error ? error.message : String(error);
+						render();
+					}
+				},
+			);
+		} catch (error) {
+			restoreMessage = error instanceof Error ? error.message : String(error);
+			render();
+		}
+	});
+
+	function handleInvalidation(message) {
+		invalidationMessage = message;
+		progressService
+			.readState()
+			.then((state) => {
+				progressState = state;
+				saved.stats = state.stats;
+				render();
+			})
+			.catch(() => render());
+	}
+
+	progressService.onInvalidation(handleInvalidation);
+	document.addEventListener("visibilitychange", () => {
+		if (document.visibilityState !== "visible") return;
+		const active = activeSession?.progress;
+		progressService
+			.checkForExternalChanges(active?.id, active?.revision)
+			.catch((error) => setPersistenceError(error, () => window.location.reload()));
+	});
+	const activeEntry = progressState.history.find(
+		({ session: item }) => item.status === "in_progress",
+	);
+	if (activeEntry) applyProgressSession(activeEntry.session, { trackActive: true });
+	const requestedResultId = new URLSearchParams(window.location.search).get("result");
+	if (requestedResultId) {
+		const previous = progressState.history.find(
+			({ session: item }) => item.id === requestedResultId,
+		);
+		if (previous) {
+			applyProgressSession(previous.session, { trackActive: false });
+		}
+	}
 
 	// --- Engine functions ---
 	function shuffle(arr) {
@@ -270,6 +451,12 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		);
 	}
 
+	function migrationNoticeList(warnings) {
+		if (!warnings?.length)
+			return '<p class="small muted">No legacy records required recovery notes.</p>';
+		return `<ul class="small">${warnings.map((warning) => `<li>${esc(warning)}</li>`).join("")}</ul>`;
+	}
+
 	function getSelectCount(q, id) {
 		// Prefer the question's explicit selectCount when defined;
 		// otherwise fall back to the answer-key length (from shuffled
@@ -287,7 +474,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 	// Shared accessor: returns { options, correctAnswers } for a question,
 	// preferring the session's shuffled permutation when available.
 	function getQuestionOptions(id) {
-		const q = byId[id];
+		const q = getQuestion(id);
 		const so = session?.shuffledOptions?.[id];
 		if (so) return { options: so.options, correctAnswers: so.correctAnswers };
 		return { options: q.options, correctAnswers: q.correctAnswers };
@@ -299,20 +486,13 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		return v.length === correctAnswers.length && v.every((k) => correctAnswers.includes(k));
 	}
 
-	function remember(id, ok) {
-		const x = saved.stats[id] || { attempts: 0, correct: 0, lastWrong: false };
-		x.attempts++;
-		if (ok) x.correct++;
-		x.lastWrong = !ok;
-		saved.stats[id] = x;
-	}
-
 	function getWeakCount() {
-		return Object.values(saved.stats).filter((s) => s.lastWrong).length;
+		return qs.filter((question) => saved.stats[question.id]?.lastWrong).length;
 	}
 
 	// --- Start session ---
-	function start(mode, domain, amount) {
+	async function start(mode, domain, amount) {
+		await checkpointQueue;
 		let ids = [];
 		if (mode === "exam") {
 			for (const [d, n] of Object.entries(cfg.examBlueprint)) {
@@ -339,32 +519,33 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 				.map((q) => q.id);
 		}
 		if (!ids.length) return;
-		// Build shuffled options for every question in this session
 		const shuffledOptions = {};
 		for (const id of ids) {
 			shuffledOptions[id] = shuffleQuestionOptions(byId[id]);
 		}
-		session = {
+		const now = Date.now();
+		const deadline = mode === "exam" ? now + (cfg.examMinutes ?? 120) * 60 * 1000 : null;
+		const previousSession =
+			activeSession?.progress?.status === "in_progress"
+				? { id: activeSession.progress.id, revision: activeSession.progress.revision }
+				: undefined;
+		const savedSession = await progressService.startQuizSession(
 			mode,
 			ids,
-			currentIndex: 0,
-			answers: {},
-			checked: {},
-			flags: [],
-			created: Date.now(),
-			deadline: mode === "exam" ? Date.now() + (cfg.examMinutes ?? 120) * 60 * 1000 : null,
-			submitted: false,
 			shuffledOptions,
-		};
-		persist();
+			deadline,
+			previousSession,
+		);
+		applyProgressSession(savedSession);
+		saved.stats = (await progressService.readState()).stats;
 		setResumeUrl(true);
 		render("question");
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	}
 
-	function requestStart(mode, domain, amount) {
-		if (session && !session.submitted) {
-			const activeType = session.mode === "exam" ? "mock exam" : "practice session";
+	async function requestStart(mode, domain, amount) {
+		if (activeSession && activeSession.progress.status === "in_progress") {
+			const activeType = activeSession.mode === "exam" ? "mock exam" : "practice session";
 			return confirmAction(
 				"Replace active session?",
 				`Your saved ${activeType} will be replaced. If you cancel, your answers and timer remain unchanged.`,
@@ -372,16 +553,19 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 				() => start(mode, domain, amount),
 			);
 		}
-		start(mode, domain, amount);
+		await start(mode, domain, amount);
 	}
 
 	function setResumeUrl(shouldResume) {
 		const url = new URL(window.location.href);
-		if (shouldResume && session) {
-			url.searchParams.set("mode", session.mode === "exam" ? "assess" : "practice");
+		if (shouldResume && activeSession) {
+			session = activeSession;
+			url.searchParams.set("mode", activeSession.mode === "exam" ? "assess" : "practice");
 			url.searchParams.set("resume", "1");
+			url.searchParams.delete("result");
 		} else {
 			url.searchParams.delete("resume");
+			url.searchParams.delete("result");
 		}
 		history.replaceState(null, "", url);
 		window.dispatchEvent(new Event("practice-lab:workspace-mode-change"));
@@ -389,7 +573,9 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 
 	// --- Home view ---
 	function home() {
-		const values = Object.values(saved.stats);
+		const values = qs.map(
+			(question) => saved.stats[question.id] || { attempts: 0, correct: 0, lastWrong: false },
+		);
 		const attempted = values.filter((s) => s.attempts > 0).length;
 		const mastered = values.filter((s) => s.attempts > 0 && !s.lastWrong).length;
 		const weak = getWeakCount();
@@ -404,12 +590,20 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 				return `<div class="domainRow"><span><strong>${d}</strong> ${esc(domainConfig.name)}<br><span class="muted small">${bpLabel} ${domainConfig.weight}%</span></span><strong>${done.length}/${list.length}</strong></div>`;
 			})
 			.join("");
+		const historyItems = progressState.history
+			.filter(({ session: item }) => item.status === "completed" || item.status === "expired")
+			.slice(0, 5)
+			.map(
+				({ session: item }) =>
+					`<button class="ghost small" data-action="review-result" data-id="${esc(item.id)}">${esc(item.mode)} · ${new Date(item.startedAt).toLocaleDateString()} · ${item.status}</button>`,
+			)
+			.join("");
 		const setupContent = assessSetup
 			? `<div class="panel examSetup">
 				<h3>Timed mock exam</h3>
 				<p>${cfg.totalQuestions} questions mapped to the ${cfg.blueprintSource === "official" ? "official blueprint" : "available question-bank distribution"}.</p>
 				<p class="small muted">${cfg.examMinutes ?? 120} minutes. The timer continues if you leave; return here to resume your saved exam.</p>
-				<button class="primary" data-action="start-exam">Start mock exam</button>
+				<button class="primary" data-action="start-exam" ${progressState.migrationPending || progressState.legacyWriteDetected ? "disabled" : ""}>Start mock exam</button>
 			</div>`
 			: `<div class="config configTop">
 				<div>
@@ -437,11 +631,11 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 				</div>
 			</div>
 			<div class="modes">
-				<button class="mode" data-action="start-practice">
+				<button class="mode" data-action="start-practice" ${progressState.migrationPending || progressState.legacyWriteDetected ? "disabled" : ""}>
 					<strong>Practice mode</strong>
 					<p>Instant feedback, explanations and links to primary documentation. Study by exam domain or focus on your weakest areas.</p>
 				</button>
-				<button class="mode" data-action="start-weak" ${weak ? "" : "disabled"}>
+				<button class="mode" data-action="start-weak" ${weak && !progressState.migrationPending && !progressState.legacyWriteDetected ? "" : "disabled"}>
 					<strong>Review mistakes</strong>
 					<p>${weak ? `${weak} questions need another pass.` : "Complete a session to unlock targeted revision."} Retest only your latest missed questions.</p>
 				</button>
@@ -450,10 +644,9 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 					<p>Start a timed assessment when you are ready to test yourself.</p>
 				</a>
 			</div>`;
-		const activeSessionNotice =
-			session && !session.submitted
-				? `<p class="sessionNotice" role="status">Your ${session.mode === "exam" ? "mock exam" : "practice session"} is saved. ${session.mode === "exam" ? "The timer continues while you are away." : "Your answers are ready to resume."}</p>`
-				: "";
+		const activeSessionNotice = activeSession
+			? `<p class="sessionNotice" role="status">Your ${activeSession.mode === "exam" ? "mock exam" : "practice session"} is saved. ${activeSession.mode === "exam" ? "The timer continues while you are away." : "Your answers are ready to resume."}</p>`
+			: "";
 
 		setAppHTML(`
 			<div class="hero">
@@ -466,8 +659,8 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 				</div>
 				<div class="ctaRow">
 					${
-						session && !session.submitted
-							? `<button class="primary" data-action="resume">Resume ${session.mode === "exam" ? "mock exam" : "practice"} · ${session.currentIndex + 1}/${session.ids.length}</button>`
+						activeSession
+							? `<button class="primary" data-action="resume">Resume ${activeSession.mode === "exam" ? "mock exam" : "practice"} · ${activeSession.currentIndex + 1}/${activeSession.ids.length}</button>`
 							: `<a class="primary" href="#session">${assessSetup ? "Review mock exam setup" : "Choose practice settings"}</a>`
 					}
 					${studyHref ? `<a class="ghost ghostOnDark" href="${esc(studyHref)}" data-action="go-to-site-home">Open study notes</a>` : ""}
@@ -480,7 +673,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 				${setupContent}
 			</section>
 			<section class="section" id="coverage">
-				<div class="sectionHead"><h2>Learning telemetry</h2><button class="ghost small" data-action="reset-stats">Reset progress</button></div>
+				<div class="sectionHead"><h2>Learning telemetry</h2><div class="actions"><button class="ghost small" data-action="download-backup">Download data backup</button><button class="ghost small" data-action="select-restore-file" ${progressState.migrationPending || progressState.legacyWriteDetected ? "disabled" : ""}>Restore from JSON</button><input id="progress-restore-file" type="file" accept=".json,application/json" hidden><button class="ghost small" data-action="reset-stats" ${progressState.migrationPending ? "disabled" : ""}>Reset progress</button></div></div>
 				<div class="statGrid">
 					<div class="panel stat"><strong>${attempted}/${qs.length}</strong><span>Questions attempted</span></div>
 					<div class="panel stat"><strong>${mastered}</strong><span>Last attempt correct</span></div>
@@ -489,6 +682,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 				</div>
 				<h3 style="margin-top:25px">Coverage by domain</h3>
 				<div class="domainGrid">${cards}</div>
+				${historyItems ? `<h3 style="margin-top:25px">Recent results</h3><div class="actions">${historyItems}</div>` : ""}
 			</section>
 			<p class="alert section">Independent study material. Practice scores are not equivalent to official exam scores.</p>
  		<p class="small muted section">This bank includes practice questions from <strong>Cert Pro Quest</strong> by Matthew Purcell. These are community-created practice questions and are not official exam content.</p>
@@ -504,7 +698,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 			return session.mode === "exam" ? examReview() : finish(false);
 
 		const id = session.ids[session.currentIndex];
-		const x = byId[id];
+		const x = getQuestion(id);
 		const v = session.answers[id] || [];
 		const checked = !!session.checked[id];
 		const isExam = session.mode === "exam";
@@ -571,7 +765,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 				<span class="badge">${x.domain} · ${esc(domains[x.domain].name)}</span>
 				${x.topic ? `<span class="muted small" style="margin-left:8px">${esc(x.topic)}</span>` : ""}
 				<h2 data-focus-target="question" tabindex="-1">${esc(x.question)}</h2>
-		 <p class="hint">${getSelectCount(x, id) === 1 ? "Select ONE answer." : `Select exactly ${getSelectCount(x, id)} answers.`}${isExam ? " Your choices stay editable until you submit." : " Check your answer to see the explanation."}</p>
+		 <p class="hint" data-select-count="${getSelectCount(x, id)}">${getSelectCount(x, id) === 1 ? "Select ONE answer." : `Select exactly ${getSelectCount(x, id)} answers.`}${isExam ? " Your choices stay editable until you submit." : " Check your answer to see the explanation."}</p>
 				${opts}${fb}
 				<div class="actions">
 					${session.currentIndex > 0 ? `<button class="ghost" data-action="prev">← Previous</button>` : ""}
@@ -633,25 +827,86 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 	}
 
 	function tick() {
-		if (!session || session.submitted || session.mode !== "exam") return;
-		const e = document.getElementById("clock");
-		if (e) {
-			e.textContent = clockText();
-			e.classList.toggle("warn", session.deadline - Date.now() < 600000);
+		const running = activeSession;
+		if (
+			running?.progress.status !== "in_progress" ||
+			running.mode !== "exam" ||
+			running.deadline === null
+		) {
+			return;
 		}
-		if (session.deadline && session.deadline <= Date.now()) finish(true);
+		if (session?.progress.id === running.progress.id) {
+			const e = document.getElementById("clock");
+			if (e) {
+				e.textContent = clockText();
+				e.classList.toggle("warn", running.deadline - Date.now() < 600000);
+			}
+		}
+		if (running.deadline <= Date.now()) void finish(true, running);
 	}
 
-	function finish(timed = false) {
-		if (!session || session.submitted) return;
-		session.submitted = true;
-		session.timedOut = timed;
-		session.finished = Date.now();
-		for (const id of session.ids)
-			if (answered(id) && !session.checked[id]) remember(id, accurate(id));
-		persist();
-		results();
-		window.scrollTo({ top: 0, behavior: "smooth" });
+	async function finish(timed = false, sessionToFinish = session) {
+		if (!sessionToFinish || sessionToFinish.submitted || finishing || persistenceError) return;
+		finishing = true;
+		const isDisplayedSession = session?.progress.id === sessionToFinish.progress.id;
+		if (isDisplayedSession) {
+			try {
+				await checkpointQueue;
+			} catch (error) {
+				finishing = false;
+				setPersistenceError(error, () => finish(timed, sessionToFinish));
+				return;
+			}
+		}
+		const evaluations = sessionToFinish.ids.flatMap((id) => {
+			const selectedIndexes = sessionToFinish.answers[id] || [];
+			if (!selectedIndexes.length || sessionToFinish.checked[id]) return [];
+			const optionIds = sessionToFinish.shuffledOptions?.[id]?.optionIds || [];
+			const selectedOptionIds = selectedIndexes.map((index) => optionIds[index]);
+			const correctAnswers =
+				sessionToFinish.shuffledOptions?.[id]?.correctAnswers || getQuestion(id).correctAnswers;
+			const correct =
+				selectedIndexes.length === correctAnswers.length &&
+				selectedIndexes.every((index) => correctAnswers.includes(index));
+			return [
+				{
+					questionId: id,
+					selectedOptionIds,
+					outcome: correct ? "correct" : "incorrect",
+					scoreEarned: correct ? 1 : 0,
+					scorePossible: 1,
+				},
+			];
+		});
+		try {
+			const completed = await progressService.finalizeSession(
+				sessionToFinish.progress.id,
+				sessionToFinish.progress.revision,
+				timed ? "expired" : "completed",
+				evaluations,
+			);
+			progressState = await progressService.readState();
+			saved.stats = progressState.stats;
+			if (isDisplayedSession) applyProgressSession(completed);
+			else applyProgressSession(completed, { display: false });
+			persistenceError = null;
+			retryPersistence = null;
+			finishing = false;
+			if (isDisplayedSession) {
+				const url = new URL(window.location.href);
+				url.searchParams.delete("resume");
+				url.searchParams.set("result", completed.id);
+				history.replaceState(null, "", url);
+				window.dispatchEvent(new Event("practice-lab:workspace-mode-change"));
+				results();
+				window.scrollTo({ top: 0, behavior: "smooth" });
+			} else if (!session) {
+				home();
+			}
+		} catch (error) {
+			finishing = false;
+			setPersistenceError(error, () => finish(timed, sessionToFinish));
+		}
 	}
 
 	// --- Results view ---
@@ -663,17 +918,20 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 
 		// Show passing threshold reference when configured
 		let passingBandHtml = "";
-		if (cfg.passingScore) {
+		const passingScore = session.progress?.scoring?.passingScore ?? cfg.passingScore;
+		if (passingScore) {
 			passingBandHtml = `
 				<div class="infoCallout">
-					<strong>Reference passing threshold: ${cfg.passingScore} / 1,000</strong>
+					<strong>Reference passing threshold: ${passingScore} / 1,000</strong>
 					<p class="small muted" style="margin:4px 0 0">The official exam uses a scaled scoring model. This practice score is a raw percentage and cannot predict the scaled result.</p>
 				</div>`;
 		}
 
-		const rows = Object.entries(cfg.domains)
-			.map(([d, domainConfig]) => {
-				const list = ids.filter((id) => byId[id].domain === d);
+		const resultDomains = [...new Set(ids.map((id) => getQuestion(id).domain))];
+		const rows = resultDomains
+			.map((d) => {
+				const domainConfig = getDomain(d);
+				const list = ids.filter((id) => getQuestion(id).domain === d);
 				if (!list.length) return "";
 				const ok = list.filter((id) => correct.includes(id)).length;
 				const domainPct = pct(ok, list.length);
@@ -698,7 +956,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		const rev = filteredIds.length
 			? filteredIds
 					.map(({ id, k }) => {
-						const q = byId[id];
+						const q = getQuestion(id);
 						const v = session.answers[id] || [];
 						const ok = accurate(id) && answered(id);
 						const { options: revOptions, correctAnswers: revCorrect } = getQuestionOptions(id);
@@ -782,7 +1040,70 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 	}
 
 	// --- Event handlers ---
-	document.addEventListener("click", (event) => {
+	async function checkAnswer(id) {
+		if (!session || session.checked[id] || checking) return;
+		checking = true;
+		try {
+			await checkpointQueue;
+		} catch (error) {
+			checking = false;
+			setPersistenceError(error, () => checkAnswer(id));
+			return;
+		}
+		if (!session || session.checked[id]) {
+			checking = false;
+			return;
+		}
+		const selectedIndexes = session.answers[id] || [];
+		if (selectedIndexes.length !== getSelectCount(getQuestion(id))) {
+			checking = false;
+			return;
+		}
+		const optionIds = session.shuffledOptions?.[id]?.optionIds || [];
+		const selectedOptionIds = selectedIndexes.map((index) => optionIds[index]);
+		const correct = accurate(id);
+		try {
+			const result = await progressService.recordEvaluation({
+				sessionId: session.progress.id,
+				questionId: id,
+				selectedOptionIds,
+				outcome: correct ? "correct" : "incorrect",
+				scoreEarned: correct ? 1 : 0,
+				scorePossible: 1,
+				expectedRevision: session.progress.revision,
+			});
+			if (result.session) {
+				session.progress.revision = result.session.revision;
+				session.progress.status = result.session.status;
+			}
+			session.checked[id] = true;
+			progressState = await progressService.readState();
+			saved.stats = progressState.stats;
+			persistenceError = null;
+			retryPersistence = null;
+			question("feedback");
+		} catch (error) {
+			setPersistenceError(error, () => checkAnswer(id));
+		} finally {
+			checking = false;
+		}
+	}
+
+	function saveThen(write, onSaved) {
+		const attempt = async () => {
+			try {
+				await write();
+				persistenceError = null;
+				retryPersistence = null;
+				onSaved();
+			} catch (error) {
+				setPersistenceError(error, attempt);
+			}
+		};
+		return attempt();
+	}
+
+	document.addEventListener("click", async (event) => {
 		const el = event.target.closest("[data-action]");
 		if (!el) return;
 		const action = el.dataset.action;
@@ -790,131 +1111,225 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		// Allow site-home link and unified Layout theme toggle to handle their own events
 		if (action === "go-to-site-home" || action === "theme") return;
 		event.preventDefault();
-
-		if (action === "home") {
-			if (session?.submitted) session = null;
-			setResumeUrl(false);
-			persist();
-			return home();
-		}
-		if (action === "resume") {
-			setResumeUrl(true);
-			return render();
-		}
-		if (action === "exit-exam") {
-			return confirmAction(
-				"Exit mock exam?",
-				"Your answers will be saved, but the timer continues while you are away. Resume the exam from this certification page.",
-				"Exit exam",
-				() => {
-					setResumeUrl(false);
-					home();
-					window.scrollTo({ top: 0, behavior: "smooth" });
-				},
-			);
-		}
-		if (action === "reset-stats") {
-			confirmAction(
-				"Reset saved practice history?",
-				"This clears your attempted, mastered, and weak-question statistics for this certification on this device.",
-				"Reset history",
-				() => {
-					saved.stats = {};
-					persist();
-					home();
-				},
-			);
+		if (action === "reload-progress") return window.location.reload();
+		if (action === "select-restore-file") {
+			document.getElementById("progress-restore-file")?.click();
 			return;
 		}
-		if (action === "filter-review") {
-			reviewFilter = el.dataset.value || "all";
-			results();
-			const activeBtn = app.querySelector(
-				`[data-action="filter-review"][data-value="${reviewFilter}"]`,
-			);
-			if (activeBtn instanceof HTMLElement) activeBtn.focus();
+		if (action === "retry-storage") {
+			if (!retryPersistence) return window.location.reload();
+			return retryPersistence();
+		}
+		if (action === "download-recovery") {
+			return progressService
+				.downloadLocalLegacyBackup()
+				.catch((error) => setPersistenceError(error, retryPersistence));
+		}
+		if (checking) return;
+		if (persistenceError || (invalidationMessage && !progressState.legacyWriteDetected)) return;
+		if (
+			progressState.migrationPending &&
+			!["download-backup", "migrate-progress"].includes(action)
+		) {
 			return;
 		}
-		if (action === "start-practice") {
-			const d = document.getElementById("domain")?.value || "all";
-			const n = +document.getElementById("amount")?.value || 20;
-			return requestStart("practice", d, n);
+		if (
+			progressState.legacyWriteDetected &&
+			!["download-backup", "reconcile-legacy"].includes(action)
+		) {
+			return;
 		}
-		if (action === "start-exam") return requestStart("exam");
-		if (action === "start-weak") return requestStart("weak");
-		if (!session || session.submitted) return;
 
-		const id = session.ids[session.currentIndex];
-		const q = byId[id];
-		if (action === "pick") {
-			if (session.checked[id]) return;
-			const n = +el.dataset.value;
-			const vals = session.answers[id] || [];
-			const pickCount = getSelectCount(q);
-			session.answers[id] =
-				pickCount === 1
-					? [n]
-					: vals.includes(n)
-						? vals.filter((x) => x !== n)
-						: vals.length >= pickCount
-							? vals
-							: [...vals, n];
-			persist();
-			return question(`answer-${n}`);
-		}
-		if (action === "check") {
-			if ((session.answers[id] || []).length !== getSelectCount(q)) return;
-			session.checked[id] = true;
-			remember(id, accurate(id));
-			persist();
-			return question("feedback");
-		}
-		if (action === "prev") {
-			session.currentIndex = Math.max(0, session.currentIndex - 1);
-			persist();
-			return question("question");
-		}
-		if (action === "next") {
-			session.currentIndex++;
-			persist();
-			if (session.currentIndex >= session.ids.length) {
-				if (session.mode === "exam") return examReview();
-				return finish();
+		try {
+			if (action === "download-backup") {
+				await progressService.downloadDataBackup();
+				progressState = await progressService.readState();
+				persistenceError = null;
+				render();
+				return;
 			}
-			return question("question");
-		}
-		if (action === "jump") {
-			// The guard applies to the destination question, not the one on screen.
-			const targetId = session.ids[+el.dataset.value];
-			if (session.mode !== "exam" && !session.checked[targetId]) return;
-			session.currentIndex = +el.dataset.value;
-			persist();
-			return question("question");
-		}
-		if (action === "flag") {
-			session.flags = session.flags.includes(id)
-				? session.flags.filter((x) => x !== id)
-				: [...session.flags, id];
-			persist();
-			return question("flag");
-		}
-		if (action === "finish") {
-			confirmAction(
-				"Submit mock exam?",
-				"Your answers will be scored and rationales will be revealed immediately.",
-				"Submit and score",
-				() => finish(false),
-			);
+			if (action === "reconcile-legacy") {
+				progressState = await progressService.reconcileLegacyWrite();
+				saved.stats = progressState.stats;
+				invalidationMessage = "";
+				persistenceError = null;
+				render();
+				return;
+			}
+			if (action === "migrate-progress") {
+				progressState = await progressService.migrateLegacyProgress();
+				saved.stats = progressState.stats;
+				if (progressState.currentSession) {
+					applyProgressSession(progressState.currentSession);
+					if (session.submitted) {
+						const url = new URL(window.location.href);
+						url.searchParams.set("result", session.progress.id);
+						history.replaceState(null, "", url);
+					}
+				}
+				persistenceError = null;
+				render();
+				return;
+			}
+			if (action === "review-result") {
+				const entry = progressState.history.find(({ session: item }) => item.id === el.dataset.id);
+				if (!entry) throw new Error("This saved result is no longer available.");
+				applyProgressSession(entry.session, { trackActive: false });
+				const url = new URL(window.location.href);
+				url.searchParams.delete("resume");
+				url.searchParams.set("result", entry.session.id);
+				history.replaceState(null, "", url);
+				return results();
+			}
+
+			if (action === "home") {
+				if (session && activeSession?.progress.id === session.progress?.id && !session.submitted) {
+					await persist();
+				}
+				if (session?.submitted) session = null;
+				setResumeUrl(false);
+				return home();
+			}
+			if (action === "resume") {
+				if (!activeSession) return home();
+				session = activeSession;
+				sessionQuestionsById = activeSession.questionsById || byId;
+				sessionDomainsById = activeSession.domainsById || domains;
+				setResumeUrl(true);
+				return render();
+			}
+			if (action === "exit-exam") {
+				return confirmAction(
+					"Exit mock exam?",
+					"Your answers will be saved, but the timer continues while you are away. Resume the exam from this certification page.",
+					"Exit exam",
+					async () => {
+						await persist();
+						setResumeUrl(false);
+						home();
+						window.scrollTo({ top: 0, behavior: "smooth" });
+					},
+				);
+			}
+			if (action === "reset-stats") {
+				confirmAction(
+					"Reset saved practice history?",
+					"This permanently clears this certification's saved quiz sessions, attempts, and question statistics on this device. Study progress and downloaded backups are kept.",
+					"Reset history",
+					async () => {
+						progressState = await progressService.resetProgress();
+						saved.stats = progressState.stats;
+						session = null;
+						activeSession = null;
+						sessionQuestionsById = {};
+						setResumeUrl(false);
+						home();
+					},
+				);
+				return;
+			}
+			if (action === "filter-review") {
+				reviewFilter = el.dataset.value || "all";
+				results();
+				const activeBtn = app.querySelector(
+					`[data-action="filter-review"][data-value="${reviewFilter}"]`,
+				);
+				if (activeBtn instanceof HTMLElement) activeBtn.focus();
+				return;
+			}
+			if (action === "start-practice") {
+				const d = document.getElementById("domain")?.value || "all";
+				const n = +document.getElementById("amount")?.value || 20;
+				return await requestStart("practice", d, n);
+			}
+			if (action === "start-exam") return await requestStart("exam");
+			if (action === "start-weak") return await requestStart("weak");
+			if (!session || session.submitted) return;
+
+			const id = session.ids[session.currentIndex];
+			const q = getQuestion(id);
+			if (action === "pick") {
+				if (session.checked[id]) return;
+				const n = +el.dataset.value;
+				const vals = session.answers[id] || [];
+				const pickCount = getSelectCount(q);
+				session.answers[id] =
+					pickCount === 1
+						? [n]
+						: vals.includes(n)
+							? vals.filter((x) => x !== n)
+							: vals.length >= pickCount
+								? vals
+								: [...vals, n];
+				return saveThen(
+					() => persist(),
+					() => question(`answer-${n}`),
+				);
+			}
+			if (action === "check") {
+				return checkAnswer(id);
+			}
+			if (action === "prev") {
+				session.currentIndex = Math.max(0, session.currentIndex - 1);
+				return saveThen(
+					() => persist(),
+					() => question("question"),
+				);
+			}
+			if (action === "next") {
+				session.currentIndex++;
+				return saveThen(
+					() => persist(),
+					() => {
+						if (session.currentIndex >= session.ids.length) {
+							if (session.mode === "exam") return examReview();
+							return finish();
+						}
+						return question("question");
+					},
+				);
+			}
+			if (action === "jump") {
+				// The guard applies to the destination question, not the one on screen.
+				const targetId = session.ids[+el.dataset.value];
+				if (session.mode !== "exam" && !session.checked[targetId]) return;
+				session.currentIndex = +el.dataset.value;
+				return saveThen(
+					() => persist(),
+					() => question("question"),
+				);
+			}
+			if (action === "flag") {
+				session.flags = session.flags.includes(id)
+					? session.flags.filter((x) => x !== id)
+					: [...session.flags, id];
+				return saveThen(
+					() => persist(),
+					() => question("flag"),
+				);
+			}
+			if (action === "finish") {
+				confirmAction(
+					"Submit mock exam?",
+					"Your answers will be scored and rationales will be revealed immediately.",
+					"Submit and score",
+					() => finish(false),
+				);
+			}
+		} catch (error) {
+			setPersistenceError(error, () => window.location.reload());
 		}
 	});
 
 	// Back to exam handler
-	document.addEventListener("click", (e) => {
+	document.addEventListener("click", async (e) => {
 		if (e.target.closest('[data-action="back-to-exam"]')) {
 			e.preventDefault();
 			session.currentIndex = 0;
-			persist();
-			question();
+			return saveThen(
+				() => persist(),
+				() => question(),
+			);
 		}
 	});
 
@@ -949,5 +1364,5 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 
 	setInterval(tick, 1000);
 	render();
-})();
+})().catch(showProgressFailure);
 </script>

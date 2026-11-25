@@ -18,6 +18,17 @@ export interface QuestionProvenance {
 	contentHash: string;
 	domainId: string;
 	optionIds: readonly string[];
+	optionTexts: readonly string[];
+	displayOptionIds: readonly string[];
+	correctOptionIds: readonly string[];
+	questionText: string;
+	domainName: string;
+	topic?: string;
+	explanation: string;
+	whyNot?: string;
+	sourceLabel: string;
+	sourceUrl: string;
+	selectCount: number;
 }
 
 export interface ContentProvenance {
@@ -29,6 +40,15 @@ export interface SessionCheckpoint {
 	currentQuestionId: string | null;
 	deadlineAt: number | null;
 	selectedOptionIdsByQuestion: Readonly<Record<string, readonly string[]>>;
+	checkedQuestionIds: readonly string[];
+	flaggedQuestionIds: readonly string[];
+}
+
+export interface LegacySessionProvenance {
+	sourceStorageKey: string;
+	version: 2;
+	limitations: readonly string[];
+	evaluatedQuestionIds: readonly string[];
 }
 
 export interface ProgressSession {
@@ -43,6 +63,7 @@ export interface ProgressSession {
 	scoring: ScoringProvenance;
 	content: ContentProvenance;
 	checkpoint: SessionCheckpoint;
+	legacy?: LegacySessionProvenance;
 }
 
 export interface CreateSessionInput {
@@ -52,6 +73,9 @@ export interface CreateSessionInput {
 	startedAt: number;
 	scoring: ScoringProvenance;
 	content: ContentProvenance;
+	checkpoint?: SessionCheckpoint;
+	legacy?: LegacySessionProvenance;
+	expectedGenerationToken?: string;
 }
 
 export interface CheckpointSessionInput {
@@ -59,6 +83,7 @@ export interface CheckpointSessionInput {
 	expectedRevision: number;
 	checkpoint: SessionCheckpoint;
 	updatedAt: number;
+	expectedGenerationToken?: string;
 }
 
 export interface RecordEvaluationInput {
@@ -69,6 +94,65 @@ export interface RecordEvaluationInput {
 	scoreEarned: number;
 	scorePossible: number;
 	evaluatedAt: number;
+	expectedRevision?: number;
+	expectedGenerationToken?: string;
+}
+
+export interface LegacyProgressBaselineInput {
+	questionId: string;
+	baseline: QuestionProgressBaseline;
+}
+
+export interface LegacySessionImport {
+	input: CreateSessionInput;
+	status?: FinalSessionStatus;
+	finishedAt?: number;
+	evaluations?: readonly RecordEvaluationInput[];
+}
+
+export interface LegacyProgressMigrationInput {
+	certificationId: string;
+	legacyStorageKey: string;
+	rawValue: string | null;
+	migratedAt: number;
+	baselines: readonly LegacyProgressBaselineInput[];
+	session?: LegacySessionImport;
+	warnings: readonly string[];
+}
+
+export interface LegacyProgressMigrationResult {
+	certificationId: string;
+	legacyStorageKey: string;
+	importedAt: number;
+	importedQuestionCount: number;
+	importedSessionId: string | null;
+	warnings: readonly string[];
+	generationToken: string;
+}
+
+export interface LegacyProgressBackup {
+	format: "practice-lab-progress-backup";
+	version: 1;
+	certificationId: string;
+	legacyStorageKey: string;
+	capturedAt: number;
+	rawValue: string | null;
+	warnings: readonly string[];
+}
+
+export interface LegacyStorageRecord {
+	certificationId: string;
+	storageKey: string;
+	rawValue: string | null;
+	snapshot?: "pre-migration-observed";
+	readError?: string;
+}
+
+export interface LegacyRecordsBackup {
+	format: "practice-lab-legacy-export";
+	version: 1;
+	exportedAt: number;
+	records: readonly LegacyStorageRecord[];
 }
 
 export interface QuestionAttempt {
@@ -122,6 +206,15 @@ export interface SessionHistoryEntry {
 	attempts: QuestionAttempt[];
 }
 
+export interface CertificationProgressSnapshot {
+	sessionHistory: SessionHistoryEntry[];
+	questionProgress: QuestionProgress[];
+}
+
+export interface CertificationProgressRestoreSnapshot extends CertificationProgressSnapshot {
+	certificationId: string;
+}
+
 export const UUID_PATTERN =
 	/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -136,11 +229,16 @@ export function createInitialSession(input: CreateSessionInput): ProgressSession
 		updatedAt: input.startedAt,
 		scoring: cloneScoring(input.scoring),
 		content: cloneContent(input.content),
-		checkpoint: {
-			currentQuestionId: null,
-			deadlineAt: null,
-			selectedOptionIdsByQuestion: {},
-		},
+		checkpoint: cloneCheckpoint(
+			input.checkpoint ?? {
+				currentQuestionId: null,
+				deadlineAt: null,
+				selectedOptionIdsByQuestion: {},
+				checkedQuestionIds: [],
+				flaggedQuestionIds: [],
+			},
+		),
+		...(input.legacy ? { legacy: cloneLegacyProvenance(input.legacy) } : {}),
 	};
 
 	validateSession(session);
@@ -376,6 +474,12 @@ export function validateSession(session: ProgressSession): void {
 	validateScoring(session.scoring);
 	validateContent(session.content);
 	validateCheckpoint(session.content, session.checkpoint);
+	if (session.legacy) {
+		assertId(session.legacy.sourceStorageKey, "legacy.sourceStorageKey");
+		assertUniqueIds(session.legacy.evaluatedQuestionIds, "legacy.evaluatedQuestionIds");
+		for (const limitation of session.legacy.limitations)
+			assertId(limitation, "legacy.limitations item");
+	}
 	if (session.status === "in_progress" && session.finishedAt !== undefined) {
 		throw new ProgressValidationError("An in-progress session cannot have finishedAt.");
 	}
@@ -393,9 +497,9 @@ function validateScoring(scoring: ScoringProvenance): void {
 		scoring.passingScore !== null &&
 		(!Number.isFinite(scoring.passingScore) ||
 			scoring.passingScore < 0 ||
-			scoring.passingScore > 100)
+			scoring.passingScore > 1_000)
 	) {
-		throw new ProgressValidationError("scoring.passingScore must be between 0 and 100.");
+		throw new ProgressValidationError("scoring.passingScore must be between 0 and 1,000.");
 	}
 	if (!Number.isInteger(scoring.totalQuestions) || scoring.totalQuestions < 1) {
 		throw new ProgressValidationError("scoring.totalQuestions must be a positive integer.");
@@ -423,10 +527,42 @@ function validateContent(content: ContentProvenance): void {
 		assertId(question.contentHash, "question.contentHash");
 		assertId(question.domainId, "question.domainId");
 		assertUniqueIds(question.optionIds, `options for ${question.questionId}`);
-		if (question.optionIds.length === 0) {
+		if (
+			question.optionIds.length === 0 ||
+			question.optionTexts.length !== question.optionIds.length
+		) {
 			throw new ProgressValidationError(
-				"A frozen question must have at least one stable option ID.",
+				"A frozen question must include stable IDs and labels for every option.",
 			);
+		}
+		if (!question.optionTexts.every((text) => typeof text === "string")) {
+			throw new ProgressValidationError("Frozen option labels must be strings.");
+		}
+		assertUniqueIds(question.displayOptionIds, `displayed options for ${question.questionId}`);
+		assertUniqueIds(question.correctOptionIds, `correct options for ${question.questionId}`);
+		if (
+			question.displayOptionIds.length !== question.optionIds.length ||
+			question.displayOptionIds.some((id) => !question.optionIds.includes(id)) ||
+			question.correctOptionIds.some((id) => !question.optionIds.includes(id)) ||
+			question.correctOptionIds.length === 0
+		) {
+			throw new ProgressValidationError("Frozen option permutations or answers are invalid.");
+		}
+		assertId(question.questionText, "question.questionText");
+		assertId(question.domainName, "question.domainName");
+		assertId(question.explanation, "question.explanation");
+		assertId(question.sourceLabel, "question.sourceLabel");
+		if (typeof question.sourceUrl !== "string") {
+			throw new ProgressValidationError("question.sourceUrl must be a string.");
+		}
+		if (!Number.isSafeInteger(question.selectCount) || question.selectCount < 1) {
+			throw new ProgressValidationError("question.selectCount must be a positive integer.");
+		}
+		if (
+			question.selectCount > question.optionIds.length ||
+			question.correctOptionIds.length !== question.selectCount
+		) {
+			throw new ProgressValidationError("Frozen answer counts do not match the question.");
 		}
 	}
 }
@@ -439,6 +575,14 @@ function validateCheckpoint(content: ContentProvenance, checkpoint: SessionCheck
 		throw new ProgressValidationError(
 			"The current question must belong to the frozen session content.",
 		);
+	}
+	assertUniqueIds(checkpoint.checkedQuestionIds, "checkedQuestionIds");
+	assertUniqueIds(checkpoint.flaggedQuestionIds, "flaggedQuestionIds");
+	if (
+		checkpoint.checkedQuestionIds.some((id) => !hasQuestion(content, id)) ||
+		checkpoint.flaggedQuestionIds.some((id) => !hasQuestion(content, id))
+	) {
+		throw new ProgressValidationError("Checked and flagged questions must belong to the session.");
 	}
 	if (checkpoint.deadlineAt !== null) assertTimestamp(checkpoint.deadlineAt, "deadlineAt");
 	for (const [questionId, optionIds] of Object.entries(checkpoint.selectedOptionIdsByQuestion)) {
@@ -456,7 +600,14 @@ function validateCheckpoint(content: ContentProvenance, checkpoint: SessionCheck
 }
 
 function checkpointsEqual(a: SessionCheckpoint, b: SessionCheckpoint): boolean {
-	if (a.currentQuestionId !== b.currentQuestionId || a.deadlineAt !== b.deadlineAt) return false;
+	if (
+		a.currentQuestionId !== b.currentQuestionId ||
+		a.deadlineAt !== b.deadlineAt ||
+		!stringArraysEqual([...a.checkedQuestionIds].sort(), [...b.checkedQuestionIds].sort()) ||
+		!stringArraysEqual([...a.flaggedQuestionIds].sort(), [...b.flaggedQuestionIds].sort())
+	) {
+		return false;
+	}
 	const aQuestionIds = Object.keys(a.selectedOptionIdsByQuestion).sort();
 	const bQuestionIds = Object.keys(b.selectedOptionIdsByQuestion).sort();
 	return (
@@ -480,6 +631,9 @@ function cloneContent(content: ContentProvenance): ContentProvenance {
 		questions: content.questions.map((question) => ({
 			...question,
 			optionIds: [...question.optionIds],
+			optionTexts: [...question.optionTexts],
+			displayOptionIds: [...question.displayOptionIds],
+			correctOptionIds: [...question.correctOptionIds],
 		})),
 	};
 }
@@ -493,6 +647,16 @@ function cloneCheckpoint(checkpoint: SessionCheckpoint): SessionCheckpoint {
 				[...options],
 			]),
 		),
+		checkedQuestionIds: [...checkpoint.checkedQuestionIds],
+		flaggedQuestionIds: [...checkpoint.flaggedQuestionIds],
+	};
+}
+
+function cloneLegacyProvenance(legacy: LegacySessionProvenance): LegacySessionProvenance {
+	return {
+		...legacy,
+		limitations: [...legacy.limitations],
+		evaluatedQuestionIds: [...legacy.evaluatedQuestionIds],
 	};
 }
 

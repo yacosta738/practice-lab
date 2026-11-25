@@ -21,9 +21,13 @@ test("captures representative screens in both themes at desktop, tablet, and mob
 	const themes = ["light", "dark"] as const;
 	mkdirSync(EVIDENCE_DIRECTORY, { recursive: true });
 	await page.addInitScript(() => {
-		localStorage.clear();
 		Math.random = () => 0.42;
 	});
+	const confirmReplacement = async () => {
+		const dialog = page.getByRole("dialog", { name: "Replace active session?" });
+		if (await dialog.isVisible())
+			await dialog.getByRole("button", { name: "Replace session" }).click();
+	};
 
 	for (const viewport of viewports) {
 		await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -53,11 +57,13 @@ test("captures representative screens in both themes at desktop, tablet, and mob
 
 			await page.selectOption("#amount", { label: "10" });
 			await page.getByRole("button", { name: "Practice mode" }).click();
+			await confirmReplacement();
 			await expect(page.locator("button.option").first()).toBeVisible();
 			await capture("practice-session");
 
 			await page.goto(`${CERTIFICATION}?mode=assess#session`);
 			await page.getByRole("button", { name: "Start mock exam" }).click();
+			await confirmReplacement();
 			await expect(page.locator(".pl-shell")).toHaveAttribute("data-exam-focus", "true");
 			await expect(page.locator('h2[data-focus-target="question"]')).toBeFocused();
 			await capture("mock-exam-focus");
@@ -71,15 +77,20 @@ test("captures representative screens in both themes at desktop, tablet, and mob
 			await page.goto(CERTIFICATION);
 			await page.selectOption("#amount", { label: "10" });
 			await page.getByRole("button", { name: "Practice mode" }).click();
+			await confirmReplacement();
 			for (let questionIndex = 0; questionIndex < 10; questionIndex++) {
-				const hint = await page.locator(".hint").first().textContent();
-				const answerCount = Number(hint?.match(/Select exactly (\d+) answers/)?.[1] ?? 1);
+				await expect(page.locator(".qhead")).toContainText(`Question ${questionIndex + 1} of 10`);
+				const answerCount = Number(await page.locator(".hint").getAttribute("data-select-count"));
 				for (let answerIndex = 0; answerIndex < answerCount; answerIndex++) {
 					await page.locator("button.option").nth(answerIndex).click();
+					await expect(page.locator("button.option.selected")).toHaveCount(answerIndex + 1);
 				}
-				await page.getByRole("button", { name: "Check answer" }).click();
+				const checkButton = page.getByRole("button", { name: "Check answer" });
+				await expect(checkButton).toBeEnabled();
+				await checkButton.click();
 				if (questionIndex < 9) {
 					await page.getByRole("button", { name: "Next question →", exact: true }).click();
+					await expect(page.locator(".qhead")).toContainText(`Question ${questionIndex + 2} of 10`);
 				}
 			}
 			await page
@@ -113,7 +124,6 @@ test("captures before screenshots from a pinned deployment baseline", async ({
 	});
 	mkdirSync(EVIDENCE_DIRECTORY, { recursive: true });
 	await page.addInitScript(() => {
-		localStorage.clear();
 		Math.random = () => 0.42;
 	});
 	await page.route("**/*", (route) =>

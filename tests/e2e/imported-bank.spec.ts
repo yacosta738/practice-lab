@@ -5,11 +5,7 @@ const BASE_PATH = "/practice-lab";
 test("imported multi-select questions render five options and honor selectCount", async ({
 	page,
 }) => {
-	// Clear any persisted session so we start fresh
 	await page.goto(`${BASE_PATH}/certifications/ccao-f/`);
-	await page.waitForLoadState("networkidle");
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
 	await page.waitForLoadState("networkidle");
 
 	// Wait for the home page to render (the #amount select is only present there)
@@ -32,6 +28,7 @@ test("imported multi-select questions render five options and honor selectCount"
 	// Walk through questions until we find one with 5 options
 	for (let i = 0; i < totalQuestions; i++) {
 		await page.waitForLoadState("networkidle");
+		await expect(page.locator(".qhead")).toContainText(`Question ${i + 1} of ${totalQuestions}`);
 
 		// Option buttons use class "option" — count them
 		const optionButtons = page.locator("button.option");
@@ -46,15 +43,15 @@ test("imported multi-select questions render five options and honor selectCount"
 			expect(letters).toEqual(["A", "B", "C", "D", "E"]);
 
 			// Read the hint for the select count
-			const hintText = await page.locator(".hint").first().textContent();
+			const hintText = await page.locator(".hint").textContent();
 			expect(hintText).toMatch(/Select exactly \d+ answers/i);
-			const match = hintText?.match(/Select exactly (\d+) answers/i);
-			const selectCount = match ? Number.parseInt(match[1], 10) : -1;
+			const selectCount = Number(await page.locator(".hint").getAttribute("data-select-count"));
 			expect(selectCount).toBeGreaterThan(0);
 
 			// Select options up to selectCount
 			for (let j = 0; j < selectCount; j++) {
 				await optionButtons.nth(j).click();
+				await expect(page.locator("button.option.selected")).toHaveCount(j + 1);
 			}
 
 			// Assert "Check answer" is enabled once selectCount options are selected
@@ -86,14 +83,12 @@ test("imported multi-select questions render five options and honor selectCount"
 		const checkBtn = page.getByRole("button", { name: "Check answer" });
 
 		// Read hint to know how many to select
-		const hintText = await page.locator(".hint").first().textContent();
-		const exactMatch = hintText?.match(/Select exactly (\d+) answers/i);
-		const oneMatch = hintText?.match(/Select ONE answer/i);
-		const needed = exactMatch ? Number.parseInt(exactMatch[1], 10) : oneMatch ? 1 : 1;
+		const needed = Number(await page.locator(".hint").getAttribute("data-select-count"));
 
 		// Select the required number of options
 		for (let j = 0; j < needed; j++) {
 			await optionButtons.nth(j).click();
+			await expect(page.locator("button.option.selected")).toHaveCount(j + 1);
 		}
 
 		// Check answer
@@ -105,6 +100,9 @@ test("imported multi-select questions render five options and honor selectCount"
 		await expect(nextBtn).toBeVisible({ timeout: 5000 });
 		await expect(nextBtn).toBeEnabled();
 		await nextBtn.click();
+		if (i + 1 < totalQuestions) {
+			await expect(page.locator(".qhead")).toContainText(`Question ${i + 2} of ${totalQuestions}`);
+		}
 	}
 
 	// If we reach here, no 5-option question was found

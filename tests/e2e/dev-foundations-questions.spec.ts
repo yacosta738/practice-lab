@@ -31,11 +31,7 @@ const _RECALL_QUESTION_SNIPPETS: Record<string, string> = {
 test("CCDV-F practice mode renders and checks single- and multi-select questions", async ({
 	page,
 }) => {
-	// Clear any persisted session so we start fresh
 	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
-	await page.waitForLoadState("networkidle");
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
 	await page.waitForLoadState("networkidle");
 
 	// Wait for the home page to render
@@ -65,10 +61,9 @@ test("CCDV-F practice mode renders and checks single- and multi-select questions
 	expect(letters.length).toBe(optionCount);
 
 	// Read the selection requirement; practice mode shuffles single- and multi-select questions.
-	const hintText = await page.locator(".hint").first().textContent();
+	const hintText = await page.locator(".hint").textContent();
 	expect(hintText).toMatch(/Select (?:ONE answer|exactly \d+ answers)/i);
-	const selectCountMatch = hintText?.match(/Select exactly (\d+) answers/i);
-	const selectCount = selectCountMatch ? Number.parseInt(selectCountMatch[1], 10) : 1;
+	const selectCount = Number(await page.locator(".hint").getAttribute("data-select-count"));
 	expect(selectCount).toBeGreaterThan(0);
 	expect(selectCount).toBeLessThanOrEqual(optionCount);
 
@@ -94,9 +89,6 @@ test("CCDV-F practice mode renders and checks single- and multi-select questions
 test("CCDV-F practice mode shows correct question count", async ({ page }) => {
 	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
 	await page.waitForLoadState("networkidle");
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
-	await page.waitForLoadState("networkidle");
 
 	// Wait for the home page to render
 	await page.waitForSelector("#amount", { state: "visible", timeout: 10000 });
@@ -121,9 +113,6 @@ test("CCDV-F practice mode shows correct question count", async ({ page }) => {
 
 test("CCDV-F exam mode follows blueprint", async ({ page }) => {
 	await page.goto(`${BASE_PATH}/certifications/ccdv-f/?mode=assess#session`);
-	await page.waitForLoadState("networkidle");
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
 	await page.waitForLoadState("networkidle");
 
 	// Start the explicit mock exam setup
