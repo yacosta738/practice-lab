@@ -4,13 +4,15 @@ type: moc
 certification: CCDV-F
 status: partial
 source_kind: authenticated-screen-notes
-updated: '2026-11-15'
+updated: '2026-11-24'
 tags:
 - certification/ccdv-f
 - type/evidence
 - status/partial
 ---
 > **Partial verified course access, not complete extraction.** The existing [CCDV-F - Apuntes de Skilljar](../ccdv-f-apuntes-de-skilljar/) reports viewing the first authenticated screens before a checkpoint locked further navigation on 2026-11-14. This PKM does not claim to have personally reopened or passed the gated checkpoints in this session.
+
+The Phase 0 public-source review on 2026-11-24 did not access new authenticated Skilljar screens. The coverage below remains limited to the previously recorded screens; no checkpoint or access restriction was bypassed.
 
 | Prep module | Screens represented in existing notes | Blocking checkpoint | Missing/uncorroborated |
 |---|---:|---|---|

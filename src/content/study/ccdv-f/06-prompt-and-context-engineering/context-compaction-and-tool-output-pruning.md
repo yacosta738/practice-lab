@@ -7,7 +7,7 @@ domain: D6
 domain_name: Prompt and Context Engineering
 status: study-synthesis
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-15'
+updated: '2026-11-24'
 tags:
 - certification/ccdv-f
 - domain/prompt-context-engineering
@@ -23,6 +23,18 @@ tags:
 - Preserve invariants, unresolved tasks, constraints and source references through compaction; do not assume summaries are lossless.
 - Use subagents or scoped retrieval to isolate verbose investigations and return concise evidence.
 - Compare manual vs automatic context compaction with regression tests for critical fact retention.
+
+## Choose the context-management control
+
+| Pressure source | Suitable approach | What it changes | Limit to test |
+|---|---|---|---|
+| Too many rarely used tool definitions are loaded up front | Tool search / on-demand discovery | Makes relevant definitions available when needed | Adds discovery work; it does not prune conversation history |
+| Old tool results no longer matter | Context editing / result pruning | Removes eligible earlier `tool_result` blocks | Do not remove facts needed for later decisions |
+| A long task must retain a compact state | Compaction | Summarizes older conversation state | Summaries can lose constraints, unresolved decisions, or evidence references |
+| Repetitive tool chains create many intermediate model round trips | Programmatic tool calling | Executes a bounded sequence and returns selected results | Authorization and side-effect validation remain application responsibilities |
+| Repeated stable input is expensive but context still fits | Prompt caching | Reduces the cost of repeated input | Does not reduce context-window occupancy; pricing and TTL are model-dependent |
+
+Measure context usage, task completion, required-fact recall, source retention, latency, and cost before and after each change. Select the intervention for the measured source rather than treating caching, pruning, and compaction as interchangeable.
 
 ## Failure modes
 

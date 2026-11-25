@@ -26,4 +26,4 @@ Separa identidades humanas y de servicio. Usa credenciales por entorno con permi
 
 - [Claude Platform · API overview](https://platform.claude.com/docs/en/api/overview)
 - [Claude Code · Permisos](https://code.claude.com/docs/en/permissions)
-- [MCP · Autorización](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization)
+- [MCP · Autorización 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization) — revisar el [registro de fuentes](../source-register/) para el límite de consulta directa.

@@ -7,7 +7,7 @@ domain: D7
 domain_name: Security and Safety
 status: study-synthesis
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-15'
+updated: '2026-11-24'
 tags:
 - certification/ccdv-f
 - domain/security-safety
@@ -43,5 +43,5 @@ tags:
 - **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
   - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [mcp-tools](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)
+  - [mcp-tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools)
 - **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).

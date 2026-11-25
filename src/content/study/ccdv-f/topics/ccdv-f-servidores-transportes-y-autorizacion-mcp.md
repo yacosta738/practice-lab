@@ -13,7 +13,7 @@ dominio: D8
 
 El host usa un cliente MCP para comunicarse con cada servidor. Las herramientas representan operaciones, los recursos ofrecen datos contextualizables y los prompts empaquetan interacciones reutilizables. La inicialización negocia versión y capacidades. Diseña nombres, esquemas y errores como un contrato con clientes independientes.
 
-En el estándar consultado, stdio conecta cliente y proceso mediante sus flujos estándar, y Streamable HTTP sirve conexiones HTTP. Un socket u otro transporte personalizado requiere que cliente y servidor compartan el contrato. HTTP+SSE histórico y Streamable HTTP tienen diferencias de compatibilidad. Para un servidor remoto, planifica autenticación y autorización conforme al transporte y al cliente.
+La especificación MCP `2026-07-28` define stdio y Streamable HTTP con requisitos propios; el cliente y el servidor deben seguir la misma versión y tratar la compatibilidad HTTP+SSE histórica por separado. Para Streamable HTTP, valida `Origin`; para autorización HTTP, vincula el token al recurso MCP previsto, no lo incluyas en una URL y valida su audiencia. La autorización del protocolo es opcional, por lo que la aplicación debe definir y aplicar su política real.
 
 **Caso.** Un servidor local de lectura puede correr por stdio con permisos limitados. Un servidor compartido necesita autenticación, aislamiento entre usuarios, validación de operaciones y trazas.
 
@@ -26,6 +26,7 @@ En el estándar consultado, stdio conecta cliente y proceso mediante sus flujos 
 
 ## Fuentes
 
-- [MCP · Especificación 2025-11-25](https://modelcontextprotocol.io/specification/2025-11-25)
-- [MCP · Autorización](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization)
+- [MCP · Especificación 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)
+- [MCP · Transportes](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports)
+- [MCP · Autorización](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization) — la consulta directa recibió HTTP 429; véase el [registro de fuentes](../source-register/) para el límite de evidencia.
 - [Claude Code · MCP](https://code.claude.com/docs/en/mcp)
