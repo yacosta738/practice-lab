@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.6.0](https://github.com/yacosta738/practice-lab/compare/v0.5.0...v0.6.0) (2026-11-25)
+
+
+### Features
+
+* add exam Focus Mode ([#54](https://github.com/yacosta738/practice-lab/issues/54)) ([6bb5ff6](https://github.com/yacosta738/practice-lab/commit/6bb5ff6df580ac79b93acb54ce03eb4aeb8d04c4))
+* **quiz:** add gap-targeted CCDV-F questions ([#61](https://github.com/yacosta738/practice-lab/issues/61)) ([261abc1](https://github.com/yacosta738/practice-lab/commit/261abc179d49651cccb7c5d4ed4e9d86a81fb8b6))
+* separate practice and assess workflows ([#53](https://github.com/yacosta738/practice-lab/issues/53)) ([a75e487](https://github.com/yacosta738/practice-lab/commit/a75e4873e6cdfb7d83d0e0bfba4bc123e3b207b9))
+* **study:** expand CCDV-F domain coverage ([#60](https://github.com/yacosta738/practice-lab/issues/60)) ([d99418a](https://github.com/yacosta738/practice-lab/commit/d99418aaf9b9349c28269d9dcf9770508ab22794))
+* **ui:** Precision Workspace redesign, study prerender fix, and WCAG 2.2 AA compliance ([#50](https://github.com/yacosta738/practice-lab/issues/50)) ([3d705fe](https://github.com/yacosta738/practice-lab/commit/3d705fef85b83b91af02109aa71960055d3f6598))
+
+
+### Bug Fixes
+
+* address issue 52 review follow-ups ([#58](https://github.com/yacosta738/practice-lab/issues/58)) ([7a7e314](https://github.com/yacosta738/practice-lab/commit/7a7e3141e6c50a35f26463fcb9f1a1cb256c8b02))
+* **quality:** harden study validation and add Vercel smoke tests ([#59](https://github.com/yacosta738/practice-lab/issues/59)) ([887718b](https://github.com/yacosta738/practice-lab/commit/887718be0e7e3668f6a050c0aa2320306100aba4))
+
 ## [0.5.0](https://github.com/yacosta738/practice-lab/compare/v0.4.0...v0.5.0) (2026-11-24)
 
 
