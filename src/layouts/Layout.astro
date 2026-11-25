@@ -10,6 +10,7 @@ interface Props {
 }
 
 const { title, description = "Practice quiz for certification preparation", ogImage } = Astro.props;
+const isVercelDeployment = process.env.VERCEL === "1";
 
 // Build canonical URL preserving the served path (including trailing slash)
 const canonicalUrl = `${Astro.url.protocol}//${Astro.url.host}${Astro.url.pathname}`;
@@ -89,7 +90,7 @@ const isDefaultImage = !ogImage;
 
 		<!-- Referrer policy hint (server header is preferred) -->
 		<meta name="referrer" content="strict-origin-when-cross-origin">
-		<Analytics />
+		{isVercelDeployment && <Analytics />}
 		<AhrefsAnalytics />
 	</head>
 	<body>
