@@ -9,6 +9,9 @@ const distRoot = path.join(projectRoot, "dist");
 const studyRoot = path.join(distRoot, "study");
 const siteOrigin = "https://practice-lab.invalid";
 const basePath = process.env.VERCEL === "1" ? "/" : "/practice-lab/";
+// Certification fragment targets are inserted by the client app after static HTML is parsed.
+const clientRenderedCertificationPrefix = new URL(`${basePath}certifications/`, siteOrigin)
+	.pathname;
 const errors = [];
 const htmlCache = new Map();
 
@@ -137,7 +140,11 @@ async function main() {
 				errors.push(
 					`${route}: ${JSON.stringify(href)} does not resolve to a generated page or asset`,
 				);
-			} else if (url.hash && targetHtmlPath) {
+			} else if (
+				url.hash &&
+				targetHtmlPath &&
+				!url.pathname.startsWith(clientRenderedCertificationPrefix)
+			) {
 				const targetHtml = await htmlForFile(targetHtmlPath);
 				if (!hasHtmlFragment(targetHtml, url.hash)) {
 					errors.push(
