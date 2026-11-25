@@ -26,6 +26,41 @@ test("Practice and Assess use distinct shareable setup modes", async ({ page }) 
 	);
 });
 
+test("workspace navigation follows runtime mode changes", async ({ page }) => {
+	await page.goto(`${CERTIFICATION}?mode=assess#session`);
+	await page.evaluate(() => {
+		const url = new URL(window.location.href);
+		url.searchParams.set("mode", "practice");
+		history.replaceState(null, "", url);
+		window.dispatchEvent(new Event("practice-lab:workspace-mode-change"));
+	});
+
+	await expect(page.locator(".pl-topbar-crumb strong")).toHaveText("Practice · Questions");
+	await expect(page.locator('.pl-sidebar [data-workspace-mode="practice"]')).toHaveAttribute(
+		"aria-current",
+		"page",
+	);
+	await expect(page.locator('.pl-sidebar [data-workspace-mode="assess"]')).not.toHaveAttribute(
+		"aria-current",
+		"page",
+	);
+});
+
+test("practice setup label follows a runtime mode change", async ({ page }) => {
+	await page.goto(`${CERTIFICATION}?mode=practice#session`);
+	await page.getByRole("button", { name: "Practice mode" }).click();
+	await page.getByRole("button", { name: "Pause & go home" }).click();
+
+	await page.goto(`${CERTIFICATION}?mode=assess#session`);
+	await expect(page.getByRole("heading", { name: "Mock exam setup" })).toBeVisible();
+	await page.getByRole("button", { name: /Resume practice/ }).click();
+	await expect(page).toHaveURL(/mode=practice.*resume=1/);
+	await page.getByRole("button", { name: "Pause & go home" }).click();
+
+	await expect(page).not.toHaveURL(/resume=1/);
+	await expect(page.getByRole("heading", { name: "Practice setup" })).toBeVisible();
+});
+
 test("domain study notes preselect practice and invalid domains fall back safely", async ({
 	page,
 }) => {
