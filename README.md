@@ -2,6 +2,8 @@
 
 Interactive practice platform for certification preparation. Study by domain, take timed mock exams, and track your progress. Practice progress is saved locally in your browser; the site itself needs an internet connection to load.
 
+![Practice Lab — Prepare with confidence](public/assets/practice-lab-confidence.png)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Available Certifications

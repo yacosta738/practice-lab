@@ -1,6 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
+import { handleVercelSmokeRoute } from "../../scripts/lib/vercel-smoke-headers.mjs";
 
 const BASE_PATH = "/practice-lab";
 const CERTIFICATION = `${BASE_PATH}/certifications/ccdv-f/`;
@@ -58,8 +59,13 @@ test("captures representative screens in both themes at desktop, tablet, and mob
 			await page.goto(`${CERTIFICATION}?mode=assess#session`);
 			await page.getByRole("button", { name: "Start mock exam" }).click();
 			await expect(page.locator(".pl-shell")).toHaveAttribute("data-exam-focus", "true");
+			await expect(page.locator('h2[data-focus-target="question"]')).toBeFocused();
 			await capture("mock-exam-focus");
 			await page.locator("details.examNavigator summary").click();
+			await expect(page.locator(".qchip").first()).toHaveAttribute(
+				"aria-label",
+				/Question 1, unanswered, not flagged for review, current question/,
+			);
 			await capture("mock-exam-navigator");
 
 			await page.goto(CERTIFICATION);
@@ -110,7 +116,9 @@ test("captures before screenshots from a pinned deployment baseline", async ({
 		localStorage.clear();
 		Math.random = () => 0.42;
 	});
-	await page.setExtraHTTPHeaders({ "x-vercel-protection-bypass": bypassSecret });
+	await page.route("**/*", (route) =>
+		handleVercelSmokeRoute(route, new URL(BASELINE_URL).origin, bypassSecret),
+	);
 
 	for (const theme of ["light", "dark"] as const) {
 		await page.setViewportSize({ width: 390, height: 844 });
@@ -121,7 +129,11 @@ test("captures before screenshots from a pinned deployment baseline", async ({
 		await page.locator("details.examNavigator summary").click();
 
 		const firstQuestion = page.locator(".qchip").first();
-		await expect(firstQuestion).not.toHaveAttribute("aria-label", /answered|flagged/i);
+		await expect(firstQuestion).toHaveAttribute(
+			"aria-label",
+			/Question 1, unanswered, not flagged for review, current question/,
+		);
+		await expect(page.locator("h2")).not.toHaveAttribute("data-focus-target", "question");
 		const filename = `before-${BASELINE_REVISION.slice(0, 12)}-${theme}-mobile-question-navigator.png`;
 		const path = join(EVIDENCE_DIRECTORY, filename);
 		await page.screenshot({
