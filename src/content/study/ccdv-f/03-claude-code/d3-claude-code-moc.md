@@ -4,7 +4,7 @@ type: moc
 certification: CCDV-F
 status: verified
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-15'
+updated: '2026-11-24'
 tags:
 - certification/ccdv-f
 - domain/claude-code
@@ -23,6 +23,10 @@ domain: D3
 - [Claude Code Permission and Approval Modes](../claude-code-permission-and-approval-modes/)
 - [Claude Code Sessions Headless and CI](../claude-code-sessions-headless-and-ci/)
 - [PreToolUse Hooks and Deterministic Controls](../pretooluse-hooks-and-deterministic-controls/)
+
+## Applied workshop
+
+- [Claude Code Operations Workshop](../claude-code-operations-workshop/) — verify settings scopes, same-name skill resolution, and event-specific hook behavior.
 
 ## Study strategy
 

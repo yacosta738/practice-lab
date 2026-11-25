@@ -4,7 +4,7 @@ type: moc
 certification: CCDV-F
 status: verified
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-15'
+updated: '2026-11-24'
 tags:
 - certification/ccdv-f
 - domain/security-safety
@@ -26,6 +26,10 @@ domain: D7
 - [Security Boundaries and Least Privilege](../security-boundaries-and-least-privilege/)
 - [Human Approval for Irreversible Actions](../human-approval-for-irreversible-actions/)
 - [Defense in Depth for AI Tools](../defense-in-depth-for-ai-tools/)
+
+## Applied workshop
+
+- [Security and Safety Workshop](../security-and-safety-workshop/) — contain indirect prompt injection with scoped access, bound approval, and environment controls.
 
 ## Study strategy
 

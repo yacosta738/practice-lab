@@ -4,7 +4,7 @@ type: moc
 certification: CCDV-F
 status: verified
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-15'
+updated: '2026-11-24'
 tags:
 - certification/ccdv-f
 - domain/prompt-context-engineering
@@ -26,6 +26,10 @@ domain: D6
 - [Structured Output and Defensive Parsing](../structured-output-and-defensive-parsing/)
 - [Prompt Iteration and Version Control](../prompt-iteration-and-version-control/)
 - [Instruction Trust and Grounding](../instruction-trust-and-grounding/)
+
+## Applied workshop
+
+- [Prompt and Context Engineering Workshop](../prompt-and-context-engineering-workshop/) — diagnose context pressure and select among tool search, context editing/compaction, programmatic tool calling, and prompt caching.
 
 ## Study strategy
 

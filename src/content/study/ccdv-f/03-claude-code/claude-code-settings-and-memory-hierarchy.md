@@ -7,7 +7,7 @@ domain: D3
 domain_name: Claude Code
 status: study-synthesis
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-15'
+updated: '2026-11-24'
 tags:
 - certification/ccdv-f
 - domain/claude-code
@@ -23,6 +23,12 @@ tags:
 - Keep stable project architecture and operational expectations in CLAUDE.md or rules rather than pasting them every turn.
 - Use Skills for repeatable, task-triggered procedures and subagents for specialized contexts, not as a substitute for the permission system.
 - Check precedence and cloud-vs-local behavior in the current Claude Code docs before depending on a specific path.
+
+## Configuration and skill precedence
+
+- Settings have managed, user, project, and local scopes. Managed policy and command-line settings have documented interactions, including security-sensitive exceptions; resolve precedence for the specific key in the current reference instead of assuming one universal file-order rule.
+- For same-named skills, the documented order is enterprise over personal over project. Plugin skills are namespaced; a skill does not silently become a permission rule.
+- Confirm the effective configuration in a clean session and test a harmless operation. Enforce sensitive permissions through the runtime or trusted service, not through a skill description.
 
 ## Failure modes
 

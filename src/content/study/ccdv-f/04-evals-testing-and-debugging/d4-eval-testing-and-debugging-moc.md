@@ -4,7 +4,7 @@ type: moc
 certification: CCDV-F
 status: verified
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-15'
+updated: '2026-11-24'
 tags:
 - certification/ccdv-f
 - domain/eval-testing-debugging
@@ -23,6 +23,10 @@ domain: D4
 - [Tracing and Failure Isolation](../tracing-and-failure-isolation/)
 - [Regression Testing and Release Gates](../regression-testing-and-release-gates/)
 - [Error Taxonomy and Recovery Matrix](../error-taxonomy-and-recovery-matrix/)
+
+## Applied workshop
+
+- [Eval, Debugging, and Recovery Workshop](../eval-debugging-and-recovery-workshop/) — isolate an ambiguous side-effect timeout, select graders, and make a release decision.
 
 ## Study strategy
 

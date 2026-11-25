@@ -7,7 +7,7 @@ domain: D8
 domain_name: Tools and MCPs
 status: study-synthesis
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-15'
+updated: '2026-11-24'
 tags:
 - certification/ccdv-f
 - domain/tools-mcp
@@ -45,5 +45,5 @@ tags:
   - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
   - [code-skills](https://code.claude.com/docs/en/skills)
   - [code-agents](https://code.claude.com/docs/en/sub-agents)
-  - [mcp-tools](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)
+  - [mcp-tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools)
 - **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).

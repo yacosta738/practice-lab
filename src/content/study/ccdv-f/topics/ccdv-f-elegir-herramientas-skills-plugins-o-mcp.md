@@ -26,4 +26,4 @@ Usa una herramienta incorporada cuando su alcance y permisos cubran la tarea. Im
 
 - [Claude Code · Extensiones](https://code.claude.com/docs/en/features-overview)
 - [Claude Platform · Tool use](https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview)
-- [MCP · Especificación 2025-11-25](https://modelcontextprotocol.io/specification/2025-11-25)
+- [MCP · Especificación 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)

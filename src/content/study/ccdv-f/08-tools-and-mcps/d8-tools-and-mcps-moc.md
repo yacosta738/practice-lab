@@ -4,7 +4,7 @@ type: moc
 certification: CCDV-F
 status: verified
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-15'
+updated: '2026-11-24'
 tags:
 - certification/ccdv-f
 - domain/tools-mcp
@@ -26,6 +26,10 @@ domain: D8
 - [MCP Transport and Authorization](../mcp-transport-and-authorization/)
 - [Skills vs Tools vs MCP vs Subagents](../skills-vs-tools-vs-mcp-vs-subagents/)
 - [MCP Server Design and Verification](../mcp-server-design-and-verification/)
+
+## Applied workshop
+
+- [Tools and MCP Integration Workshop](../tools-and-mcp-integration-workshop/) — trace capability discovery, tool execution, transport, authorization, and verification.
 
 ## Study strategy
 

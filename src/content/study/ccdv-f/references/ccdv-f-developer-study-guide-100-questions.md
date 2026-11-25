@@ -1132,7 +1132,7 @@ A team confuses Skills, custom tools and MCP. Which TWO statements are correct? 
 - **D7.04 — A.** A before-tool hook can prevent execution; a hook that runs afterward cannot undo side effects. [Claude Code — Hooks](https://code.claude.com/docs/en/hooks).
 - **D7.05 — A.** Credentials need secret storage, rotation and least-privilege access—not repository documentation. [CCDV-F Exam Guide v1.0 (July 2026)](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view).
 - **D7.06 — A, B.** Minimization, access control, logging discipline and retention reduce privacy exposure across the AI pipeline. [CCDV-F Exam Guide v1.0 (July 2026)](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view).
-- **D7.07 — A.** The tool/API server must enforce authorization; model instructions cannot be trusted for access control. [MCP — Authorization specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization).
+- **D7.07 — A.** The tool/API server must enforce authorization; model instructions cannot be trusted for access control. [MCP — Authorization specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization).
 - **D7.08 — A.** Safe deployment relies on defense in depth across the model and the execution environment. [CCDV-F Exam Guide v1.0 (July 2026)](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view).
 
 ### D8 · Tools and MCPs
@@ -1144,7 +1144,7 @@ A team confuses Skills, custom tools and MCP. Which TWO statements are correct? 
 - **D8.05 — A.** Resources supply retrievable application-controlled data; they are not inherently model-invoked actions. [MCP — TypeScript SDK concepts](https://ts.sdk.modelcontextprotocol.io/).
 - **D8.06 — A.** Prompts represent reusable templates that clients or users can select and populate. [MCP — TypeScript SDK concepts](https://ts.sdk.modelcontextprotocol.io/).
 - **D8.07 — A.** The MCP SDK documents stdio for local child processes and Streamable HTTP for remote use; old HTTP+SSE is compatibility-only. [MCP — TypeScript SDK concepts](https://ts.sdk.modelcontextprotocol.io/).
-- **D8.08 — A.** Remote MCP endpoints need normal application security controls: identity, authorization, token handling and TLS. [MCP — Authorization specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization).
+- **D8.08 — A.** Remote MCP endpoints need normal application security controls: identity, authorization, token handling and TLS. [MCP — Authorization specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization).
 - **D8.09 — A.** MCP creates reusable integrations across compliant clients, independent of any single application's prompts. [CCDV-F Exam Guide v1.0 (July 2026)](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view).
 - **D8.10 — A, B.** Skills organize guidance; tools connect to executable behavior; MCP standardizes remote/local capability discovery and transport. [Claude Code — Skills](https://code.claude.com/docs/en/skills).
 
@@ -1177,7 +1177,7 @@ The following reference list points to public, authoritative sources. It is not 
 - **skills:** [Claude Code — Skills](https://code.claude.com/docs/en/skills)
 - **subagents:** [Claude Code — Subagents](https://code.claude.com/docs/en/sub-agents)
 - **mcp:** [MCP — TypeScript SDK concepts](https://ts.sdk.modelcontextprotocol.io/)
-- **mcpauth:** [MCP — Authorization specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization)
+- **mcpauth:** [MCP — Authorization specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization) — direct review was rate-limited; indexed excerpts only. See the [Source Register](../source-register/).
 - **evals:** [Claude Platform — Define success criteria and build evaluations](https://platform.claude.com/docs/en/test-and-evaluate/develop-tests)
 - **prompt:** [Claude Platform — Prompt engineering overview](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview)
 - **injection:** [Claude Platform — Mitigate prompt injections](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks)
