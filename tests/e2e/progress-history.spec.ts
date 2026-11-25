@@ -126,9 +126,12 @@ test("reviewing an older result keeps the active mock exam available to resume",
 		await navigator.locator("summary").click();
 	}
 	await page.locator(`.qchip[data-value="${overlappingQuestionIndex}"]`).click();
-	await expect(page.locator("h2")).toHaveText(
-		activeQuestions[overlappingQuestionIndex].questionText,
-	);
+	await expect(
+		page.getByRole("heading", {
+			name: activeQuestions[overlappingQuestionIndex].questionText,
+			level: 2,
+		}),
+	).toHaveText(activeQuestions[overlappingQuestionIndex].questionText);
 
 	const stateAfterResume = await readCertificationProgress(page, "ccdv-f");
 	const resumed = stateAfterResume.sessions.find((session) => session.id === activeSession.id);
