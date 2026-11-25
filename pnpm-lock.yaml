@@ -196,7 +196,7 @@ importers:
         specifier: 0.9.12
         version: 0.9.12(prettier@3.10.1)(typescript@6.0.3)
       '@astrojs/partytown':
-        specifier: ^2.1.9
+        specifier: 2.1.9
         version: 2.1.9
       '@astrojs/sitemap':
         specifier: 3.7.6
