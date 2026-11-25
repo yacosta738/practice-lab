@@ -24,6 +24,16 @@ The service worker cache is versioned so an activated update removes the previou
 
 **Reset progress** requires confirmation and removes only quiz sessions, evaluated attempts, and question-stat projections for the current certification. It keeps study completion/bookmarks, learning goals, legacy backups, and downloaded JSON files.
 
+## Full learning data backup and portability
+
+Open **Data management** in the workspace to download or restore a complete learning-data backup, or reset one certification or all learning data. The versioned JSON contains quiz sessions (including active and historical snapshots), attempts and projections, study progress, learning goals, allowlisted legacy recovery records, and legacy migration provenance. It does not include theme preferences, arbitrary `localStorage` entries, accounts, or uploaded data. The SHA-256 digest detects accidental file changes; it is not encryption or authentication, so store the downloaded file somewhere private.
+
+Restore is a full replacement for the current browser profile and origin. The page validates the format, size, record limits, timestamps, IDs, certification relationships, frozen question content, scoring and projections before showing a dry-run summary. Review the counts and confirm explicitly; a current-data download is offered first. Cancelling or rejecting a file changes nothing. Importing does not merge aggregate-only legacy counts, which could double-count history.
+
+Browser profiles and origins have separate storage. GitHub Pages, Vercel, and a custom domain do not share quiz or study progress, even when they serve the same site. To move data, download the JSON in the original profile/origin and manually transfer and restore it in the destination. A PWA or service-worker cache only helps load application assets; it does not guarantee that browser storage or progress will be retained.
+
+The storage panel reports estimates only when `StorageManager` supports them. **Request persistent storage** is an explicit browser request and may be denied or unavailable; it is not permanent storage. Keep a downloaded backup for recovery. A reset names its scope before confirmation, includes active sessions, rotates generation tokens to invalidate stale tabs, and keeps legacy recovery archives and unrelated appearance preferences.
+
 ## Restoring a JSON backup
 
 On a certification page, choose **Restore from JSON** and select a version 1 **Download data backup** or complete **Download recovery backup** file. The importer validates the file format, session content, attempts, and question-progress projections before asking for confirmation. It replaces only the quiz progress for the certification currently open; other certifications and study progress remain unchanged. The replacement is atomic, and the page reloads to resume restored sessions.

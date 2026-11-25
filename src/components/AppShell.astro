@@ -11,7 +11,7 @@ export interface SidebarDomain {
 }
 
 interface Props {
-	activeNav: "overview" | "study" | "practice" | "assess";
+	activeNav: "overview" | "study" | "practice" | "assess" | "data";
 	activeCertSlug?: string;
 	activeCertCode?: string;
 	breadcrumb?: string;
@@ -81,6 +81,14 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 				data-action="go-to-site-home"
 			>
 				<span>Assess · Mock exam</span>
+			</a>
+			<a
+				class="pl-nav-link"
+				href={`${base}data-management/`}
+				aria-current={activeNav === "data" ? "page" : undefined}
+				data-action="go-to-site-home"
+			>
+				<span>Data management</span>
 			</a>
 		</nav>
 
@@ -249,6 +257,13 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 			aria-current={activeNav === "assess" ? "page" : undefined}
 			data-action="go-to-site-home"
 			>Assess · Mock exam</a
+		>
+		<a
+			class="pl-nav-link"
+			href={`${base}data-management/`}
+			aria-current={activeNav === "data" ? "page" : undefined}
+			data-action="go-to-site-home"
+			>Data management</a
 		>
 		<a class="pl-nav-link" href={resourcesHref} data-action="go-to-site-home">Learning resources</a>
 	</nav>

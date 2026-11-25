@@ -4,6 +4,8 @@ import type {
 	CheckpointSessionInput,
 	CreateSessionInput,
 	FinalSessionStatus,
+	LearningDataRestoreData,
+	LearningDataSnapshot,
 	LegacyProgressBackup,
 	LegacyProgressMigrationInput,
 	LegacyProgressMigrationResult,
@@ -47,6 +49,17 @@ export interface ProgressRepository {
 		snapshots: readonly CertificationProgressRestoreSnapshot[],
 		expectedGenerationTokens: Readonly<Record<string, string>>,
 	): Promise<Record<string, string>>;
+	getLearningDataSnapshot(): Promise<LearningDataSnapshot>;
+	replaceLearningData(
+		data: LearningDataRestoreData,
+		certificationIds: readonly string[],
+		expectedFingerprint: string,
+	): Promise<Record<string, string>>;
+	resetLearningData(
+		certificationId: string | null,
+		certificationIds: readonly string[],
+	): Promise<Record<string, string>>;
+	markSuccessfulBackup(timestamp: number): Promise<void>;
 	getSession(sessionId: string): Promise<ProgressSession | undefined>;
 	getQuestionProgressForCertification(certificationId: string): Promise<QuestionProgress[]>;
 	getQuestionProgress(

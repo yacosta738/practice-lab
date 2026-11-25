@@ -14,6 +14,8 @@ import {
 	createQuestionAttempt,
 	evaluationMatches,
 	type FinalSessionStatus,
+	type LearningDataRestoreData,
+	type LearningDataSnapshot,
 	type LegacyProgressBackup,
 	type LegacyProgressMigrationInput,
 	type LegacyProgressMigrationResult,
@@ -26,9 +28,10 @@ import {
 	type RecordEvaluationInput,
 	type SessionHistoryEntry,
 	validateLegacyBaseline,
+	validateSession,
 } from "./model";
 import type { ProgressRepository } from "./repository-port";
-import type { ProgressDatabaseSchema, ProgressStoreName } from "./schema";
+import type { MetadataRecord, ProgressDatabaseSchema, ProgressStoreName } from "./schema";
 
 type StoreNames = ProgressStoreName[];
 
@@ -477,6 +480,235 @@ class IndexedDbProgressRepository implements ProgressRepository {
 		);
 	}
 
+	getLearningDataSnapshot(): Promise<LearningDataSnapshot> {
+		return withTransaction(
+			this.getDatabase,
+			[
+				"sessions",
+				"questionAttempts",
+				"questionProgress",
+				"studyProgress",
+				"learningGoals",
+				"metadata",
+			],
+			"readonly",
+			async (transaction) =>
+				buildLearningDataSnapshot(
+					await Promise.all([
+						transaction.objectStore("sessions").getAll(),
+						transaction.objectStore("questionAttempts").getAll(),
+						transaction.objectStore("questionProgress").getAll(),
+						transaction.objectStore("studyProgress").getAll(),
+						transaction.objectStore("learningGoals").getAll(),
+						transaction.objectStore("metadata").getAll(),
+					]),
+				),
+		);
+	}
+
+	replaceLearningData(
+		data: LearningDataRestoreData,
+		certificationIds: readonly string[],
+		expectedFingerprint: string,
+	): Promise<Record<string, string>> {
+		return withTransaction(
+			this.getDatabase,
+			[
+				"sessions",
+				"questionAttempts",
+				"questionProgress",
+				"studyProgress",
+				"learningGoals",
+				"metadata",
+			],
+			"readwrite",
+			async (transaction) => {
+				const current = buildLearningDataSnapshot(
+					await Promise.all([
+						transaction.objectStore("sessions").getAll(),
+						transaction.objectStore("questionAttempts").getAll(),
+						transaction.objectStore("questionProgress").getAll(),
+						transaction.objectStore("studyProgress").getAll(),
+						transaction.objectStore("learningGoals").getAll(),
+						transaction.objectStore("metadata").getAll(),
+					]),
+				);
+				if (current.fingerprint !== expectedFingerprint) {
+					throw new ProgressConflictError(
+						"Learning data changed while the restore was being reviewed. Reload and select the backup again.",
+					);
+				}
+				const knownIds = new Set(certificationIds);
+				if (knownIds.size !== certificationIds.length || knownIds.size === 0) {
+					throw new ProgressConflictError("The certification list for this restore is invalid.");
+				}
+				assertKnownCertifications(data, knownIds);
+
+				for (const storeName of [
+					"sessions",
+					"questionAttempts",
+					"questionProgress",
+					"studyProgress",
+					"learningGoals",
+				] as const) {
+					await transaction.objectStore(storeName).clear();
+				}
+				const metadata = transaction.objectStore("metadata");
+				for (const record of await metadata.getAll()) {
+					if (isReplaceableLearningMetadata(record.key)) await metadata.delete(record.key);
+				}
+
+				await Promise.all([
+					...data.sessions.map((record) => transaction.objectStore("sessions").add(record)),
+					...data.questionAttempts.map((record) =>
+						transaction.objectStore("questionAttempts").add(record),
+					),
+					...data.questionProgress.map((record) =>
+						transaction.objectStore("questionProgress").add(record),
+					),
+					...data.studyProgress.map((record) =>
+						transaction.objectStore("studyProgress").add(record),
+					),
+					...data.learningGoals.map((record) =>
+						transaction.objectStore("learningGoals").add(record),
+					),
+				]);
+
+				for (const provenance of data.legacyProvenance) {
+					if (!isLegacyProvenanceKey(provenance.key)) {
+						throw new ProgressConflictError("The backup contains unsupported legacy metadata.");
+					}
+					await metadata.put(provenance);
+				}
+				if (data.legacyRecords.length > 0) {
+					const backupKey = `legacy-backup:archive:${globalThis.crypto.randomUUID()}`;
+					const backup: LegacyRecordsBackup = {
+						format: "practice-lab-legacy-export",
+						version: 1,
+						exportedAt: Date.now(),
+						records: data.legacyRecords,
+					};
+					await metadata.put({ key: backupKey, value: backup });
+					await metadata.put({ key: "legacy-backup:latest", value: backupKey });
+				}
+
+				const tokens: Record<string, string> = {};
+				for (const certificationId of certificationIds) {
+					const token = globalThis.crypto.randomUUID();
+					tokens[certificationId] = token;
+					await metadata.put({
+						key: `data-generation-token:${certificationId}`,
+						value: token,
+					});
+					await metadata.put({
+						key: `legacy-import-suppressed:${certificationId}`,
+						value: true,
+					});
+				}
+				return tokens;
+			},
+		);
+	}
+
+	resetLearningData(
+		certificationId: string | null,
+		certificationIds: readonly string[],
+	): Promise<Record<string, string>> {
+		return withTransaction(
+			this.getDatabase,
+			[
+				"sessions",
+				"questionAttempts",
+				"questionProgress",
+				"studyProgress",
+				"learningGoals",
+				"metadata",
+			],
+			"readwrite",
+			async (transaction) => {
+				const targets = certificationId === null ? [...certificationIds] : [certificationId];
+				if (targets.length === 0 || targets.some((id) => !certificationIds.includes(id))) {
+					throw new ProgressConflictError("Choose a known certification before resetting data.");
+				}
+				const targetSet = new Set(targets);
+				const sessions = transaction.objectStore("sessions");
+				const attempts = transaction.objectStore("questionAttempts");
+				const questionProgress = transaction.objectStore("questionProgress");
+				const studyProgress = transaction.objectStore("studyProgress");
+				const goals = transaction.objectStore("learningGoals");
+				if (certificationId === null) {
+					await Promise.all([
+						sessions.clear(),
+						attempts.clear(),
+						questionProgress.clear(),
+						studyProgress.clear(),
+						goals.clear(),
+					]);
+				} else {
+					for (const storeName of [
+						"sessions",
+						"questionAttempts",
+						"questionProgress",
+						"studyProgress",
+					] as const) {
+						if (storeName === "sessions") {
+							let cursor = await sessions.index("by-certification").openCursor(certificationId);
+							while (cursor) {
+								await cursor.delete();
+								cursor = await cursor.continue();
+							}
+						} else if (storeName === "questionAttempts") {
+							let cursor = await attempts.index("by-certification").openCursor(certificationId);
+							while (cursor) {
+								await cursor.delete();
+								cursor = await cursor.continue();
+							}
+						} else if (storeName === "questionProgress") {
+							let cursor = await questionProgress
+								.index("by-certification")
+								.openCursor(certificationId);
+							while (cursor) {
+								await cursor.delete();
+								cursor = await cursor.continue();
+							}
+						} else {
+							let cursor = await studyProgress
+								.index("by-certification")
+								.openCursor(certificationId);
+							while (cursor) {
+								await cursor.delete();
+								cursor = await cursor.continue();
+							}
+						}
+					}
+					await goals.delete(certificationId);
+				}
+
+				const metadata = transaction.objectStore("metadata");
+				const tokens: Record<string, string> = {};
+				for (const id of targetSet) {
+					const token = globalThis.crypto.randomUUID();
+					tokens[id] = token;
+					await metadata.put({ key: `data-generation-token:${id}`, value: token });
+					await metadata.put({ key: `legacy-import-suppressed:${id}`, value: true });
+				}
+				return tokens;
+			},
+		);
+	}
+
+	markSuccessfulBackup(timestamp: number): Promise<void> {
+		if (!Number.isFinite(timestamp) || timestamp < 0) {
+			return Promise.reject(new ProgressConflictError("The backup timestamp is invalid."));
+		}
+		return withTransaction(this.getDatabase, ["metadata"], "readwrite", async (transaction) => {
+			await transaction.objectStore("metadata").put({
+				key: "data-management:last-backup-at",
+				value: timestamp,
+			});
+		});
+	}
+
 	restoreCertificationProgress(
 		snapshots: readonly CertificationProgressRestoreSnapshot[],
 		expectedGenerationTokens: Readonly<Record<string, string>>,
@@ -624,6 +856,10 @@ class IndexedDbProgressRepository implements ProgressRepository {
 				await transaction.objectStore("metadata").put({
 					key: `data-generation-token:${certificationId}`,
 					value: generationToken,
+				});
+				await transaction.objectStore("metadata").put({
+					key: `legacy-import-suppressed:${certificationId}`,
+					value: true,
 				});
 				return generationToken;
 			},
@@ -836,6 +1072,124 @@ function isLegacyMigrationResult(value: unknown): value is LegacyProgressMigrati
 		"generationToken" in value &&
 		"importedAt" in value &&
 		"warnings" in value
+	);
+}
+
+function buildLearningDataSnapshot([
+	sessions,
+	questionAttempts,
+	questionProgress,
+	studyProgress,
+	learningGoals,
+	metadata,
+]: [
+	ProgressSession[],
+	QuestionAttempt[],
+	QuestionProgress[],
+	LearningDataSnapshot["studyProgress"],
+	LearningDataSnapshot["learningGoals"],
+	MetadataRecord[],
+]): LearningDataSnapshot {
+	const legacyProvenance = metadata
+		.filter(({ key }) => isLegacyProvenanceKey(key))
+		.map(({ key, value }) => ({ key, value }));
+	const lastBackupValue = metadata.find(
+		({ key }) => key === "data-management:last-backup-at",
+	)?.value;
+	const payload = {
+		sessions,
+		questionAttempts,
+		questionProgress,
+		studyProgress,
+		learningGoals,
+		legacyProvenance,
+	};
+	return {
+		...payload,
+		...(typeof lastBackupValue === "number" && Number.isFinite(lastBackupValue)
+			? { lastBackupAt: lastBackupValue }
+			: {}),
+		fingerprint: stableStringify(payload),
+	};
+}
+
+function assertKnownCertifications(
+	data: LearningDataRestoreData,
+	knownIds: ReadonlySet<string>,
+): void {
+	const sessionsById = new Map<string, ProgressSession>();
+	const activeCertifications = new Set<string>();
+	for (const session of data.sessions) {
+		validateSession(session);
+		if (!knownIds.has(session.certificationId) || sessionsById.has(session.id)) {
+			throw new ProgressConflictError("The backup contains an unknown or duplicate session.");
+		}
+		if (session.status === "in_progress") {
+			if (activeCertifications.has(session.certificationId)) {
+				throw new ProgressConflictError(
+					"The backup contains multiple active sessions for a certification.",
+				);
+			}
+			activeCertifications.add(session.certificationId);
+		}
+		sessionsById.set(session.id, session);
+	}
+
+	const attemptKeys = new Set<string>();
+	for (const attempt of data.questionAttempts) {
+		const session = sessionsById.get(attempt.sessionId);
+		const key = `${attempt.sessionId}\u0000${attempt.questionId}`;
+		if (!session || attemptKeys.has(key) || attempt.certificationId !== session.certificationId) {
+			throw new ProgressConflictError(
+				"The backup contains an attempt with an invalid session relationship.",
+			);
+		}
+		const normalized = createQuestionAttempt(session, {
+			sessionId: attempt.sessionId,
+			questionId: attempt.questionId,
+			selectedOptionIds: attempt.selectedOptionIds,
+			outcome: attempt.outcome,
+			scoreEarned: attempt.scoreEarned,
+			scorePossible: attempt.scorePossible,
+			evaluatedAt: attempt.evaluatedAt,
+		});
+		if (stableStringify(normalized) !== stableStringify(attempt)) {
+			throw new ProgressConflictError(
+				"The backup contains an attempt that conflicts with its question snapshot.",
+			);
+		}
+		attemptKeys.add(key);
+	}
+
+	for (const record of [...data.questionProgress, ...data.studyProgress, ...data.learningGoals]) {
+		if (!knownIds.has(record.certificationId)) {
+			throw new ProgressConflictError("The backup contains data for an unknown certification.");
+		}
+	}
+	for (const { key } of data.legacyProvenance) {
+		if (!isLegacyProvenanceKey(key)) {
+			throw new ProgressConflictError("The backup contains unsupported legacy metadata.");
+		}
+	}
+	for (const record of data.legacyRecords) {
+		if (
+			!knownIds.has(record.certificationId) ||
+			record.storageKey !== `${record.certificationId}-practice-lab-v2`
+		) {
+			throw new ProgressConflictError("The backup contains an unsupported legacy storage record.");
+		}
+	}
+}
+
+function isLegacyProvenanceKey(key: string): boolean {
+	return key.startsWith("legacy-backup:") || key.startsWith("migration:legacy-v2:");
+}
+
+function isReplaceableLearningMetadata(key: string): boolean {
+	return (
+		isLegacyProvenanceKey(key) ||
+		key.startsWith("legacy-import-suppressed:") ||
+		key.startsWith("data-generation-token:")
 	);
 }
 
