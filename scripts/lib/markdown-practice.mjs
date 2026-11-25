@@ -11,7 +11,7 @@ import path from "node:path";
  * @property {string[]} options
  */
 
-const optionLinePattern = /^\s*-\s+(?:\*\*)?([A-E])\.(?:\*\*)?\s+(.+?)\s*$/;
+const optionLinePattern = /^\s*-\s+(?:\*\*)?([A-Za-z])\.(?:\*\*)?\s+(.+?)\s*$/;
 const questionHeadingPattern = /^####\s+(D[1-8]\.\d{2})\b/;
 const answerKeyPattern = /^\s*-\s+\*\*(D[1-8]\.\d{2})\s+[—–-]\s+([A-E](?:\s*,\s*[A-E])*)\.\*\*/;
 const inlineAnswerPattern = /^\s*\*\*Best answer:\s*([A-E](?:\s*,\s*[A-E])*)\.\*\*/;
@@ -31,10 +31,47 @@ function isAnswerLetter(answer) {
 	return /^[A-E]$/.test(answer);
 }
 
+/**
+ * @param {string[]} lines
+ * @returns {Set<number>}
+ */
+function findFencedLines(lines) {
+	/** @type {Set<number>} */
+	const fencedLines = new Set();
+	/** @type {{ character: string, length: number } | undefined} */
+	let activeFence;
+
+	for (const [lineIndex, line] of lines.entries()) {
+		if (activeFence) {
+			fencedLines.add(lineIndex);
+			const closingFence = line.match(/^ {0,3}(`+|~+)[\t ]*$/);
+			if (
+				closingFence?.[1][0] === activeFence.character &&
+				closingFence[1].length >= activeFence.length
+			) {
+				activeFence = undefined;
+			}
+			continue;
+		}
+
+		const openingFence = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+		if (!openingFence || (openingFence[1][0] === "`" && openingFence[2].includes("`"))) {
+			continue;
+		}
+
+		fencedLines.add(lineIndex);
+		activeFence = { character: openingFence[1][0], length: openingFence[1].length };
+	}
+
+	return fencedLines;
+}
+
 /** @param {string[]} lines
+ * @param {Set<number>} fencedLines
+ * @param {string} file
  * @returns {OptionBlock[]}
  */
-function collectOptionBlocks(lines) {
+function collectOptionBlocks(lines, fencedLines, file) {
 	/** @type {OptionBlock[]} */
 	const blocks = [];
 	/** @type {OptionBlock | undefined} */
@@ -50,10 +87,15 @@ function collectOptionBlocks(lines) {
 	}
 
 	for (const [lineIndex, line] of lines.entries()) {
+		if (fencedLines.has(lineIndex)) {
+			finishCurrentBlock();
+			continue;
+		}
+
 		const match = line.match(optionLinePattern);
 		if (match) {
 			if (!isAnswerLetter(match[1])) {
-				continue;
+				throw new Error(`${file}:${lineIndex + 1}: unsupported option label ${match[1]}`);
 			}
 			current ??= { startLine: lineIndex, endLine: lineIndex, options: [] };
 			current.endLine = lineIndex;
@@ -63,6 +105,15 @@ function collectOptionBlocks(lines) {
 		}
 
 		if (!current) {
+			continue;
+		}
+		if (/^[\t ]+\S/.test(line) && !inlineAnswerPattern.test(line) && !answerKeyPattern.test(line)) {
+			const lastOption = current.options.at(-1);
+			if (lastOption) {
+				lastOption.text = `${lastOption.text} ${line.trim()}`;
+				current.endLine = lineIndex;
+			}
+			pendingBlankLine = false;
 			continue;
 		}
 
@@ -160,7 +211,8 @@ function questionFromBlock(block, options, answers, file, answerSource, question
  */
 export function parseMarkdownPracticeQuestions(markdown, file = "<markdown>") {
 	const lines = markdown.split(/\r?\n/);
-	const blocks = collectOptionBlocks(lines);
+	const fencedLines = findFencedLines(lines);
+	const blocks = collectOptionBlocks(lines, fencedLines, file);
 	/** @type {Map<string, AnswerKeyEntry>} */
 	const answerKeyEntries = new Map();
 	/** @type {QuestionHeading[]} */
@@ -170,6 +222,10 @@ export function parseMarkdownPracticeQuestions(markdown, file = "<markdown>") {
 	let hasAnswerKeyHeading = false;
 
 	for (const [lineIndex, line] of lines.entries()) {
+		if (fencedLines.has(lineIndex)) {
+			continue;
+		}
+
 		const questionHeading = line.match(questionHeadingPattern);
 		if (questionHeading) {
 			questionHeadings.push({ id: questionHeading[1], line: lineIndex });

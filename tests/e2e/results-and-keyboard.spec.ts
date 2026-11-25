@@ -65,6 +65,7 @@ test("CCDV-F practice mode shows results page after finishing questions", async 
 
 		// Verify feedback appears
 		await expect(page.locator(".feedback")).toBeVisible({ timeout: 5000 });
+		await expect(page.locator(".feedback")).toBeFocused();
 
 		// Move to next question (unless this is the last one)
 		if (i < 9) {

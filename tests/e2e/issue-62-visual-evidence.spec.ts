@@ -4,7 +4,8 @@ import { expect, test } from "@playwright/test";
 
 const BASE_PATH = "/practice-lab";
 const CERTIFICATION = `${BASE_PATH}/certifications/ccdv-f/`;
-const VERCEL_BASE_URL = process.env.VERCEL_SMOKE_BASE_URL;
+const BASELINE_URL = process.env.ISSUE_62_BASELINE_URL;
+const BASELINE_REVISION = process.env.ISSUE_62_BASELINE_REVISION;
 const EVIDENCE_DIRECTORY = join(process.cwd(), "tmp", "issue-62-visual-evidence");
 
 test("captures representative screens in both themes at desktop, tablet, and mobile sizes", async ({
@@ -90,26 +91,38 @@ test("captures representative screens in both themes at desktop, tablet, and mob
 	}
 });
 
-test("captures before screenshots of the deployed question navigator", async ({
+test("captures before screenshots from a pinned deployment baseline", async ({
 	page,
 }, testInfo) => {
-	test.skip(!VERCEL_BASE_URL, "Set VERCEL_SMOKE_BASE_URL to capture the deployed baseline.");
-	if (!VERCEL_BASE_URL) return;
+	const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+	test.skip(
+		!BASELINE_URL || !BASELINE_REVISION || !bypassSecret,
+		"Set the pinned baseline URL, revision, and VERCEL_AUTOMATION_BYPASS_SECRET to capture a protected baseline.",
+	);
+	if (!BASELINE_URL || !BASELINE_REVISION || !bypassSecret) return;
+	expect(BASELINE_REVISION).toMatch(/^[a-f\d]{40}$/i);
+	testInfo.annotations.push({
+		type: "visual-baseline",
+		description: `${BASELINE_URL} at ${BASELINE_REVISION}`,
+	});
 	mkdirSync(EVIDENCE_DIRECTORY, { recursive: true });
+	await page.addInitScript(() => {
+		localStorage.clear();
+		Math.random = () => 0.42;
+	});
+	await page.setExtraHTTPHeaders({ "x-vercel-protection-bypass": bypassSecret });
 
 	for (const theme of ["light", "dark"] as const) {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await page.emulateMedia({ colorScheme: theme });
-		const url = new URL("/certifications/ccdv-f/?mode=assess#session", VERCEL_BASE_URL);
+		const url = new URL("/certifications/ccdv-f/?mode=assess#session", BASELINE_URL);
 		await page.goto(url.toString());
-		await page.evaluate(() => localStorage.clear());
-		await page.reload();
 		await page.getByRole("button", { name: "Start mock exam" }).click();
 		await page.locator("details.examNavigator summary").click();
 
 		const firstQuestion = page.locator(".qchip").first();
 		await expect(firstQuestion).not.toHaveAttribute("aria-label", /answered|flagged/i);
-		const filename = `before-${theme}-mobile-question-navigator.png`;
+		const filename = `before-${BASELINE_REVISION.slice(0, 12)}-${theme}-mobile-question-navigator.png`;
 		const path = join(EVIDENCE_DIRECTORY, filename);
 		await page.screenshot({
 			path,
