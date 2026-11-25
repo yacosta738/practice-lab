@@ -2,6 +2,7 @@
 import { getCertificationList } from "../certifications/index";
 import { base } from "../lib/base";
 import { studyCerts } from "../study/registry";
+import FeedbackDialog from "./FeedbackDialog.astro";
 
 export interface SidebarDomain {
 	id: string;
@@ -182,7 +183,21 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 			<slot />
 		</main>
 
-		<footer class="pl-footer">{footerText}</footer>
+		<footer class="pl-footer">
+			<span>{footerText}</span>
+			<span class="pl-footer-sep" aria-hidden="true">·</span>
+			<button
+				type="button"
+				class="pl-feedback-link"
+				data-pl-open-feedback
+				data-feedback-type="application"
+				data-feedback-cert={activeCertSlug}
+				aria-haspopup="dialog"
+				aria-controls="pl-feedback-dialog"
+			>
+				Send feedback
+			</button>
+		</footer>
 	</div>
 </div>
 
@@ -301,6 +316,8 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 	<section id="pl-search-results" class="pl-dialog-body" aria-label="Search results"></section>
 	<p id="pl-search-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
 </dialog>
+
+<FeedbackDialog />
 
 <script>
 import { base } from "../lib/base";

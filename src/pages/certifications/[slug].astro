@@ -536,6 +536,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 
 		const src = x.source;
 		const domainStudyLink = studyHref ? `${studyHref}#${x.domain}` : "";
+		const questionVersion = x.contentVersion || "1";
 		let fb = "";
 		if (checked)
 			fb = `<div class="feedback ${good ? "correct" : "wrong"}" data-focus-target="feedback" tabindex="-1" role="status">
@@ -545,6 +546,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 			<div class="feedbackLinks">
 				${src.url ? `<a href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">Study source: ${esc(src.label)} ↗</a>` : `<span class="small muted">Study source: ${esc(src.label)}</span>`}
 				${domainStudyLink ? `<a href="${esc(domainStudyLink)}" data-action="go-to-site-home">Read ${x.domain} study notes →</a>` : ""}
+				<button type="button" class="pl-feedback-link" data-pl-open-feedback data-feedback-type="question" data-feedback-cert="${esc(cfg.slug)}" data-feedback-domain="${esc(x.domain)}" data-feedback-question="${esc(x.id)}" data-feedback-version="${esc(questionVersion)}" data-feedback-category="incorrect-explanation" aria-haspopup="dialog" aria-controls="pl-feedback-dialog">Question this explanation</button>
 			</div>
 		</div>`;
 
@@ -584,6 +586,14 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 								: `<button class="primary" data-action="check" ${v.length === getSelectCount(x, id) ? "" : "disabled"}>Check answer</button>`
 					}
 				</div>
+				${
+					!isExam
+						? `<div class="pl-question-meta">
+					<span class="mono small muted">Question ID: ${esc(cfg.subtitle)}-${esc(x.id)} · v${esc(questionVersion)}</span>
+					<button type="button" class="pl-feedback-link" data-pl-open-feedback data-feedback-type="question" data-feedback-cert="${esc(cfg.slug)}" data-feedback-domain="${esc(x.domain)}" data-feedback-question="${esc(x.id)}" data-feedback-version="${esc(questionVersion)}" aria-haspopup="dialog" aria-controls="pl-feedback-dialog">Report an issue</button>
+				</div>`
+						: ""
+				}
 			</div>`;
 
 		const grid = session.ids
@@ -707,7 +717,10 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 				${revOptions.map((t, n) => `<div class="option${revCorrect.includes(n) ? " good" : v.includes(n) ? " bad" : ""}"><span class="letter">${LETTERS[n]}</span><span>${esc(t)}</span></div>`).join("")}
 				<p>${esc(q.explanation)}</p>
 				${q.whyNot ? `<p class="small muted">Why not the others: ${esc(q.whyNot)}</p>` : ""}
-				${q.source.url ? `<a href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">${esc(q.source.label)} ↗</a>` : `<span class="small muted" style="display:inline-block;margin:0 16px 14px">${esc(q.source.label)}</span>`}
+				<div class="pl-review-meta">
+					${q.source.url ? `<a href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">${esc(q.source.label)} ↗</a>` : `<span class="small muted">${esc(q.source.label)}</span>`}
+					<button type="button" class="pl-feedback-link" data-pl-open-feedback data-feedback-type="question" data-feedback-cert="${esc(cfg.slug)}" data-feedback-domain="${esc(q.domain)}" data-feedback-question="${esc(q.id)}" data-feedback-version="${esc(q.contentVersion || "1")}" aria-haspopup="dialog" aria-controls="pl-feedback-dialog">Report an issue (${esc(q.id)})</button>
+				</div>
 			</details>`;
 					})
 					.join("")

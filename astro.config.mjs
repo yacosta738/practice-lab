@@ -41,6 +41,18 @@ export default defineConfig({
 				access: "public",
 				optional: true,
 			}),
+			PUBLIC_FEEDBACK_TALLY_URL: envField.string({
+				context: "client",
+				access: "public",
+				optional: true,
+				default: "https://tally.so/r/GeleeQ",
+			}),
+			PUBLIC_FEEDBACK_GITHUB_REPO: envField.string({
+				context: "client",
+				access: "public",
+				optional: true,
+				default: "yacosta738/practice-lab",
+			}),
 		},
 	},
 	integrations: [partytown(), sitemap()],

@@ -63,6 +63,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build site
+        env:
+          PUBLIC_FEEDBACK_TALLY_URL: ${{ vars.PUBLIC_FEEDBACK_TALLY_URL }}
         run: pnpm run build
 
       - name: Setup Pages

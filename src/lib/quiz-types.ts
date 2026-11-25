@@ -16,6 +16,8 @@ export interface Question {
 	whyNot?: string;
 	/** Number of options the user must select (for multi-select questions). */
 	selectCount?: number;
+	/** Monotonic content version for feedback traceability and deduplication (defaults to "1"). */
+	contentVersion?: string;
 }
 
 export interface DomainInfo {
