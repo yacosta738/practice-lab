@@ -100,6 +100,9 @@ export class BrowserProgressService {
 		const marker = await this.useCases.getMetadata(
 			migrationMarkerKey(this.options.certificationId),
 		);
+		const legacyImportSuppressed =
+			(await this.useCases.getMetadata(suppressedLegacyImportKey(this.options.certificationId))) ===
+			true;
 		if (marker && !isMigrationMarker(marker)) {
 			throw new Error(
 				"The saved migration marker is invalid. Download the legacy backup before recovery.",
@@ -116,10 +119,14 @@ export class BrowserProgressService {
 					"The migration backup is unavailable. Progress remains in IndexedDB; download a current export.",
 				);
 			}
-			if (currentLegacy?.rawValue !== storedBackup.rawValue) {
+			if (!legacyImportSuppressed && currentLegacy?.rawValue !== storedBackup.rawValue) {
 				this.legacyWriteDetected = true;
 			}
-		} else if (currentLegacy?.rawValue !== null && currentLegacy?.rawValue !== undefined) {
+		} else if (
+			!legacyImportSuppressed &&
+			currentLegacy?.rawValue !== null &&
+			currentLegacy?.rawValue !== undefined
+		) {
 			this.pendingMigrationPlan = buildLegacyMigrationPlan({
 				certificationId: this.options.certificationId,
 				legacyStorageKey: this.storageKey,
@@ -761,6 +768,10 @@ function readLegacyValue(storageKey: string): string | null {
 
 function migrationMarkerKey(certificationId: string): string {
 	return `migration:legacy-v2:${certificationId}`;
+}
+
+function suppressedLegacyImportKey(certificationId: string): string {
+	return `legacy-import-suppressed:${certificationId}`;
 }
 
 function legacyBackupKey(certificationId: string): string {
