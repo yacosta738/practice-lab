@@ -11,9 +11,96 @@ export interface RankedSearchItem extends SearchItem {
 	score: number;
 }
 
-/** Convert study Markdown into readable text without indexing its formatting or link targets. */
+function isAnswerSectionHeading(title: string): boolean {
+	const normalizedTitle = title.replace(/[`*_~]/g, "").trim();
+	return /^(?:answer\s+keys?|answers?(?:\s+(?:and|&)\s+(?:rationales?|explanations?))?|rationales?(?:\s+(?:and|&)\s+answers?)?|solutions?)(?:\s*(?:[,;:–—-].*|and\b.*))?$/i.test(
+		normalizedTitle,
+	);
+}
+
+function isMultipleChoiceOptions(block: string): boolean {
+	const optionLabels = new Set<string>();
+	for (const line of block.split(/\r?\n/)) {
+		const option = line.match(/^\s*(?:[-*+]\s+)?(?:\*\*)?([A-D])[.)](?:\*\*)?(?:\s|$)/i);
+		if (option) {
+			optionLabels.add(option[1].toUpperCase());
+		} else if (!/^\s{2,}\S/.test(line)) {
+			return false;
+		}
+	}
+	return optionLabels.size >= 2;
+}
+
+function isAnswerRationale(block: string): boolean {
+	const firstLine = block.trimStart().split(/\r?\n/, 1)[0];
+	return /^(?:>\s*)?(?:[-*+]\s+)?(?:\*\*)?(?:best\s+answer|correct\s+answer|answer|rationale|explanation)\s*:/i.test(
+		firstLine,
+	);
+}
+
+function excludeAssessmentAnswers(markdown: string): string {
+	const output: string[] = [];
+	let answerSectionLevel: number | undefined;
+	let previousBlockHasOptions = false;
+	let block: string[] = [];
+	let fence: { marker: string; length: number } | undefined;
+
+	const flushBlock = () => {
+		if (!block.length) return;
+		const currentBlock = block.join("\n");
+		if (previousBlockHasOptions && isAnswerRationale(currentBlock)) {
+			previousBlockHasOptions = false;
+		} else {
+			output.push(currentBlock);
+			previousBlockHasOptions = isMultipleChoiceOptions(currentBlock);
+		}
+		block = [];
+	};
+
+	for (const line of markdown.split(/\r?\n/)) {
+		const fenceMarker = line.match(/^\s{0,3}(`{3,}|~{3,})/);
+		if (fence) {
+			if (answerSectionLevel === undefined) block.push(line);
+			if (fenceMarker?.[1][0] === fence.marker && fenceMarker[1].length >= fence.length)
+				fence = undefined;
+			continue;
+		}
+		if (fenceMarker) {
+			if (answerSectionLevel === undefined) block.push(line);
+			fence = { marker: fenceMarker[1][0], length: fenceMarker[1].length };
+			continue;
+		}
+
+		const heading = line.match(/^ {0,3}(#{1,6})\s+(.+?)\s*#*\s*$/);
+		if (heading) {
+			if (answerSectionLevel === undefined) flushBlock();
+			const headingLevel = heading[1].length;
+			if (answerSectionLevel !== undefined) {
+				if (headingLevel > answerSectionLevel) continue;
+				answerSectionLevel = undefined;
+			}
+			if (isAnswerSectionHeading(heading[2])) {
+				answerSectionLevel = headingLevel;
+				previousBlockHasOptions = false;
+				continue;
+			}
+		}
+		if (answerSectionLevel !== undefined) continue;
+
+		if (!line.trim()) {
+			flushBlock();
+			output.push(line);
+		} else {
+			block.push(line);
+		}
+	}
+	flushBlock();
+	return output.join("\n");
+}
+
+/** Convert study Markdown into readable text, excluding structurally identified assessment answers. */
 export function normalizeSearchText(markdown: string): string {
-	return markdown
+	return excludeAssessmentAnswers(markdown)
 		.replace(/```[^\n]*\n?/g, " ")
 		.replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
 		.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")

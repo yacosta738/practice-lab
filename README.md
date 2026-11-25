@@ -19,7 +19,7 @@ Interactive practice platform for certification preparation. Study by domain, ta
 - **Exam mode** — timed mock exam with 53 questions distributed by domain.
 - **Weaknesses mode** — focus on the questions you got wrong.
 - **Progress tracking** — statistics and active sessions persist in browser `localStorage`; the site itself needs an internet connection to load.
-- **Search** — the accessible search dialog matches result metadata by title, category, and badge; full-text study-note content search is deferred.
+- **Search** — the accessible search dialog matches result metadata and full-text study-note content; structurally identified assessment answers are omitted from its generated index.
 - **Study library** — per-certification study notes rendered from Markdown, organised by exam domain with a table of contents and cross-links.
 
 ## Content Sources and Attribution
@@ -87,6 +87,14 @@ pnpm sync:study
 The default vault path is the Claude Certified Developer folder in iCloud and can be overridden with the `STUDY_SOURCE` environment variable. The script copies CCDV-F - Base de conocimiento, MSO Foundations, and the vault root notes, converts wikilinks to relative links, strips the leading H1, injects a title when missing, converts Obsidian callouts, and copies the exam guide PDF to `public/study/ccdv-f/`.
 
 The `src/content/study` directory is excluded from Biome formatting because it mirrors an external source. The study routes are `/study/`, `/study/<cert>/`, and `/study/<cert>/<slug>/`.
+
+### Search indexing policy
+
+Study-note search indexes readable Markdown body text while omitting answer sections headed with labels such as `Answer key`, `Answers`, `Rationales`, or `Solutions`, including their nested subsections. It also omits a standalone answer or rationale paragraph when it directly follows a Markdown block containing at least two labeled A–D options. Question prompts, `Check your understanding` tasks, ordinary technical explanations, and content outside those structural boundaries remain searchable.
+
+The current CCDV-F inventory includes original practice questions with `- A.` through `- D.` options followed by a `Best answer:` rationale, plus the imported `ccdv-f-developer-study-guide-100-questions.md`, whose nested answer section is headed `Answer key, rationales and primary references` and contains domain-level bullet keys. Both formats are excluded structurally without removing the question prompts or instructional prose around them.
+
+This is a learning-experience control, not an anti-cheating or security boundary: study notes remain publicly accessible on their pages. Only the documented heading and multiple-choice formats are recognized, so differently formatted answer material may still appear in search results.
 
 Each question follows this structure:
 

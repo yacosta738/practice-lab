@@ -946,7 +946,15 @@ label.small {
 
 .qchip {
 	width: 100%;
+	min-width: 44px;
+	min-height: 44px;
 	aspect-ratio: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	padding: 2px;
 	border: 1px solid var(--border);
 	border-radius: 4px;
 	background: var(--raised);
@@ -975,11 +983,39 @@ label.small {
 	border-color: var(--brand-strong);
 	color: var(--on-brand);
 	font-weight: 600;
+	position: relative;
+	z-index: 1;
+	box-shadow:
+		0 0 0 2px var(--surface),
+		0 0 0 4px var(--ink);
 }
 
 .qchip.flagged {
 	outline: 2px solid var(--error);
 	outline-offset: -2px;
+}
+
+.qchipMarks {
+	font-size: 10px;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.qchipLegend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 12px;
+	margin: 10px 0;
+	padding: 0;
+	list-style: none;
+	color: var(--ink-secondary);
+	font-size: var(--fs-small);
+}
+
+.qchipLegend li span {
+	margin-right: 3px;
+	color: var(--ink);
+	font-weight: 700;
 }
 
 /* Results view */
