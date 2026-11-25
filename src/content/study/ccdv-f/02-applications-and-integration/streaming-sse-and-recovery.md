@@ -7,7 +7,7 @@ domain: D2
 domain_name: Applications and Integration
 status: study-synthesis
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-15'
+updated: '2026-11-25'
 tags:
 - certification/ccdv-f
 - domain/applications-integration
@@ -22,7 +22,9 @@ tags:
 - Expect `message_start`, zero or more `content_block_start/delta/stop`, `message_delta`, and finally `message_stop`; `ping` can appear throughout.
 - Concatenate text deltas and partial tool-input JSON; parse a complete tool input once the relevant block is complete (or use SDK helpers).
 - An error may arrive **after HTTP 200** as an SSE event. Maintain explicit stream-failed vs stream-complete states.
+- Inspect the final `stop_reason` from `message_delta`; classify normal completion, truncation, tool use, refusal, and transport failure separately.
 - If the transport breaks, preserve partial output only as incomplete and decide whether the operation is safe to retry.
+- Recovery steps can vary by model generation; follow the current streaming guidance rather than assuming every partial response can be replayed identically.
 
 ## Failure modes
 
@@ -44,4 +46,5 @@ tags:
 - **Primary references:**
   - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
   - [streaming](https://platform.claude.com/docs/en/build-with-claude/streaming)
+  - [stop-reasons](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons)
 - **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).

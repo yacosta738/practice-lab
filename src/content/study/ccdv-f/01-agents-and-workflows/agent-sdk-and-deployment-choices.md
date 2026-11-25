@@ -7,7 +7,7 @@ domain: D1
 domain_name: Agents and Workflows
 status: study-synthesis
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-15'
+updated: '2026-11-25'
 tags:
 - certification/ccdv-f
 - domain/agents-workflows
@@ -44,4 +44,6 @@ tags:
 - **Primary references:**
   - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
   - [building-agents](https://www.anthropic.com/engineering/building-effective-agents)
+  - [Claude Managed Agents overview](https://platform.claude.com/docs/en/managed-agents/overview)
+  - [SDKs, CLI, and libraries](https://platform.claude.com/docs/en/cli-sdks-libraries/overview)
 - **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).

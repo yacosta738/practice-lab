@@ -4,7 +4,7 @@ type: moc
 certification: CCDV-F
 status: study-synthesis
 source_kind: official-blueprint-and-documentation
-updated: '2026-11-24'
+updated: '2026-11-25'
 tags:
 - certification/ccdv-f
 - type/source-register
@@ -52,6 +52,7 @@ This is a bounded public-source review, not a claim that every page, video, or a
 | [Claude Code `llms.txt`](https://code.claude.com/docs/llms.txt) | 2026-11-24; direct public HTTPS retrieval (HTTP 200; 53,393 bytes), plus selected documentation pages. **content-reviewed** for the index and **partially-reviewed** for the docs | The index maps current settings, managed settings, hooks, skills, subagents, MCP, and other docs; settings, managed-settings, hooks, and skills pages were consulted selectively for the matrix and workshops. The index is a discovery map, not evidence that every linked page was reviewed. |
 | [MCP Specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28) | 2026-11-24; selected versioned specification pages and public search excerpts. **partially-reviewed** | Transports and tools pages were reviewed; authorization and security requirements were checked using indexed excerpts. A direct authorization-page request was rate-limited (HTTP 429), so that section was not treated as a full-page review. No rate limit or access control was bypassed. |
 | [Anthropic Engineering](https://www.anthropic.com/engineering) | 2026-11-24; public index and selected article review. **partially-reviewed** | The engineering index and [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents) were used for architecture/pattern cross-checks. The full article corpus was not reviewed. |
+| [Managed Agents overview](https://platform.claude.com/docs/en/managed-agents/overview), [SDKs, CLI, and libraries](https://platform.claude.com/docs/en/cli-sdks-libraries/overview), [streaming](https://platform.claude.com/docs/en/build-with-claude/streaming), [stop reasons](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons), and [structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs) | 2026-11-25; public web-search excerpts from official documentation. Direct page extraction was attempted but the extractor failed to parse response metadata (`favicon: null`). **partially-reviewed** | Excerpts covered the managed-agent versus Messages API distinction, Agent SDK runtime, streaming stop reasons and recovery, refusal behavior, and structured-output limitations. Full pages and model-specific recovery details were not reviewed. Public access was available; no authentication or access control was bypassed, and no question-bank content was copied. |
 
 ### Supplementary security cross-check (2026-11-24)
 
@@ -72,7 +73,10 @@ The associated [competency matrix](../exam-blueprint-and-coverage/) assesses all
 | json | [Documentation](https://platform.claude.com/docs/en/build-with-claude/structured-outputs) |
 | evals | [Documentation](https://platform.claude.com/docs/en/test-and-evaluate/develop-tests) |
 | managed-agent-security | [Documentation](https://platform.claude.com/docs/en/managed-agents/secure-deployment-risks) — selected indexed excerpts; not a full-page review |
+| managed-agents | [Documentation](https://platform.claude.com/docs/en/managed-agents/overview) — selected public search excerpts; not a full-page review |
+| agent-sdk | [Documentation](https://platform.claude.com/docs/en/cli-sdks-libraries/overview) — selected public search excerpts; not a full-page review |
 | thinking | [Documentation](https://platform.claude.com/docs/en/build-with-claude/thinking) |
+| stop-reasons | [Documentation](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons) — selected public search excerpts; not a full-page review |
 | code-settings | [Documentation](https://code.claude.com/docs/en/settings) |
 | code-hooks | [Documentation](https://code.claude.com/docs/en/hooks) |
 | code-agents | [Documentation](https://code.claude.com/docs/en/sub-agents) |

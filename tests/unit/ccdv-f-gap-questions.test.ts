@@ -3,6 +3,11 @@ import { describe, expect, it } from "vitest";
 import { questions } from "../../src/certifications/ccdv-f/questions";
 
 const questionIds = [
+	"D1-023",
+	"D1-024",
+	"D2-041",
+	"D6-021",
+	"D6-022",
 	"D6-019",
 	"D6-020",
 	"D8-015",
@@ -16,6 +21,9 @@ const questionIds = [
 ];
 
 const objectiveQuestionCounts = {
+	"1.2 Agent Construction with Claude": 2,
+	"2.3 Claude API Mechanics": 1,
+	"6.3 Output Handling": 2,
 	"6.1 Context Engineering": 2,
 	"8.2 MCP Server Development": 2,
 	"7.1 AI Application Security": 2,
@@ -23,6 +31,9 @@ const objectiveQuestionCounts = {
 	"4.1 Debugging and Error Handling": 2,
 };
 const domainByObjective: Record<string, string> = {
+	"1.2 Agent Construction with Claude": "D1",
+	"2.3 Claude API Mechanics": "D2",
+	"6.3 Output Handling": "D6",
 	"6.1 Context Engineering": "D6",
 	"8.2 MCP Server Development": "D8",
 	"7.1 AI Application Security": "D7",
@@ -33,7 +44,7 @@ const domainByObjective: Record<string, string> = {
 const gapQuestions = questions.filter((question) => questionIds.includes(question.id));
 
 describe("CCDV-F validated-gap questions", () => {
-	it("adds two original scenario questions for each prioritized objective", () => {
+	it("adds original scenario questions for each validated objective gap", () => {
 		expect(gapQuestions).toHaveLength(questionIds.length);
 
 		for (const [objective, expectedCount] of Object.entries(objectiveQuestionCounts)) {
