@@ -1,7 +1,7 @@
-import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
-
+import { discoverMarkdownPracticeQuestions } from "../../scripts/lib/markdown-practice.mjs";
 import { questions as ccaoFQuestions } from "../../src/certifications/ccao-f/questions";
 import { questions as ccarFQuestions } from "../../src/certifications/ccar-f/questions";
 import { questions as ccarPQuestions } from "../../src/certifications/ccar-p/questions";
@@ -9,39 +9,28 @@ import { questions as ccarPQuestions } from "../../src/certifications/ccar-p/que
 import { questions as ccdvFQuestions } from "../../src/certifications/ccdv-f/questions";
 import type { Question } from "../../src/lib/quiz-types";
 
-const allBanks: Record<string, Question[]> = {
+type BiasQuestion = Pick<Question, "correctAnswers" | "options">;
+
+const markdownPracticeQuestions = discoverMarkdownPracticeQuestions(
+	fileURLToPath(new URL("../../src/content/study", import.meta.url)),
+);
+const markdownStudyQuestions: BiasQuestion[] = markdownPracticeQuestions.map((question) => ({
+	correctAnswers: question.answers.map((answer) => answer.charCodeAt(0) - "A".charCodeAt(0)),
+	options: question.options,
+}));
+
+const allBanks: Record<string, BiasQuestion[]> = {
 	"ccdv-f": ccdvFQuestions,
 	"ccao-f": ccaoFQuestions,
 	"ccar-f": ccarFQuestions,
 	"ccar-p": ccarPQuestions,
+	"study-markdown": markdownStudyQuestions,
 };
 
 // When true, bias violations fail the CI check. When false, they only print
 // warnings so the report is visible without blocking merges while questions
 // are being improved. Flip to true once the banks are shuffled / balanced.
 const failOnBias = false;
-
-const markdownPracticeFiles = [
-	"../../src/content/study/ccdv-f/00-navigation/exam-decision-guide.md",
-	"../../src/content/study/ccdv-f/01-agents-and-workflows/agent-architecture-design-workshop.md",
-	"../../src/content/study/ccdv-f/02-applications-and-integration/application-integration-design-workshop.md",
-	"../../src/content/study/ccdv-f/05-model-selection-and-optimization/model-selection-and-optimization-workshop.md",
-];
-
-const markdownPracticeQuestions = markdownPracticeFiles.map((file) => {
-	const content = readFileSync(new URL(file, import.meta.url), "utf8");
-	const answer = content.match(/\*\*Best answer:\s*([A-D])\./)?.[1];
-	const options = [...content.matchAll(/^- ([A-D])\.\s+(.+)$/gm)].map(([, letter, text]) => ({
-		letter,
-		text,
-	}));
-
-	if (!answer || options.length !== 4) {
-		throw new Error(`Expected one four-option practice question in ${file}`);
-	}
-
-	return { file, answer, options };
-});
 
 /**
  * Check position bias: the correct answer should be evenly distributed
@@ -50,7 +39,7 @@ const markdownPracticeQuestions = markdownPracticeFiles.map((file) => {
  *
  * Flag if any single position holds more than the threshold of answers.
  */
-function checkPositionBias(questions: Question[]) {
+function checkPositionBias(questions: BiasQuestion[]) {
 	const singleSelect = questions.filter(
 		(q) => q.correctAnswers.length === 1 && q.options.length >= 4,
 	);
@@ -58,7 +47,7 @@ function checkPositionBias(questions: Question[]) {
 		return { total: singleSelect.length, warning: "too few questions to analyze" };
 	}
 
-	const positionCounts: Record<number, number> = {};
+	const positionCounts: Record<string, number> = {};
 	for (const q of singleSelect) {
 		const pos = q.correctAnswers[0];
 		positionCounts[pos] = (positionCounts[pos] || 0) + 1;
@@ -89,7 +78,7 @@ function checkPositionBias(questions: Question[]) {
  * answer as the only longest option, that's a strong signal of bias.
  * Questions where multiple options tie for longest are not counted.
  */
-function checkLengthBias(questions: Question[]) {
+function checkLengthBias(questions: BiasQuestion[]) {
 	const singleSelect = questions.filter(
 		(q) => q.correctAnswers.length === 1 && q.options.length >= 3,
 	);
@@ -125,23 +114,36 @@ function checkLengthBias(questions: Question[]) {
 }
 
 describe("Quiz bias detection", () => {
-	it("balances answer positions and option lengths in new study questions", () => {
-		expect(markdownPracticeQuestions).toHaveLength(4);
+	it("automatically discovers Markdown questions, including the answer-key question bank", () => {
+		expect(markdownPracticeQuestions.length).toBeGreaterThan(100);
 		expect(
-			markdownPracticeQuestions.reduce<Record<string, number>>((counts, question) => {
-				counts[question.answer] = (counts[question.answer] ?? 0) + 1;
-				return counts;
-			}, {}),
-		).toEqual({ A: 1, B: 1, C: 1, D: 1 });
+			markdownPracticeQuestions.some((question) =>
+				question.file.endsWith("ccdv-f-developer-study-guide-100-questions.md"),
+			),
+		).toBe(true);
+	});
 
-		for (const question of markdownPracticeQuestions) {
-			const lengths = question.options.map((option) => option.text.length);
+	it("balances answer positions and option lengths in inline study questions", () => {
+		const inlineQuestions = markdownPracticeQuestions.filter(
+			(question) => question.answerSource === "inline" && question.answers.length === 1,
+		);
+		expect(inlineQuestions.length).toBeGreaterThan(0);
+
+		const positionCounts = inlineQuestions.reduce<Record<string, number>>((counts, question) => {
+			const answer = question.answers[0];
+			counts[answer] = (counts[answer] ?? 0) + 1;
+			return counts;
+		}, {});
+		const maxPositionShare = Math.max(...Object.values(positionCounts)) / inlineQuestions.length;
+		expect(maxPositionShare).toBeLessThanOrEqual(0.4);
+
+		for (const question of inlineQuestions) {
+			const lengths = question.options.map((option) => option.length);
 			const longestLength = Math.max(...lengths);
-			const correctOption = question.options.find((option) => option.letter === question.answer);
-			expect(correctOption, question.file).toBeDefined();
+			const correctOption = question.options[question.answers[0].charCodeAt(0) - "A".charCodeAt(0)];
 			expect(
 				lengths.filter((length) => length === longestLength).length > 1 ||
-					correctOption?.text.length !== longestLength,
+					correctOption.length !== longestLength,
 				question.file,
 			).toBe(true);
 			expect(longestLength - Math.min(...lengths), question.file).toBeLessThanOrEqual(

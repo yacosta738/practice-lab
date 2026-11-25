@@ -73,7 +73,7 @@ A new, less expensive configuration lowers average API spend, but the percentage
 - C. Compare cost per successful task, quality slices, latency, and recovery rates.
 - D. Compare input cost and cache hits, ignoring failed or escalated tasks.
 
-**Best answer: C.** The system is valuable when it completes acceptable work, not merely when an individual request is cheap. The same test set makes the tradeoff comparable; quality slices and failure severity reveal regressions that an average can hide. A ignores recovery cost and quality, B is not an outcome metric, and D cannot establish task performance by itself.
+**Best answer: C.** The system is valuable when it completes acceptable work, not merely when an individual request is cheap. Compare quality, cost, latency, and recovery on the same test set. A ignores retry and escalation costs; B relies on aggregate accuracy and median latency that can hide high-impact errors; D excludes failed tasks and escalations, understating their impact.
 
 ## Review checklist
 
