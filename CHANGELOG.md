@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.7.0](https://github.com/yacosta738/practice-lab/compare/v0.6.0...v0.7.0) (2026-11-25)
+
+
+### Features
+
+* add PWA support and repair web icons ([#67](https://github.com/yacosta738/practice-lab/issues/67)) ([afb6d90](https://github.com/yacosta738/practice-lab/commit/afb6d9032aeb1139180c1957663137f77f1a0e88))
+* add social image and harden visual evidence tests ([#70](https://github.com/yacosta738/practice-lab/issues/70)) ([03353d1](https://github.com/yacosta738/practice-lab/commit/03353d153fedbd62d49b88ab8cd723741159c160))
+* integrate Vercel and Ahrefs analytics ([#69](https://github.com/yacosta738/practice-lab/issues/69)) ([7fa4357](https://github.com/yacosta738/practice-lab/commit/7fa4357a548bb66d8447cb44acc56b5440ae3c09))
+* **markdown:** enhance option parsing and support indented continuation text ([da796f2](https://github.com/yacosta738/practice-lab/commit/da796f29127ae66e8193a8e9a4d1fe0f0b9cf6ac))
+
+
+### Bug Fixes
+
+* **a11y:** address issue 62 review follow-up ([#66](https://github.com/yacosta738/practice-lab/issues/66)) ([a12f8a2](https://github.com/yacosta738/practice-lab/commit/a12f8a235948de0e05971213ecea939953cc896b))
+* **a11y:** expose exam states and filter study answers ([#63](https://github.com/yacosta738/practice-lab/issues/63)) ([5e65b49](https://github.com/yacosta738/practice-lab/commit/5e65b493548df4a26938fbd6acda6ad4b3e56f41))
+* improve social previews and study CTA contrast ([#74](https://github.com/yacosta738/practice-lab/issues/74)) ([e41ef7e](https://github.com/yacosta738/practice-lab/commit/e41ef7e5ddc6716dc81479c6ea9e9964e13da3a9))
+
 ## [0.6.0](https://github.com/yacosta738/practice-lab/compare/v0.5.0...v0.6.0) (2026-11-25)
 
 
