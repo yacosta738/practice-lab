@@ -128,6 +128,22 @@ const practiceLabel = practiceDomain ? `Practice ${practiceDomain}` : `Practice 
 				</div>
 				<a class="primary" href={practiceHref}>{practiceLabel} →</a>
 			</div>
+			<div class="pl-contextual-feedback">
+				<span class="small muted">Spotted an error or outdated detail in this note?</span>
+				<button
+					type="button"
+					class="pl-feedback-link"
+					data-pl-open-feedback
+					data-feedback-type="lesson"
+					data-feedback-cert={cert.slug}
+					data-feedback-domain={section.domain}
+					data-feedback-lesson={note.slug}
+					aria-haspopup="dialog"
+					aria-controls="pl-feedback-dialog"
+				>
+					Report an issue
+				</button>
+			</div>
 		</article>
 
 		{toc.length >= 2 && (
