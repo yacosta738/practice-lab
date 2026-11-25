@@ -1,42 +1,41 @@
-# Issue #62 verification
+# Issue #62 / PR #63 verification
 
 Date: 2026-11-25
 
-## Base and scope
+## Scope and provenance
 
-- Issue: [#62 — accessible question navigator, search answer exclusion, and visual verification](https://github.com/yacosta738/practice-lab/issues/62).
-- The implementation worktree is on `main` at `4241ba0`; `origin/main` was fetched and `git pull --ff-only origin main` reported `Already up to date`.
-- The separate `/Users/acosta/Dev/certificate` checkout remains on `fix/quality-reliability` with pre-existing local changes; it was not modified.
-- No implementation PR or deployment was created. `tests/e2e/issue-62-visual-evidence.spec.ts` preserves the screenshots under `tmp/issue-62-visual-evidence/` (ignored by Git); test-run attachments are also produced but cleaned up by Playwright.
+- Issue: [#62 — accessible question navigator and study-answer exclusion](https://github.com/yacosta738/practice-lab/issues/62).
+- Review follow-up to [PR #63](https://github.com/yacosta738/practice-lab/pull/63), which is merged into `main` as `5e65b49`. This successor branch is based on that exact tree; the separate `/Users/acosta/Dev/certificate` checkout was not modified.
+- Pinned visual baseline: [Vercel deployment](https://project-lab-git-fix-issue-62-accessible-se-7e7127-yuniel-acosta.vercel.app), revision `aa32145650899d33992e94f4d368c4eb62f69ad6`. This is the pre-follow-up PR deployment and is protected by Vercel authentication.
+- The [CI workflow](https://github.com/yacosta738/practice-lab/actions/workflows/ci.yml) pins that baseline URL/revision, seeds the exam order, and uploads `tmp/issue-62-visual-evidence/` after a successful accessibility job. The artifact name includes the Actions run ID and commit SHA; retention is 7 days. Baseline capture requires `VERCEL_AUTOMATION_BYPASS_SECRET`; without it, that capture is explicitly skipped so protected deployment access does not time out the full suite.
+- Screenshot files remain under the Git-ignored `tmp/issue-62-visual-evidence/`; no PNGs are committed.
 
-## Markdown format inventory
+## Implementation and source policy
 
-- Original CCDV-F exercises use a question heading or scenario, a blank-separated list of `- A.` through `- D.` options, and a following `Best answer:` paragraph with the rationale. This format appears in the exam decision guide and the agent, application-integration, and model-selection workshops.
-- The imported `src/content/study/ccdv-f/references/ccdv-f-developer-study-guide-100-questions.md` has 100 question headings with `- **A.**`–`- **D.**` options, followed by `## Answer key, rationales and primary references`, nested domain headings, and bullet answer/rationale entries such as `**D1.01 — B.**`.
-- Search filtering removes recognized answer-key heading subtrees and a marked answer/rationale paragraph directly following a block with at least two labeled A–D options. It retains prompts, ordinary technical explanations, and subsequent sibling sections. See the policy and limitations in `README.md`.
+- Quiz rerenders restore focus to the selected answer or flag control after state changes and move it to the new question heading after navigation. Practice feedback receives focus after answer checking. Keyboard `Enter` continues to work with focus on an answer option.
+- Flagged status uses an inset error-color mark; keyboard focus uses a separate outer ring. Playwright checks the focused/unfocused flagged appearance in light and dark themes.
+- Search omits explicit answer-key/combined answer-rationale sections and structurally marked assessment rationales, including continuation paragraphs until a heading, recognized question prompt, or new options block. Generic technical headings `Solutions`, `Answers`, and `Rationales` remain indexed. Fenced-code closing markers accept only trailing spaces or tabs; see the policy in `README.md`.
 
 ## Automated verification
 
-- `pnpm check`: passed; Biome checked 112 files and Astro reported 0 errors, 0 warnings, and 19 non-blocking hints in existing project files.
-- `pnpm test`: 330 tests passed across 18 files.
-- `pnpm test:a11y`: 81 Playwright tests passed, including WCAG A/AA checks on the active mock exam with the navigator expanded; the suite built and previewed the Astro site.
-- `pnpm check:study-links`: 125 generated study pages checked under `/practice-lab/`; all internal links resolve.
-- `VERCEL_SMOKE_BASE_URL=https://certificate-nine-phi.vercel.app pnpm test:vercel-smoke`: 5/5 smoke tests passed against the [currently available Vercel deployment](https://certificate-nine-phi.vercel.app). This is not a deployment of the uncommitted implementation; a post-PR/deployment smoke run and GitHub Actions link remain outstanding.
-- Playwright exercises the `/practice-lab/` base path. The 52 PNGs in `tmp/issue-62-visual-evidence/` show home, study note, practice setup/session, mock-exam Focus Mode/navigator, results, and search dialog in light/dark themes at 1440×900, 768×1024, and 390×844, plus before/after mobile navigator screenshots and answered+flagged+current states.
-- Examples: `before-light-mobile-question-navigator.png`, `after-light-mobile-question-navigator-with-states.png`, and `after-dark-mobile-question-navigator-with-states.png` in that evidence directory. Git ignores `tmp/`; attach these PNGs to the PR when one is opened.
+- `pnpm check`: passed; Biome checked 112 files and Astro reported 0 errors, 0 warnings, and 19 non-blocking hints.
+- `pnpm test`: 334 tests passed across 18 files.
+- `pnpm test:a11y`: 82 Playwright tests passed; the pinned-deployment screenshot test was skipped because the Vercel baseline requires an unavailable bypass credential. The suite built and previewed the Astro site.
+- `pnpm check:study-links`: all 125 generated study pages under `/practice-lab/` passed.
+- Targeted focus/navigation tests: 9 passed, including focus after answer selection, flag toggling, question navigation, feedback, and both-theme focus distinction.
+- `VERCEL_SMOKE_BASE_URL=<pinned-preview> pnpm test:vercel-smoke`: attempted, 0/5 passed. The protected preview returned the Vercel sign-in page instead of application content; this was not a smoke test of the uncommitted follow-up implementation.
+- The successful local visual-evidence run captured after-state screens in light/dark themes at 1440×900, 768×1024, and 390×844. The before-state could not be captured locally due to preview protection; CI can access it when `VERCEL_AUTOMATION_BYPASS_SECRET` is configured.
 
-## Manual accessibility checks and limitations
+## Manual accessibility checks and remaining limitations
 
-- **Keyboard-only navigator:** Automated pass: Tab reaches question buttons and Enter jumps to the selected question. Playwright Chromium keyboard events were used; no separate physical-keyboard session was performed.
-- **Visible focus:** Automated pass: the focused question matches `:focus-visible` and has a visible outline in Playwright Chromium at 390×844.
-- **Target size:** Automated pass: the tested question button is at least 44×44 CSS pixels at 390×844.
-- **Timer/session persistence and scoring flow:** Existing Playwright coverage passed with the full suite; no separate manual session was performed.
-- **Light/dark and responsive layout:** Screenshots were captured for all six viewport/theme combinations. Chromium emulated the color schemes and viewport sizes; the images are evidence, not a human review of every screen.
-- **200% browser zoom / reflow:** **Not manually verified.** The 390×844 mobile viewport is not a substitute for testing browser zoom at 200%; verify in a real browser before claiming this check.
-- **Screen-reader announcements:** **Not manually verified.** No screen-reader session was available. Accessible names, `aria-current`, `aria-pressed`, and Axe checks are automated evidence only; they do not establish full WCAG conformance.
+- **Keyboard focus:** Automated Playwright checks pass for answer selection, flag toggling, previous/next navigation, and jumping between questions. No separate physical-keyboard session was performed.
+- **Focus and navigator states:** Automated checks confirm the flagged focus indicator differs from its unfocused state in both themes; the question buttons meet the existing 44×44 CSS-pixel target assertion.
+- **Axe:** The full Playwright suite reported no tested WCAG A/AA violations. Automated checks do not establish full WCAG conformance.
+- **200% zoom/reflow:** **Not manually verified.** Responsive viewport screenshots are not a substitute for browser zoom at 200%.
+- **Screen reader:** **Not manually verified.** No VoiceOver/NVDA/TalkBack session was performed; accessible names and ARIA states are automated evidence only.
 
-## Follow-up before implementation release
+## Remaining verification
 
-- Attach the generated screenshot artifacts to the implementation PR when one is opened.
-- Run the Vercel smoke suite against the deployed PR/implementation and link that run; the passing smoke result above is for the currently deployed baseline only.
-- Perform and record a real 200% zoom/reflow check and a screen-reader session (for example, VoiceOver on macOS) before closing those manual verification items.
+- Publish these changes as a successor PR so Vercel can create a preview of this exact implementation; then rerun the smoke suite and link the successful CI/artifact run.
+- Configure the Vercel bypass secret to capture the pinned before-state in CI; until then, only after-state screenshots are available in the artifact.
+- Complete and record manual 200% zoom/reflow and screen-reader verification (for example, VoiceOver on macOS).

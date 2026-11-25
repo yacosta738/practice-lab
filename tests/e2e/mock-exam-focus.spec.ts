@@ -163,3 +163,90 @@ test("mobile question navigator exposes combined states and supports keyboard na
 		"Question 1, answered, flagged for review",
 	);
 });
+
+test("preserves keyboard focus through quiz updates and question transitions", async ({ page }) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.goto(`${CERTIFICATION}?mode=assess#session`);
+	await page.evaluate(() => localStorage.clear());
+	await page.reload();
+	await page.getByRole("button", { name: "Start mock exam" }).click();
+
+	const questionHeading = page.locator(".question h2");
+	await expect(questionHeading).toBeFocused();
+
+	const flagButton = page.locator('[data-action="flag"]');
+	await flagButton.focus();
+	await page.keyboard.press("Enter");
+	await expect(page.locator('[data-action="flag"]')).toBeFocused();
+	await expect(page.locator('[data-action="flag"]')).toHaveAttribute("aria-pressed", "true");
+
+	const answer = page.locator('.question [data-action="pick"]').first();
+	await answer.focus();
+	await page.keyboard.press("Space");
+	await expect(page.locator('.question [data-action="pick"]').first()).toBeFocused();
+	await expect(page.locator('.question [data-action="pick"]').first()).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
+
+	const next = page.locator('[data-action="next"]');
+	await next.focus();
+	await page.keyboard.press("Enter");
+	await expect(questionHeading).toBeFocused();
+	await expect(page.locator(".qhead")).toContainText("Question 2 of");
+
+	const previous = page.locator('[data-action="prev"]');
+	await previous.focus();
+	await page.keyboard.press("Enter");
+	await expect(questionHeading).toBeFocused();
+	await expect(page.locator(".qhead")).toContainText("Question 1 of");
+
+	const navigator = page.locator("details.examNavigator");
+	await navigator.locator("summary").click();
+	const thirdQuestion = page.locator('.qchip[data-value="2"]');
+	await thirdQuestion.focus();
+	await page.keyboard.press("Enter");
+	await expect(questionHeading).toBeFocused();
+	await expect(page.locator(".qhead")).toContainText("Question 3 of");
+});
+
+test("distinguishes keyboard focus from flagged state in both themes", async ({ page }) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.goto(`${CERTIFICATION}?mode=assess#session`);
+	await page.evaluate(() => localStorage.clear());
+	await page.reload();
+	await page.getByRole("button", { name: "Start mock exam" }).click();
+
+	const navigator = page.locator("details.examNavigator");
+	await navigator.locator("summary").click();
+	await page.locator('[data-action="flag"]').click();
+	await page.locator('.qchip[data-value="1"]').click();
+	const flaggedQuestion = page.locator('.qchip[data-value="0"]');
+	await expect(flaggedQuestion).toHaveClass(/flagged/);
+	await expect(flaggedQuestion).not.toHaveClass(/current/);
+
+	for (const theme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme: theme });
+		await page.locator("body").evaluate(() => {
+			if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+		});
+		const unfocusedIndicator = await flaggedQuestion.evaluate((button) => {
+			const style = getComputedStyle(button);
+			return `${style.outlineWidth} ${style.outlineStyle} ${style.outlineColor} ${style.outlineOffset} ${style.boxShadow}`;
+		});
+
+		await navigator.locator("summary").focus();
+		await page.keyboard.press("Tab");
+		await expect(flaggedQuestion).toBeFocused();
+		const focusedIndicator = await flaggedQuestion.evaluate((button) => {
+			const style = getComputedStyle(button);
+			return {
+				visible: button.matches(":focus-visible"),
+				outline: `${style.outlineWidth} ${style.outlineStyle} ${style.outlineColor} ${style.outlineOffset} ${style.boxShadow}`,
+			};
+		});
+
+		expect(focusedIndicator.visible).toBe(true);
+		expect(focusedIndicator.outline).not.toBe(unfocusedIndicator);
+	}
+});

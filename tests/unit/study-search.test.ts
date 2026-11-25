@@ -53,6 +53,78 @@ Retain this later section marker.
 			normalizeSearchText("The best answer: describe this API as a stateless interface."),
 		).toContain("best answer: describe this API as a stateless interface");
 	});
+
+	it("keeps technical sections titled Solutions, Answers, or Rationales searchable", () => {
+		const normalized = normalizeSearchText(`
+## Solutions
+Use exponential backoff with jitter to recover from transient failures.
+
+## Answers
+Return a structured answer payload from the API endpoint.
+
+## Rationales
+Include the rationale for each retry decision in the audit log.
+`);
+
+		expect(normalized).toContain("exponential backoff with jitter");
+		expect(normalized).toContain("structured answer payload");
+		expect(normalized).toContain("rationale for each retry decision");
+	});
+
+	it("excludes all paragraphs in a structurally marked multi-paragraph rationale", () => {
+		const normalized = normalizeSearchText(`
+## Practice question
+Retain this instructional question prompt.
+
+- **A.** First option
+- **B.** Second option
+
+**Best answer: B.** Exclude the first assessment rationale paragraph.
+
+Exclude the continuation paragraph from the same rationale.
+
+Question: Retain the next question prompt without a heading.
+
+- **A.** Third option
+- **B.** Fourth option
+
+**Answer: B.** Exclude this next answer rationale.
+
+## Next topic
+Retain this instructional section after the rationale boundary.
+`);
+
+		expect(normalized).toContain("instructional question prompt");
+		expect(normalized).toContain("next question prompt without a heading");
+		expect(normalized).toContain("instructional section after the rationale boundary");
+		expect(normalized).not.toContain("first assessment rationale paragraph");
+		expect(normalized).not.toContain("continuation paragraph");
+		expect(normalized).not.toContain("next answer rationale");
+	});
+
+	it("does not mistake a fenced code line with trailing text for a closing fence", () => {
+		const normalized = normalizeSearchText(`
+\`\`\`markdown
+\`\`\` not a closing fence
+## Answer key
+Keep this technical example searchable.
+\`\`\`\`
+`);
+
+		expect(normalized).toContain("Keep this technical example searchable");
+	});
+
+	it("requires only spaces or tabs after a closing fence marker", () => {
+		const normalized = normalizeSearchText(`
+\`\`\`markdown
+\`\`\`\u00a0
+## Answer key
+Preserve content after a non-breaking space fence marker.
+\`\`\`
+`);
+
+		expect(normalized).toContain("Preserve content after a non-breaking space fence marker");
+	});
 });
 
 describe("rankSearchItems", () => {

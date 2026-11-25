@@ -144,7 +144,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 	// falls back to innerHTML for browsers without support (e.g. Safari).
 	// The quiz content is trusted (from the question bank), so the sanitizer allows
 	// data-* attributes required for event delegation.
-	function setAppHTML(html) {
+	function setAppHTML(html, focusTarget) {
 		if ("setHTML" in Element.prototype && typeof Sanitizer !== "undefined") {
 			try {
 				const sanitizer = new Sanitizer({
@@ -158,6 +158,10 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 			app.innerHTML = html;
 		}
 		syncFocusMode();
+		if (focusTarget) {
+			const target = app.querySelector(`[data-focus-target="${focusTarget}"]`);
+			if (target instanceof HTMLElement) target.focus();
+		}
 		const navigator = app.querySelector("details.examNavigator");
 		navigator?.addEventListener("toggle", () => {
 			examNavigatorExpanded = navigator.open;
@@ -354,7 +358,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		};
 		persist();
 		setResumeUrl(true);
-		render();
+		render("question");
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	}
 
@@ -492,7 +496,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 	}
 
 	// --- Question view ---
-	function question() {
+	function question(focusTarget) {
 		if (!session || session.submitted) return home();
 		if (session.mode === "exam" && session.deadline && session.deadline <= Date.now())
 			return finish(true);
@@ -524,7 +528,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 									? " bad"
 									: "";
 				else if (v.includes(n)) status = " selected";
-				return `<button class="option${status}" data-action="pick" data-value="${n}" aria-pressed="${v.includes(n)}" ${checked ? "disabled" : ""}>
+				return `<button class="option${status}" data-action="pick" data-value="${n}" data-focus-target="answer-${n}" aria-pressed="${v.includes(n)}" ${checked ? "disabled" : ""}>
 				<span class="letter">${LETTERS[n]}</span><span>${esc(t)}</span>
 			</button>`;
 			})
@@ -534,7 +538,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		const domainStudyLink = studyHref ? `${studyHref}#${x.domain}` : "";
 		let fb = "";
 		if (checked)
-			fb = `<div class="feedback ${good ? "correct" : "wrong"}" role="status">
+			fb = `<div class="feedback ${good ? "correct" : "wrong"}" data-focus-target="feedback" tabindex="-1" role="status">
 			<strong>${good ? "Correct — well reasoned." : "Not quite — review the reasoning."}</strong>
 			<p>${esc(x.explanation)}</p>
 			${x.whyNot ? `<p class="small muted">Why not the others: ${esc(x.whyNot)}</p>` : ""}
@@ -566,14 +570,14 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 			<div class="panel question" style="margin-top:14px">
 				<span class="badge">${x.domain} · ${esc(domains[x.domain].name)}</span>
 				${x.topic ? `<span class="muted small" style="margin-left:8px">${esc(x.topic)}</span>` : ""}
-				<h2>${esc(x.question)}</h2>
+				<h2 data-focus-target="question" tabindex="-1">${esc(x.question)}</h2>
 		 <p class="hint">${getSelectCount(x, id) === 1 ? "Select ONE answer." : `Select exactly ${getSelectCount(x, id)} answers.`}${isExam ? " Your choices stay editable until you submit." : " Check your answer to see the explanation."}</p>
 				${opts}${fb}
 				<div class="actions">
 					${session.currentIndex > 0 ? `<button class="ghost" data-action="prev">← Previous</button>` : ""}
 					${
 						isExam
-							? `<button class="ghost" data-action="flag" aria-pressed="${session.flags.includes(id)}"><span aria-hidden="true">⚑</span> ${session.flags.includes(id) ? "Flagged" : "Flag for review"}</button>
+							? `<button class="ghost" data-action="flag" data-focus-target="flag" aria-pressed="${session.flags.includes(id)}"><span aria-hidden="true">⚑</span> ${session.flags.includes(id) ? "Flagged" : "Flag for review"}</button>
 						<button class="primary" data-action="next">${isLast ? "Go to review" : "Next →"}</button>`
 							: checked
 								? `<button class="primary" data-action="next">${isLast ? "Finish session" : "Next question →"}</button>`
@@ -619,7 +623,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 				<button class="ghost" data-action="home">Pause & go home</button>
 			</aside>`;
 
-		setAppHTML(`<div class="split"><div>${main}</div>${side}</div>`);
+		setAppHTML(`<div class="split"><div>${main}</div>${side}</div>`, focusTarget);
 	}
 
 	function clockText() {
@@ -764,13 +768,13 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 	}
 
 	// --- Render ---
-	function render() {
+	function render(focusTarget) {
 		if (
 			session &&
 			!session.submitted &&
 			new URLSearchParams(window.location.search).get("resume") === "1"
 		)
-			question();
+			question(focusTarget);
 		else if (session && !session.submitted) home();
 		else if (session?.submitted) results();
 		else home();
@@ -856,19 +860,19 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 							? vals
 							: [...vals, n];
 			persist();
-			return question();
+			return question(`answer-${n}`);
 		}
 		if (action === "check") {
 			if ((session.answers[id] || []).length !== getSelectCount(q)) return;
 			session.checked[id] = true;
 			remember(id, accurate(id));
 			persist();
-			return question();
+			return question("feedback");
 		}
 		if (action === "prev") {
 			session.currentIndex = Math.max(0, session.currentIndex - 1);
 			persist();
-			return question();
+			return question("question");
 		}
 		if (action === "next") {
 			session.currentIndex++;
@@ -877,7 +881,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 				if (session.mode === "exam") return examReview();
 				return finish();
 			}
-			return question();
+			return question("question");
 		}
 		if (action === "jump") {
 			// The guard applies to the destination question, not the one on screen.
@@ -885,14 +889,14 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 			if (session.mode !== "exam" && !session.checked[targetId]) return;
 			session.currentIndex = +el.dataset.value;
 			persist();
-			return question();
+			return question("question");
 		}
 		if (action === "flag") {
 			session.flags = session.flags.includes(id)
 				? session.flags.filter((x) => x !== id)
 				: [...session.flags, id];
 			persist();
-			return question();
+			return question("flag");
 		}
 		if (action === "finish") {
 			confirmAction(
@@ -930,9 +934,16 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		if (optionIndex !== -1) {
 			const b = app.querySelector(`[data-action="pick"][data-value="${optionIndex}"]`);
 			if (b && !b.disabled) b.click();
-		} else if (e.key === "Enter" && document.activeElement === document.body) {
+		} else if (
+			e.key === "Enter" &&
+			(document.activeElement === document.body ||
+				document.activeElement?.matches('[data-action="pick"]'))
+		) {
 			const b = app.querySelector('[data-action="check"]:not(:disabled),[data-action="next"]');
-			if (b) b.click();
+			if (b) {
+				e.preventDefault();
+				b.click();
+			}
 		}
 	});
 
