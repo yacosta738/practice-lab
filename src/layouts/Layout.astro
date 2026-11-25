@@ -33,7 +33,9 @@ const isDefaultImage = !ogImage;
 		<link rel="icon" type="image/png" sizes="16x16" href={`${base}favicon-16x16.png`}>
 		<link rel="shortcut icon" href={`${base}favicon.ico`}>
 		<link rel="apple-touch-icon" sizes="180x180" href={`${base}apple-touch-icon.png`}>
-		<link rel="manifest" href={`${base}manifest.json`}>
+		<link rel="manifest" type="application/manifest+json" href={`${base}manifest.json`}>
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-title" content="Practice Lab">
 
 		<!-- Theme colors -->
 		<meta name="theme-color" content="#f7f4ee" media="(prefers-color-scheme: light)">
@@ -130,6 +132,18 @@ const isDefaultImage = !ogImage;
 				if (event.key === STORAGE_KEY) applyStoredTheme();
 			});
 		})();
+		</script>
+		<script>
+		if (import.meta.env.PROD && "serviceWorker" in navigator) {
+			const baseUrl = import.meta.env.BASE_URL.endsWith("/")
+				? import.meta.env.BASE_URL
+				: `${import.meta.env.BASE_URL}/`;
+			window.addEventListener("load", () => {
+				void navigator.serviceWorker.register(`${baseUrl}sw.js`).catch((error) => {
+					console.error("Service worker registration failed:", error);
+				});
+			});
+		}
 		</script>
 	</body>
 </html>
