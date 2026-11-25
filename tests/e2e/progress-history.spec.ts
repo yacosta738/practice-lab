@@ -7,6 +7,7 @@ test("reviewing an older result keeps the active mock exam available to resume",
 	page,
 }) => {
 	await page.goto(`${CERTIFICATION}?mode=practice`);
+	await expect(page.getByRole("button", { name: /Practice mode/ })).toBeVisible();
 	const completedSessionId = await page.evaluate(async () => {
 		const bootstrap = JSON.parse(
 			document.querySelector<HTMLElement>("#quiz-bootstrap")?.dataset.bootstrap || "{}",
