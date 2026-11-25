@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { readCertificationProgress } from "./progress-helpers";
 
 const BASE_PATH = "/practice-lab";
 const CERTIFICATION = `${BASE_PATH}/certifications/ccdv-f/`;
@@ -80,34 +81,39 @@ test("starting a different session requires confirmation and preserves canceled 
 	page,
 }) => {
 	await page.goto(`${CERTIFICATION}?mode=practice#session`);
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
 	await page.selectOption("#amount", "10");
 	await page.getByRole("button", { name: "Practice mode" }).click();
 	await page.locator("button.option").first().click();
 
-	const getSession = () =>
-		page.evaluate(() => JSON.parse(localStorage.getItem("ccdv-f-practice-lab-v2") || "{}"));
-	const practiceState = await getSession();
-	const originalSession = practiceState.session;
+	const getProgress = () => readCertificationProgress(page, "ccdv-f");
+	const practiceState = await getProgress();
+	const originalSession = practiceState.sessions.find((item) => item.status === "in_progress");
+	if (!originalSession) throw new Error("Expected the active practice session in IndexedDB.");
 	await page.locator('.pl-sidebar [data-workspace-mode="assess"]').click();
 	await page.getByRole("button", { name: "Start mock exam" }).click();
 
 	const confirmation = page.getByRole("dialog", { name: "Replace active session?" });
 	await expect(confirmation).toBeVisible();
 	await confirmation.getByRole("button", { name: "Cancel" }).click();
-	const afterCancel = await getSession();
-	expect(afterCancel.session).toMatchObject({
+	const afterCancel = await getProgress();
+	const unchangedSession = afterCancel.sessions.find((item) => item.status === "in_progress");
+	if (!unchangedSession)
+		throw new Error("Expected the active session to remain after canceling replacement.");
+	expect(unchangedSession).toMatchObject({
+		id: originalSession.id,
 		mode: originalSession.mode,
-		ids: originalSession.ids,
-		currentIndex: originalSession.currentIndex,
-		answers: originalSession.answers,
-		checked: originalSession.checked,
-		flags: originalSession.flags,
-		created: originalSession.created,
-		deadline: originalSession.deadline,
+		checkpoint: originalSession.checkpoint,
 	});
-	expect(afterCancel.stats).toEqual(practiceState.stats);
+	expect(
+		(unchangedSession.content as { questions: { questionId: string }[] }).questions.map(
+			(question) => question.questionId,
+		),
+	).toEqual(
+		(originalSession.content as { questions: { questionId: string }[] }).questions.map(
+			(question) => question.questionId,
+		),
+	);
+	expect(afterCancel.questionProgress).toEqual(practiceState.questionProgress);
 
 	await page.getByRole("button", { name: "Start mock exam" }).click();
 	await page
@@ -115,7 +121,11 @@ test("starting a different session requires confirmation and preserves canceled 
 		.getByRole("button", { name: "Replace session" })
 		.click();
 	await expect(page.locator("button.option").first()).toBeVisible();
-	expect((await getSession()).session.mode).toBe("exam");
+	const replaced = await getProgress();
+	expect(replaced.sessions.find((item) => item.status === "in_progress")?.mode).toBe("exam");
+	expect(replaced.sessions.find((item) => item.id === originalSession.id)?.status).toBe(
+		"abandoned",
+	);
 });
 
 test("homepage accurately describes local progress storage", async ({ page }) => {

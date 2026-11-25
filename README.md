@@ -1,6 +1,6 @@
 # Practice Lab
 
-Interactive practice platform for certification preparation. Study by domain, take timed mock exams, and track your progress. Practice progress is saved locally in your browser; the site itself needs an internet connection to load.
+Interactive practice platform for certification preparation. Study by domain, take timed mock exams, and track your progress. Quiz progress is saved in browser IndexedDB; the site itself needs an internet connection to load.
 
 ![Practice Lab — Prepare with confidence](public/assets/practice-lab-confidence.png)
 
@@ -20,7 +20,7 @@ Interactive practice platform for certification preparation. Study by domain, ta
 - **Practice mode** — study question by question with explanations and sources.
 - **Exam mode** — timed mock exam with 53 questions distributed by domain.
 - **Weaknesses mode** — focus on the questions you got wrong.
-- **Progress tracking** — statistics and active sessions persist in browser `localStorage`; the site itself needs an internet connection to load.
+- **Progress tracking** — statistics, resumable sessions, and results persist in browser `IndexedDB` on this origin.
 - **Search** — the accessible search dialog matches result metadata and full-text study-note content; structurally identified assessment answers are omitted from its generated index.
 - **Study library** — per-certification study notes rendered from Markdown, organised by exam domain with a table of contents and cross-links.
 
@@ -33,7 +33,12 @@ The imported practice questions for CCAO-F, CCAR-P, CCAR-F, and 53 items in CCDV
 - [Astro](https://astro.build) — static site framework.
 - TypeScript — full type safety.
 - Native CSS — no preprocessors or UI frameworks.
-- `localStorage` — progress and session persistence.
+- IndexedDB — versioned quiz progress, active sessions, and history.
+- `localStorage` — theme preference and read-only legacy progress during migration.
+
+## Browser Progress, Migration, and Recovery
+
+Quiz progress stays in the current browser profile and site origin; it is not synchronized to a server or between deployments. Certification pages offer versioned JSON backups that can be restored for the certification currently open. Before importing a legacy record, the page also offers a backup of known legacy records and IndexedDB progress; the original legacy key is retained. For migration, rollback, stale-tab reconciliation, reset, and restore behavior, see [`docs/progress-storage.md`](docs/progress-storage.md).
 
 ## Project Structure
 

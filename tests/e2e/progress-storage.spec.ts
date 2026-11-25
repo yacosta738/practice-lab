@@ -51,8 +51,28 @@ test("persists typed progress through the browser adapter and keeps aborted tran
 						contentHash: "sha256:question-v1",
 						domainId: "domain-a",
 						optionIds: ["option-a", "option-b"],
+						optionTexts: ["Correct", "Incorrect"],
+						displayOptionIds: ["option-a", "option-b"],
+						correctOptionIds: ["option-a"],
+						questionText: "Question text",
+						domainName: "Domain A",
+						explanation: "Explanation",
+						sourceLabel: "Guide",
+						sourceUrl: "https://example.test/guide",
+						selectCount: 1,
 					},
 				],
+			},
+		});
+		const checkpointed = await useCases.checkpointSession({
+			sessionId: session.id,
+			expectedRevision: session.revision,
+			checkpoint: {
+				currentQuestionId: "question-stable-id",
+				deadlineAt: null,
+				selectedOptionIdsByQuestion: { "question-stable-id": ["option-a"] },
+				checkedQuestionIds: [],
+				flaggedQuestionIds: [],
 			},
 		});
 		await useCases.recordEvaluation({
@@ -62,8 +82,11 @@ test("persists typed progress through the browser adapter and keeps aborted tran
 			outcome: "correct",
 			scoreEarned: 1,
 			scorePossible: 1,
+			expectedRevision: checkpointed.revision,
 		});
-		await useCases.finalizeSession(session.id, session.revision, "completed");
+		const evaluatedSession = await useCases.getSession(session.id);
+		if (!evaluatedSession) throw new Error("Expected the evaluated session to remain available.");
+		await useCases.finalizeSession(session.id, evaluatedSession.revision, "completed");
 		await repository.close();
 
 		const reopenedRepository = api.createProgressRepository();
@@ -78,7 +101,7 @@ test("persists typed progress through the browser adapter and keeps aborted tran
 
 	expect(persisted.history).toHaveLength(1);
 	expect(persisted.history[0]).toMatchObject({
-		session: { status: "completed", revision: 2 },
+		session: { status: "completed", revision: 4 },
 		attempts: [{ outcome: "correct", questionRevision: "question-v1" }],
 	});
 	expect(persisted.questionProgress).toMatchObject({ attemptCount: 1, correctCount: 1 });
@@ -128,5 +151,5 @@ test("persists typed progress through the browser adapter and keeps aborted tran
 		return { didAbort, revision: after?.revision };
 	});
 
-	expect(transactionResult).toEqual({ didAbort: true, revision: 2 });
+	expect(transactionResult).toEqual({ didAbort: true, revision: 4 });
 });

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { readCertificationProgress } from "./progress-helpers";
 
 const BASE_PATH = "/practice-lab";
 
@@ -11,17 +12,20 @@ test("quiz shortcuts pause while the submit dialog is open", async ({ page }) =>
 	const dialog = page.getByRole("dialog", { name: "Submit mock exam?" });
 	const cancel = dialog.getByRole("button", { name: "Cancel" });
 	await expect(cancel).toBeFocused();
-	const savedSession = () => page.evaluate(() => localStorage.getItem("ccdv-f-practice-lab-v2"));
-	const before = await savedSession();
+	const getActiveSession = async () => {
+		const state = await readCertificationProgress(page, "ccdv-f");
+		return state.sessions.find((item) => item.status === "in_progress");
+	};
+	const before = await getActiveSession();
 	await page.keyboard.press("1");
-	expect(await savedSession()).toBe(before);
+	expect(await getActiveSession()).toEqual(before);
 
 	await cancel.press("Enter");
 	await expect(dialog).toBeHidden();
 	await expect(page.locator("button.option.selected")).toHaveCount(0);
 	await page.keyboard.press("1");
 	await expect(page.locator("button.option.selected .letter")).toHaveText("A");
-	expect(await savedSession()).not.toBe(before);
+	expect((await getActiveSession())?.revision).toBe((before?.revision as number) + 1);
 });
 
 test("CCDV-F practice mode shows results page after finishing questions", async ({ page }) => {
@@ -29,9 +33,6 @@ test("CCDV-F practice mode shows results page after finishing questions", async 
 
 	// Use 10 questions (smallest option available)
 	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
-	await page.waitForLoadState("domcontentloaded");
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
 	await page.waitForLoadState("domcontentloaded");
 
 	// Wait for the home page to render
@@ -48,20 +49,34 @@ test("CCDV-F practice mode shows results page after finishing questions", async 
 
 	// Answer all 10 questions
 	for (let i = 0; i < 10; i++) {
+		await expect(page.locator(".qhead")).toContainText(`Question ${i + 1} of 10`);
 		const questionProgress = await page.locator(".qhead").textContent();
-		// Read the hint to know how many answers to select
-		const hintText = await page.locator(".hint").first().textContent();
-		const exactMatch = hintText?.match(/Select exactly (\d+) answers/i);
-		const needed = exactMatch ? Number.parseInt(exactMatch[1], 10) : 1;
+		const needed = Number(await page.locator(".hint").getAttribute("data-select-count"));
+		expect(Number.isSafeInteger(needed) && needed > 0).toBe(true);
 
 		// Select the required number of options
 		const optionButtons = page.locator("button.option");
 		for (let j = 0; j < needed; j++) {
-			await optionButtons.nth(j).click();
+			await optionButtons.nth(j).click({ timeout: 5_000 });
+			await expect(page.locator("button.option.selected")).toHaveCount(j + 1);
 		}
 
 		// Check answer
-		await page.getByRole("button", { name: "Check answer" }).click();
+		const checkButton = page.getByRole("button", { name: "Check answer" });
+		await expect(checkButton).toBeEnabled();
+		const progress = await readCertificationProgress(page, "ccdv-f");
+		const active = progress.sessions.find((item) => item.status === "in_progress");
+		if (!active) throw new Error("Expected the active practice session in IndexedDB.");
+		const checkpoint = active.checkpoint as {
+			currentQuestionId: string | null;
+			selectedOptionIdsByQuestion: Record<string, string[]>;
+		};
+		if (checkpoint.currentQuestionId) {
+			expect(checkpoint.selectedOptionIdsByQuestion[checkpoint.currentQuestionId]).toHaveLength(
+				needed,
+			);
+		}
+		await checkButton.click();
 
 		// Verify feedback appears
 		await expect(page.locator(".feedback")).toBeVisible({ timeout: 5000 });
@@ -81,8 +96,9 @@ test("CCDV-F practice mode shows results page after finishing questions", async 
 	}
 
 	// After the last question, the Finish button should appear
-	const finishBtn = page.getByRole("button", { name: /Finish/i }).first();
+	const finishBtn = page.getByRole("button", { name: "Finish session", exact: true });
 	await finishBtn.waitFor({ state: "visible", timeout: 10000 });
+	await expect(finishBtn).toBeEnabled();
 	await finishBtn.click();
 
 	// Verify the results page is visible
@@ -111,8 +127,6 @@ test("CCDV-F practice mode shows results page after finishing questions", async 
 test("CCDV-F keyboard shortcuts select options", async ({ page }) => {
 	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
 	await page.waitForLoadState("networkidle");
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
 	await page.waitForLoadState("networkidle");
 
 	// Wait for the home page to render
@@ -128,8 +142,8 @@ test("CCDV-F keyboard shortcuts select options", async ({ page }) => {
 	await page.waitForSelector("button.option", { state: "visible", timeout: 10000 });
 
 	// Check if this is a single-select question (most common)
-	const hintText = await page.locator(".hint").first().textContent();
-	const isSingleSelect = hintText?.includes("Select ONE");
+	const selectCount = Number(await page.locator(".hint").getAttribute("data-select-count"));
+	const isSingleSelect = selectCount === 1;
 
 	// For single-select questions, keyboard toggles between options
 	if (isSingleSelect) {
@@ -149,6 +163,7 @@ test("CCDV-F keyboard shortcuts select options", async ({ page }) => {
 	} else {
 		// For multi-select, keyboard adds/removes options
 		await page.keyboard.press("1");
+		await expect(page.locator("button.option.selected")).toHaveCount(1);
 		await page.keyboard.press("2");
 		const selectedOptions = page.locator("button.option.selected");
 		await expect(selectedOptions).toHaveCount(2);
@@ -158,8 +173,6 @@ test("CCDV-F keyboard shortcuts select options", async ({ page }) => {
 test("CCDV-F keyboard shortcut Enter checks answer", async ({ page }) => {
 	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
 	await page.waitForLoadState("networkidle");
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
 	await page.waitForLoadState("networkidle");
 
 	// Wait for the home page to render
@@ -175,13 +188,12 @@ test("CCDV-F keyboard shortcut Enter checks answer", async ({ page }) => {
 	await page.waitForSelector("button.option", { state: "visible", timeout: 10000 });
 
 	// Read the hint to know how many answers to select
-	const hintText = await page.locator(".hint").first().textContent();
-	const exactMatch = hintText?.match(/Select exactly (\d+) answers/i);
-	const needed = exactMatch ? Number.parseInt(exactMatch[1], 10) : 1;
+	const needed = Number(await page.locator(".hint").getAttribute("data-select-count"));
 
 	// Select the required number of options using keyboard shortcuts
 	for (let i = 0; i < needed; i++) {
 		await page.keyboard.press(String(i + 1));
+		await expect(page.locator("button.option.selected")).toHaveCount(i + 1);
 	}
 
 	// Focus on body so Enter shortcut works (the handler requires activeElement === body)
@@ -197,8 +209,6 @@ test("CCDV-F keyboard shortcut Enter checks answer", async ({ page }) => {
 test("CCDV-F Next button moves to next question", async ({ page }) => {
 	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
 	await page.waitForLoadState("networkidle");
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
 	await page.waitForLoadState("networkidle");
 
 	// Wait for the home page to render
@@ -217,13 +227,12 @@ test("CCDV-F Next button moves to next question", async ({ page }) => {
 	const firstQuestion = await page.locator("h2").first().textContent();
 
 	// Read the hint to know how many answers to select
-	const hintText = await page.locator(".hint").first().textContent();
-	const exactMatch = hintText?.match(/Select exactly (\d+) answers/i);
-	const needed = exactMatch ? Number.parseInt(exactMatch[1], 10) : 1;
+	const needed = Number(await page.locator(".hint").getAttribute("data-select-count"));
 
 	// Select the required number of options using keyboard shortcuts
 	for (let i = 0; i < needed; i++) {
 		await page.keyboard.press(String(i + 1));
+		await expect(page.locator("button.option.selected")).toHaveCount(i + 1);
 	}
 
 	// Focus on body and press Enter to check answer

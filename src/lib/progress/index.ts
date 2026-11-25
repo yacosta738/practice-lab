@@ -1,3 +1,4 @@
+export { parseProgressBackup } from "./backup-restore";
 export type { ProgressStorageErrorCode } from "./errors";
 export {
 	ProgressConflictError,
@@ -6,12 +7,23 @@ export {
 	ProgressValidationError,
 } from "./errors";
 export { createProgressRepository } from "./indexeddb-repository";
+export {
+	createLearningBackup,
+	LEARNING_BACKUP_FORMAT,
+	type LearningBackup,
+	MAX_LEARNING_BACKUP_RECORDS,
+	MAX_LEARNING_BACKUP_SIZE,
+	parseLearningBackup,
+} from "./learning-backup";
 export type {
+	CertificationProgressRestoreSnapshot,
 	CheckpointSessionInput,
 	ContentProvenance,
 	CreateSessionInput,
 	EvaluationOutcome,
 	FinalSessionStatus,
+	LearningDataRestoreData,
+	LearningDataSnapshot,
 	LearningGoalRecord,
 	ProgressSession,
 	QuestionAttempt,

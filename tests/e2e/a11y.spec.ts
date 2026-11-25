@@ -5,6 +5,7 @@ import { expect, test } from "@playwright/test";
 // prefixed with the `base` value from astro.config.mjs.
 const ROUTES = [
 	"/practice-lab/",
+	"/practice-lab/data-management/",
 	"/practice-lab/certifications/ccdv-f",
 	"/practice-lab/certifications/ccao-f",
 	"/practice-lab/certifications/ccar-p",

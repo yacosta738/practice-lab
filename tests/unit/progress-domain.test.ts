@@ -31,6 +31,15 @@ const CONTENT: ContentProvenance = {
 			contentHash: "sha256:question-v1",
 			domainId: "domain-a",
 			optionIds: ["option-a", "option-b"],
+			optionTexts: ["Correct", "Incorrect"],
+			displayOptionIds: ["option-a", "option-b"],
+			correctOptionIds: ["option-a"],
+			questionText: "Question text",
+			domainName: "Domain A",
+			explanation: "Explanation",
+			sourceLabel: "Guide",
+			sourceUrl: "https://example.test/guide",
+			selectCount: 1,
 		},
 	],
 };
@@ -101,6 +110,8 @@ describe("progress domain rules", () => {
 			currentQuestionId: "question-stable-id",
 			deadlineAt: null,
 			selectedOptionIdsByQuestion: { "question-stable-id": ["option-b"] },
+			checkedQuestionIds: [],
+			flaggedQuestionIds: [],
 		};
 		const saved = checkpointSession(initial, 1, checkpoint, 2);
 

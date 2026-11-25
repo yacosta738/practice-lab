@@ -58,6 +58,7 @@ export interface QuestionStats {
 export interface ShuffledQuestionOptions {
 	options: string[];
 	correctAnswers: number[];
+	optionIds?: string[];
 }
 
 export interface QuizSession {

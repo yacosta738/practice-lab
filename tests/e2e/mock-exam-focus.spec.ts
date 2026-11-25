@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { readCertificationProgress } from "./progress-helpers";
 
 const BASE_PATH = "/practice-lab";
 const CERTIFICATION = `${BASE_PATH}/certifications/ccdv-f/`;
@@ -12,18 +13,17 @@ test("active mock exams enter Focus Mode, retain the deadline, and keep the mobi
 }) => {
 	await page.setViewportSize({ width: 390, height: 844 });
 	await page.goto(`${CERTIFICATION}?mode=assess#session`);
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
 	await page.getByRole("button", { name: "Start mock exam" }).click();
 	await expect(page.locator(".pl-shell")).toHaveAttribute("data-exam-focus", "true");
 	await expect(page.locator(".pl-sidebar")).toBeHidden();
 	await expect(page.locator(".pl-bottom-nav")).toBeHidden();
 	await expect(page.locator(".pl-search-trigger")).toBeHidden();
 
-	const deadline = await page.evaluate(() => {
-		const saved = JSON.parse(localStorage.getItem("ccdv-f-practice-lab-v2") || "{}");
-		return saved.session.deadline;
-	});
+	const initialProgress = await readCertificationProgress(page, "ccdv-f");
+	const activeSession = initialProgress.sessions.find((item) => item.status === "in_progress");
+	if (!activeSession) throw new Error("Expected the active mock exam in IndexedDB.");
+	const deadline = (activeSession.checkpoint as { deadlineAt: number | null }).deadlineAt;
+	expect(deadline).not.toBeNull();
 	const navigator = page.locator("details.examNavigator");
 	await expect(navigator.locator("summary")).toBeVisible();
 	await expect(navigator).not.toHaveAttribute("open", "");
@@ -44,15 +44,45 @@ test("active mock exams enter Focus Mode, retain the deadline, and keep the mobi
 	});
 	expect(shortcutPrevented).toBe(true);
 	await expect(page.locator("#pl-search-dialog")).not.toHaveAttribute("open", "");
+	const answerCount = Number(
+		(await page.locator(".hint").textContent())?.match(/exactly (\d+) answers/)?.[1] ?? 1,
+	);
+	for (let index = 0; index < answerCount; index += 1) {
+		await page.locator("button.option").nth(index).click();
+	}
+	await page.getByRole("button", { name: "Flag for review" }).click();
+	await expect(page.getByRole("button", { name: "Flagged", exact: true })).toBeVisible();
+	const beforeReload = await readCertificationProgress(page, "ccdv-f");
+	const examBeforeReload = beforeReload.sessions.find((item) => item.status === "in_progress");
+	if (!examBeforeReload) throw new Error("Expected the active exam before reload.");
+	const questionId = (examBeforeReload.content as { questions: { questionId: string }[] })
+		.questions[0].questionId;
+	const checkpointBeforeReload = examBeforeReload.checkpoint as {
+		deadlineAt: number | null;
+		selectedOptionIdsByQuestion: Record<string, string[]>;
+		flaggedQuestionIds: string[];
+	};
+	expect(checkpointBeforeReload.selectedOptionIdsByQuestion[questionId]).toHaveLength(answerCount);
+	expect(checkpointBeforeReload.flaggedQuestionIds).toContain(questionId);
 	await page.reload();
 	await expect(page.locator("button.option").first()).toBeVisible();
 	await expect(page.locator(".pl-shell")).toHaveAttribute("data-exam-focus", "true");
-	expect(
-		await page.evaluate(() => {
-			const saved = JSON.parse(localStorage.getItem("ccdv-f-practice-lab-v2") || "{}");
-			return saved.session.deadline;
-		}),
-	).toBe(deadline);
+	const restoredProgress = await readCertificationProgress(page, "ccdv-f");
+	const restoredSession = restoredProgress.sessions.find((item) => item.status === "in_progress");
+	const restoredCheckpoint = restoredSession?.checkpoint as
+		| {
+				deadlineAt: number | null;
+				selectedOptionIdsByQuestion: Record<string, string[]>;
+				flaggedQuestionIds: string[];
+		  }
+		| undefined;
+	expect(restoredCheckpoint?.deadlineAt).toBe(deadline);
+	expect(restoredCheckpoint?.selectedOptionIdsByQuestion[questionId]).toEqual(
+		checkpointBeforeReload.selectedOptionIdsByQuestion[questionId],
+	);
+	expect(restoredCheckpoint?.flaggedQuestionIds).toContain(questionId);
+	await expect(page.locator("button.option.selected")).toHaveCount(answerCount);
+	await expect(page.getByRole("button", { name: "Flagged", exact: true })).toBeVisible();
 
 	await page.getByRole("button", { name: "Exit exam" }).click();
 	const exitDialog = page.getByRole("dialog", { name: "Exit mock exam?" });
@@ -76,8 +106,6 @@ test("mobile question navigator exposes combined states and supports keyboard na
 	mkdirSync(EVIDENCE_DIRECTORY, { recursive: true });
 	await page.emulateMedia({ colorScheme: "light" });
 	await page.goto(`${CERTIFICATION}?mode=assess#session`);
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
 	await page.getByRole("button", { name: "Start mock exam" }).click();
 
 	const navigator = page.locator("details.examNavigator");
@@ -167,8 +195,6 @@ test("mobile question navigator exposes combined states and supports keyboard na
 test("preserves keyboard focus through quiz updates and question transitions", async ({ page }) => {
 	await page.setViewportSize({ width: 390, height: 844 });
 	await page.goto(`${CERTIFICATION}?mode=assess#session`);
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
 	await page.getByRole("button", { name: "Start mock exam" }).click();
 
 	const questionHeading = page.locator(".question h2");
@@ -213,8 +239,6 @@ test("preserves keyboard focus through quiz updates and question transitions", a
 test("distinguishes keyboard focus from flagged state in both themes", async ({ page }) => {
 	await page.setViewportSize({ width: 390, height: 844 });
 	await page.goto(`${CERTIFICATION}?mode=assess#session`);
-	await page.evaluate(() => localStorage.clear());
-	await page.reload();
 	await page.getByRole("button", { name: "Start mock exam" }).click();
 
 	const navigator = page.locator("details.examNavigator");

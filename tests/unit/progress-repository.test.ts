@@ -13,6 +13,10 @@ import {
 	type ScoringProvenance,
 } from "../../src/lib/progress";
 import { ProgressConflictError } from "../../src/lib/progress/errors";
+import type {
+	LegacyProgressBackup,
+	LegacyProgressMigrationInput,
+} from "../../src/lib/progress/model";
 
 const CONTENT: ContentProvenance = {
 	bankRevision: "bank-v1",
@@ -23,6 +27,15 @@ const CONTENT: ContentProvenance = {
 			contentHash: "sha256:question-v1",
 			domainId: "domain-a",
 			optionIds: ["option-a", "option-b"],
+			optionTexts: ["Correct", "Incorrect"],
+			displayOptionIds: ["option-a", "option-b"],
+			correctOptionIds: ["option-a"],
+			questionText: "Question text",
+			domainName: "Domain A",
+			explanation: "Explanation",
+			sourceLabel: "Guide",
+			sourceUrl: "https://example.test/guide",
+			selectCount: 1,
 		},
 	],
 };
@@ -58,6 +71,54 @@ afterEach(async () => {
 });
 
 describe("IndexedDB progress repository", () => {
+	it("restores an exported snapshot atomically and rejects stale generation tokens", async () => {
+		const sessionId = "00000000-0000-4000-8000-000000000001";
+		const session = await repository.createSession(sessionInput(sessionId));
+		const checkpoint = await repository.checkpointSession({
+			sessionId,
+			expectedRevision: session.revision,
+			checkpoint: {
+				currentQuestionId: "question-stable-id",
+				deadlineAt: null,
+				selectedOptionIdsByQuestion: { "question-stable-id": ["option-a"] },
+				checkedQuestionIds: [],
+				flaggedQuestionIds: [],
+			},
+			updatedAt: 150,
+		});
+		await repository.recordEvaluation({
+			sessionId,
+			questionId: "question-stable-id",
+			selectedOptionIds: ["option-a"],
+			outcome: "correct",
+			scoreEarned: 1,
+			scorePossible: 1,
+			evaluatedAt: 200,
+			expectedRevision: checkpoint.revision,
+		});
+		const snapshot = await repository.getCertificationProgressSnapshot("ccdv-f");
+		const staleToken = await repository.getDataGenerationToken("ccdv-f");
+
+		await repository.resetCertificationProgress("ccdv-f");
+		const currentToken = await repository.getDataGenerationToken("ccdv-f");
+		const restoredTokens = await repository.restoreCertificationProgress(
+			[{ certificationId: "ccdv-f", ...snapshot }],
+			{ "ccdv-f": currentToken },
+		);
+		expect(await repository.getCertificationProgressSnapshot("ccdv-f")).toEqual(snapshot);
+		expect(restoredTokens["ccdv-f"]).not.toBe(currentToken);
+
+		await repository.resetCertificationProgress("ccdv-f");
+		await repository.createSession(sessionInput("00000000-0000-4000-8000-000000000002"));
+		await expect(
+			repository.restoreCertificationProgress([{ certificationId: "ccdv-f", ...snapshot }], {
+				"ccdv-f": staleToken,
+			}),
+		).rejects.toThrow(/changed in another tab/i);
+		expect(await repository.getSession(sessionId)).toBeUndefined();
+		expect(await repository.getSession("00000000-0000-4000-8000-000000000002")).toBeDefined();
+	});
+
 	it("creates the complete versioned schema and its metadata in the upgrade transaction", async () => {
 		await repository.createSession(sessionInput("00000000-0000-4000-8000-000000000001"));
 		const database = await openDB<ProgressDatabaseSchema>(PROGRESS_DATABASE_NAME);
@@ -144,6 +205,159 @@ describe("IndexedDB progress repository", () => {
 		).resolves.toMatchObject({ certificationId: "ccar-f", status: "in_progress" });
 	});
 
+	it("replaces an active session atomically while retaining its abandoned history", async () => {
+		const previous = await repository.createSession(
+			sessionInput("00000000-0000-4000-8000-000000000001"),
+		);
+		const replacement = await repository.replaceSession(
+			sessionInput("00000000-0000-4000-8000-000000000002", "ccdv-f", 200),
+			previous.id,
+			previous.revision,
+		);
+
+		expect(replacement.status).toBe("in_progress");
+		expect(await repository.getSession(previous.id)).toMatchObject({
+			status: "abandoned",
+			finishedAt: 200,
+		});
+		expect(await repository.getSessionHistory("ccdv-f")).toHaveLength(2);
+	});
+
+	it("imports legacy baselines, a raw backup, and a session once in a single migration", async () => {
+		const migration: LegacyProgressMigrationInput = {
+			certificationId: "ccdv-f",
+			legacyStorageKey: "ccdv-f-practice-lab-v2",
+			rawValue: '{"stats":{"removed-question":{"attempts":2,"correct":1,"lastWrong":true}}}',
+			migratedAt: 300,
+			baselines: [
+				{
+					questionId: "removed-question",
+					baseline: { attempts: 2, correct: 1, lastWrong: true },
+				},
+			],
+			session: {
+				input: {
+					id: "00000000-0000-4000-8000-000000000001",
+					certificationId: "ccdv-f",
+					mode: "exam",
+					startedAt: 100,
+					scoring: SCORING,
+					content: CONTENT,
+					checkpoint: {
+						currentQuestionId: "question-stable-id",
+						deadlineAt: 1_000,
+						selectedOptionIdsByQuestion: { "question-stable-id": ["option-a"] },
+						checkedQuestionIds: [],
+						flaggedQuestionIds: ["question-stable-id"],
+					},
+					legacy: {
+						sourceStorageKey: "ccdv-f-practice-lab-v2",
+						version: 2,
+						limitations: ["The original wording was not captured."],
+						evaluatedQuestionIds: [],
+					},
+				},
+			},
+			warnings: ["Some historical data was not recoverable."],
+		};
+
+		const [first, retried] = await Promise.all([
+			repository.migrateLegacyData(migration),
+			repository.migrateLegacyData({ ...migration, migratedAt: 999 }),
+		]);
+
+		expect(retried).toEqual(first);
+		expect(await repository.getQuestionProgress("ccdv-f", "removed-question")).toMatchObject({
+			legacyBaseline: { attempts: 2, correct: 1, lastWrong: true },
+		});
+		expect(await repository.getMetadata("legacy-backup:ccdv-f")).toMatchObject({
+			format: "practice-lab-progress-backup",
+			version: 1,
+			rawValue: migration.rawValue,
+		});
+		expect(await repository.getMetadata("migration:legacy-v2:ccdv-f")).toEqual(first);
+		expect(await repository.getSessionHistory("ccdv-f")).toHaveLength(1);
+	});
+
+	it("archives old-tab writes without merging them into the migrated baseline", async () => {
+		const migration: LegacyProgressMigrationInput = {
+			certificationId: "ccdv-f",
+			legacyStorageKey: "ccdv-f-practice-lab-v2",
+			rawValue: "original legacy value",
+			migratedAt: 300,
+			baselines: [
+				{
+					questionId: "removed-question",
+					baseline: { attempts: 2, correct: 1, lastWrong: true },
+				},
+			],
+			warnings: [],
+		};
+		const original = await repository.migrateLegacyData(migration);
+		const backup: LegacyProgressBackup = {
+			format: "practice-lab-progress-backup",
+			version: 1,
+			certificationId: "ccdv-f",
+			legacyStorageKey: "ccdv-f-practice-lab-v2",
+			capturedAt: 500,
+			rawValue: "updated by an old application tab",
+			warnings: ["Archived old-tab progress without importing or merging it."],
+		};
+
+		const reconciled = await repository.reconcileLegacyWrite(
+			"ccdv-f",
+			backup,
+			original.generationToken,
+		);
+
+		expect(reconciled.generationToken).not.toBe(original.generationToken);
+		expect(reconciled.warnings).toContain(backup.warnings[0]);
+		expect(await repository.getMetadata("legacy-backup:ccdv-f")).toMatchObject(backup);
+		expect(await repository.getQuestionProgress("ccdv-f", "removed-question")).toMatchObject({
+			legacyBaseline: { attempts: 2, correct: 1, lastWrong: true },
+		});
+	});
+
+	it("aborts an invalid legacy import without leaving its marker or backup", async () => {
+		const migration: LegacyProgressMigrationInput = {
+			certificationId: "ccdv-f",
+			legacyStorageKey: "ccdv-f-practice-lab-v2",
+			rawValue: "legacy",
+			migratedAt: 300,
+			baselines: [
+				{
+					questionId: "question-stable-id",
+					baseline: { attempts: 1, correct: 2, lastWrong: false },
+				},
+			],
+			warnings: [],
+		};
+
+		await expect(repository.migrateLegacyData(migration)).rejects.toBeInstanceOf(Error);
+		expect(await repository.getMetadata("legacy-backup:ccdv-f")).toBeUndefined();
+		expect(await repository.getMetadata("migration:legacy-v2:ccdv-f")).toBeUndefined();
+	});
+
+	it("invalidates stale generation tokens when resetting only one certification", async () => {
+		const token = await repository.getDataGenerationToken("ccdv-f");
+		const session = await repository.createSession({
+			...sessionInput("00000000-0000-4000-8000-000000000001"),
+			expectedGenerationToken: token,
+		});
+		await repository.createSession(sessionInput("00000000-0000-4000-8000-000000000002", "ccar-f"));
+
+		await repository.resetCertificationProgress("ccdv-f");
+		await expect(
+			repository.createSession({
+				...sessionInput("00000000-0000-4000-8000-000000000003"),
+				expectedGenerationToken: token,
+			}),
+		).rejects.toBeInstanceOf(ProgressConflictError);
+		expect(await repository.getSession(session.id)).toBeUndefined();
+		expect(await repository.getSessionHistory("ccdv-f")).toEqual([]);
+		expect(await repository.getSessionHistory("ccar-f")).toHaveLength(1);
+	});
+
 	it("rejects stale checkpoints without overwriting the winner and accepts an identical retry", async () => {
 		const created = await repository.createSession(
 			sessionInput("00000000-0000-4000-8000-000000000001"),
@@ -153,11 +367,15 @@ describe("IndexedDB progress repository", () => {
 				currentQuestionId: "question-stable-id",
 				deadlineAt: null,
 				selectedOptionIdsByQuestion: { "question-stable-id": ["option-a"] },
+				checkedQuestionIds: [],
+				flaggedQuestionIds: [],
 			},
 			{
 				currentQuestionId: "question-stable-id",
 				deadlineAt: null,
 				selectedOptionIdsByQuestion: { "question-stable-id": ["option-b"] },
+				checkedQuestionIds: [],
+				flaggedQuestionIds: [],
 			},
 		];
 		const results = await Promise.allSettled(
@@ -198,6 +416,18 @@ describe("IndexedDB progress repository", () => {
 			correct: 2,
 			lastWrong: true,
 		});
+		const checkpointed = await repository.checkpointSession({
+			sessionId: session.id,
+			expectedRevision: session.revision,
+			checkpoint: {
+				currentQuestionId: "question-stable-id",
+				deadlineAt: null,
+				selectedOptionIdsByQuestion: { "question-stable-id": ["option-a"] },
+				checkedQuestionIds: [],
+				flaggedQuestionIds: [],
+			},
+			updatedAt: 150,
+		});
 		const evaluation = {
 			sessionId: session.id,
 			questionId: "question-stable-id",
@@ -206,6 +436,7 @@ describe("IndexedDB progress repository", () => {
 			scoreEarned: 1,
 			scorePossible: 1,
 			evaluatedAt: 200,
+			expectedRevision: checkpointed.revision,
 		};
 		const first = await repository.recordEvaluation(evaluation);
 		const retry = await repository.recordEvaluation({ ...evaluation, evaluatedAt: 201 });
@@ -220,14 +451,30 @@ describe("IndexedDB progress repository", () => {
 			repository.recordEvaluation({ ...evaluation, selectedOptionIds: ["option-b"] }),
 		).rejects.toBeInstanceOf(ProgressConflictError);
 
-		await repository.finalizeSession(session.id, 1, "completed", 300);
+		const evaluatedSession = await repository.getSession(session.id);
+		if (!evaluatedSession) throw new Error("Expected the evaluated session to remain available.");
+		await repository.finalizeSession(session.id, evaluatedSession.revision, "completed", 300);
 		const history = await repository.getSessionHistory("ccdv-f");
 		expect(history).toHaveLength(1);
 		expect(history[0]).toMatchObject({
-			session: { status: "completed", revision: 2 },
+			session: {
+				status: "completed",
+				revision: 4,
+				checkpoint: { checkedQuestionIds: ["question-stable-id"] },
+			},
 			attempts: [first],
 		});
 		expect(await repository.getSessionHistory("ccar-f")).toEqual([]);
+		const exportSnapshot = await repository.getCertificationProgressSnapshot("ccdv-f");
+		expect(exportSnapshot.sessionHistory).toEqual(history);
+		expect(exportSnapshot.questionProgress).toMatchObject([
+			{
+				questionId: "question-stable-id",
+				attemptCount: 1,
+				correctCount: 1,
+				legacyBaseline: { attempts: 4, correct: 2, lastWrong: true },
+			},
+		]);
 
 		const rebuilt = await repository.rebuildQuestionProgress("ccdv-f");
 		expect(rebuilt).toHaveLength(1);

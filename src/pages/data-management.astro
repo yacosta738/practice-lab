@@ -1,0 +1,657 @@
+---
+import { getCertificationList } from "../certifications/index";
+import AppShell from "../components/AppShell.astro";
+import Layout from "../layouts/Layout.astro";
+
+const certifications = await getCertificationList();
+const certificationIds = certifications.map(({ slug }) => slug);
+---
+
+<Layout
+	title="Data Management | Practice Lab"
+	description="Back up, restore, and manage Practice Lab learning data stored in this browser."
+>
+	<AppShell
+		activeNav="data"
+		activeCertSlug={certificationIds[0] ?? "ccdv-f"}
+		breadcrumb="Data management"
+		wide
+	>
+		<section class="dataManager" data-certification-ids={JSON.stringify(certificationIds)}>
+			<header class="dataHeader">
+				<p class="eyebrow">YOUR BROWSER · YOUR DATA</p>
+				<h1>Data management</h1>
+				<p>
+					Learning data is stored locally in this browser. Create a portable backup before moving to
+					another browser or device; this site does not upload it.
+				</p>
+			</header>
+
+			<p id="data-status" class="dataStatus" role="status" aria-live="polite" aria-atomic="true">
+				Loading saved learning data…
+			</p>
+
+			<div class="dataGrid">
+				<section class="dataCard" aria-labelledby="backup-heading">
+					<p class="eyebrow">PORTABILITY</p>
+					<h2 id="backup-heading">Backup and restore</h2>
+					<p>
+						A backup includes quiz history and active sessions, question progress, study progress,
+						learning goals, and allowlisted legacy recovery records. The file is validated before
+						restore.
+					</p>
+					<p id="backup-summary" class="dataSummary">Reading browser data…</p>
+					<p id="last-backup" class="dataMuted">Last backup: checking…</p>
+					<button id="download-backup" class="dataButton dataPrimary" type="button">
+						Download full backup
+					</button>
+
+					<div class="dataDivider"></div>
+					<label class="dataLabel" for="backup-file">Choose a Practice Lab full backup</label>
+					<input id="backup-file" class="dataFile" type="file" accept="application/json,.json">
+					<p class="dataHint">
+						Maximum file size: 50 MB. Selecting a file only validates it; it does not change saved
+						data.
+					</p>
+					<div id="restore-preview" class="restorePreview" hidden>
+						<h3>Restore preview</h3>
+						<p id="restore-summary"></p>
+						<button id="review-restore" class="dataButton" type="button">Review replacement</button>
+					</div>
+				</section>
+
+				<section class="dataCard" aria-labelledby="storage-heading">
+					<p class="eyebrow">BROWSER STORAGE</p>
+					<h2 id="storage-heading">Storage status</h2>
+					<p id="storage-summary" class="dataSummary">Checking browser storage…</p>
+					<p id="persistence-summary" class="dataMuted">Checking persistence status…</p>
+					<button id="request-persistence" class="dataButton" type="button">
+						Request persistent storage
+					</button>
+					<p class="dataHint">
+						Persistent storage is a browser request, not a backup or a guarantee. Keep a downloaded
+						copy for recovery.
+					</p>
+				</section>
+
+				<section class="dataCard dataDangerCard" aria-labelledby="reset-heading">
+					<p class="eyebrow">DESTRUCTIVE ACTIONS</p>
+					<h2 id="reset-heading">Reset learning data</h2>
+					<p>
+						Resets remove quiz history, attempts, study progress, goals, and active sessions in the
+						chosen scope. Downloaded files and legacy recovery archives are kept; browser appearance
+						preferences are not changed.
+					</p>
+					<label class="dataLabel" for="reset-certification">Certification scope</label>
+					<select id="reset-certification" class="dataSelect">
+						{certifications.map((certification) => (
+							<option value={certification.slug}>
+								{certification.subtitle} · {certification.title}
+							</option>
+						))}
+					</select>
+					<div class="dataActions">
+						<button id="reset-certification-button" class="dataButton dataDanger" type="button">
+							Reset selected certification
+						</button>
+						<button id="reset-all-button" class="dataButton dataDanger" type="button">
+							Reset all learning data
+						</button>
+					</div>
+				</section>
+			</div>
+		</section>
+
+		<dialog id="restore-dialog" class="dataDialog" aria-labelledby="restore-dialog-title">
+			<h2 id="restore-dialog-title">Replace current learning data?</h2>
+			<p>
+				Restoring replaces all learning data in this browser with the selected backup, including
+				active quiz sessions. The existing browser appearance preferences are left alone.
+			</p>
+			<p
+				id="restore-dialog-status"
+				class="dialogStatus"
+				role="status"
+				aria-live="polite"
+				hidden
+			></p>
+			<button id="download-before-restore" class="dataButton" type="button">
+				Download a backup of current data first
+			</button>
+			<label class="dataCheck">
+				<input id="confirm-restore-check" type="checkbox">
+				<span>I have a copy of the current data or do not need one, and I want to replace it.</span>
+			</label>
+			<div class="dataActions">
+				<button id="confirm-restore" class="dataButton dataDanger" type="button" disabled>
+					Replace learning data
+				</button>
+				<button class="dataButton" type="button" data-close-dialog="restore-dialog">Cancel</button>
+			</div>
+		</dialog>
+
+		<dialog id="reset-dialog" class="dataDialog" aria-labelledby="reset-dialog-title">
+			<h2 id="reset-dialog-title">Confirm reset</h2>
+			<p id="reset-dialog-summary"></p>
+			<p id="reset-dialog-status" class="dialogStatus" role="status" aria-live="polite" hidden></p>
+			<div class="dataActions">
+				<button id="confirm-reset" class="dataButton dataDanger" type="button">
+					Reset learning data
+				</button>
+				<button class="dataButton" type="button" data-close-dialog="reset-dialog">Cancel</button>
+			</div>
+		</dialog>
+	</AppShell>
+</Layout>
+
+<style>
+.dataManager {
+	--data-border: var(--border, #d7dce3);
+	--data-surface: var(--surface, #fff);
+	--data-muted: var(--muted, #5c6573);
+	max-width: 1040px;
+	margin: 0 auto;
+}
+
+.dataHeader {
+	max-width: 720px;
+	margin: 0 0 24px;
+}
+
+.dataHeader h1,
+.dataCard h2,
+.dataDialog h2 {
+	margin: 0 0 10px;
+}
+
+.dataHeader > p:last-child,
+.dataCard > p:not(.eyebrow),
+.dataDialog > p {
+	color: var(--data-muted);
+	line-height: 1.6;
+}
+
+.eyebrow {
+	margin: 0 0 8px;
+	color: var(--data-muted);
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.09em;
+}
+
+.dataStatus {
+	min-height: 1.5em;
+	margin: 16px 0;
+	color: var(--data-muted);
+}
+
+.dataStatus[data-error="true"] {
+	color: #a4262c;
+}
+
+.dataGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 16px;
+}
+
+.dataCard {
+	min-width: 0;
+	padding: 22px;
+	border: 1px solid var(--data-border);
+	border-radius: 14px;
+	background: var(--data-surface);
+}
+
+.dataDangerCard {
+	grid-column: 1 / -1;
+	border-color: color-mix(in srgb, #a4262c 24%, var(--data-border));
+}
+
+.dataSummary {
+	padding: 12px;
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--data-border) 28%, transparent);
+	font-size: 0.9rem;
+	line-height: 1.55;
+}
+
+.dataMuted,
+.dataHint {
+	color: var(--data-muted);
+	font-size: 0.85rem;
+	line-height: 1.5;
+}
+
+.dataLabel {
+	display: block;
+	margin: 14px 0 7px;
+	font-size: 0.9rem;
+	font-weight: 650;
+}
+
+.dataFile,
+.dataSelect {
+	width: 100%;
+	min-height: 42px;
+	padding: 8px;
+	border: 1px solid var(--data-border);
+	border-radius: 8px;
+	background: var(--data-surface);
+	color: inherit;
+	font: inherit;
+}
+
+.dataButton {
+	min-height: 40px;
+	padding: 8px 13px;
+	border: 1px solid var(--data-border);
+	border-radius: 8px;
+	background: var(--data-surface);
+	color: inherit;
+	font: inherit;
+	font-weight: 650;
+	cursor: pointer;
+}
+
+.dataButton:hover:not(:disabled) {
+	border-color: #687386;
+}
+
+.dataButton:focus-visible,
+.dataFile:focus-visible,
+.dataSelect:focus-visible {
+	outline: 3px solid #4779d0;
+	outline-offset: 2px;
+}
+
+.dataButton:disabled {
+	cursor: not-allowed;
+	opacity: 0.55;
+}
+
+.dataPrimary {
+	border-color: #2156a5;
+	background: #2156a5;
+	color: #fff;
+}
+
+.dataDanger {
+	border-color: #a4262c;
+	color: #a4262c;
+}
+
+.dataDivider {
+	height: 1px;
+	margin: 22px 0;
+	background: var(--data-border);
+}
+
+.restorePreview {
+	margin-top: 20px;
+	padding: 16px;
+	border: 1px solid var(--data-border);
+	border-radius: 10px;
+}
+
+.restorePreview h3 {
+	margin: 0;
+}
+
+.dataActions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 16px;
+}
+
+.dataDialog {
+	width: min(560px, calc(100vw - 32px));
+	max-height: min(80vh, 700px);
+	padding: 24px;
+	border: 1px solid var(--data-border);
+	border-radius: 14px;
+	background: var(--data-surface);
+	color: inherit;
+}
+
+.dataDialog::backdrop {
+	background: rgb(10 16 28 / 55%);
+}
+
+.dialogStatus[data-error="true"] {
+	color: #a4262c;
+}
+
+.dataCheck {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	margin-top: 16px;
+	line-height: 1.5;
+}
+
+.dataCheck input {
+	width: 18px;
+	height: 18px;
+	margin: 2px 0 0;
+}
+
+@media (max-width: 720px) {
+	.dataGrid {
+		grid-template-columns: 1fr;
+	}
+
+	.dataDangerCard {
+		grid-column: auto;
+	}
+}
+</style>
+
+<script>
+import { DataManagementService } from "../lib/progress/data-management-service";
+import { MAX_LEARNING_BACKUP_SIZE } from "../lib/progress/learning-backup";
+
+const page = document.querySelector<HTMLElement>(".dataManager");
+const status = document.getElementById("data-status");
+const backupSummary = document.getElementById("backup-summary");
+const lastBackup = document.getElementById("last-backup");
+const storageSummary = document.getElementById("storage-summary");
+const persistenceSummary = document.getElementById("persistence-summary");
+const persistenceButton = document.getElementById(
+	"request-persistence",
+) as HTMLButtonElement | null;
+const backupFile = document.getElementById("backup-file") as HTMLInputElement | null;
+const restorePreview = document.getElementById("restore-preview");
+const restoreSummary = document.getElementById("restore-summary");
+const restoreDialog = document.getElementById("restore-dialog") as HTMLDialogElement | null;
+const restoreCheck = document.getElementById("confirm-restore-check") as HTMLInputElement | null;
+const restoreConfirm = document.getElementById("confirm-restore") as HTMLButtonElement | null;
+const restoreDialogStatus = document.getElementById("restore-dialog-status");
+const resetDialog = document.getElementById("reset-dialog") as HTMLDialogElement | null;
+const resetDialogSummary = document.getElementById("reset-dialog-summary");
+const resetDialogStatus = document.getElementById("reset-dialog-status");
+const resetCertification = document.getElementById(
+	"reset-certification",
+) as HTMLSelectElement | null;
+const certificationIds = page?.dataset.certificationIds
+	? (JSON.parse(page.dataset.certificationIds) as string[])
+	: [];
+const service = new DataManagementService(certificationIds);
+let currentFingerprint: string | undefined;
+let pendingBackup: Awaited<ReturnType<typeof service.validateBackup>> | undefined;
+let pendingReset: string | null | undefined;
+
+function showStatus(message: string, isError = false) {
+	if (!status) return;
+	status.textContent = message;
+	status.dataset.error = String(isError);
+}
+
+function showDialogStatus(target: HTMLElement | null, message: string, isError = false) {
+	if (!target) return;
+	target.textContent = message;
+	target.dataset.error = String(isError);
+	target.hidden = message.length === 0;
+}
+
+function formatBytes(bytes: number | undefined): string {
+	if (bytes === undefined) return "Unavailable";
+	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatCounts(counts: Record<string, number>): string {
+	return [
+		`${counts.sessions} sessions`,
+		`${counts.questionAttempts} attempts`,
+		`${counts.questionProgress} question records`,
+		`${counts.studyProgress} study records`,
+		`${counts.learningGoals} goals`,
+	].join(" · ");
+}
+
+async function refreshSummary() {
+	const snapshot = await service.getSnapshot();
+	currentFingerprint = snapshot.fingerprint;
+	const counts = {
+		sessions: snapshot.sessions.length,
+		questionAttempts: snapshot.questionAttempts.length,
+		questionProgress: snapshot.questionProgress.length,
+		studyProgress: snapshot.studyProgress.length,
+		learningGoals: snapshot.learningGoals.length,
+	};
+	if (backupSummary) backupSummary.textContent = `Current data: ${formatCounts(counts)}.`;
+	if (lastBackup) {
+		lastBackup.textContent = snapshot.lastBackupAt
+			? `Last backup created: ${new Date(snapshot.lastBackupAt).toLocaleString()}`
+			: "Last backup: no backup has been created in this browser yet.";
+	}
+}
+
+async function updateStorageStatus() {
+	const storage = navigator.storage;
+	if (!storage?.estimate) {
+		if (storageSummary)
+			storageSummary.textContent = "Storage estimates are not available in this browser.";
+	} else {
+		const estimate = await storage.estimate();
+		if (storageSummary) {
+			storageSummary.textContent = `Estimated usage: ${formatBytes(estimate.usage)} of ${formatBytes(estimate.quota)}.`;
+		}
+	}
+	if (!storage?.persisted) {
+		if (persistenceSummary)
+			persistenceSummary.textContent = "Persistent storage requests are not supported here.";
+		if (persistenceButton) persistenceButton.disabled = true;
+		return;
+	}
+	const persisted = await storage.persisted();
+	if (persistenceSummary) {
+		persistenceSummary.textContent = persisted
+			? "This browser currently reports persistent storage."
+			: "The browser may clear site data when storage is under pressure.";
+	}
+	if (persistenceButton) persistenceButton.disabled = persisted || !storage.persist;
+}
+
+async function createAndDownloadBackup() {
+	const button = document.getElementById("download-backup") as HTMLButtonElement | null;
+	if (button) button.disabled = true;
+	try {
+		const backup = await service.createBackup();
+		const text = JSON.stringify(backup, null, 2);
+		if (new TextEncoder().encode(text).byteLength > MAX_LEARNING_BACKUP_SIZE) {
+			throw new Error(
+				"This backup exceeds the 50 MB file limit. Reduce stored data before exporting.",
+			);
+		}
+		const blob = new Blob([text], { type: "application/json" });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.href = url;
+		link.download = `practice-lab-learning-backup-${new Date(backup.exportedAt).toISOString().slice(0, 10)}.json`;
+		document.body.append(link);
+		link.click();
+		link.remove();
+		window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+		await service.markSuccessfulBackup(backup.exportedAt);
+		await refreshSummary();
+		showStatus("A full backup file was created and the browser download was requested.");
+		return true;
+	} catch (error) {
+		showStatus(error instanceof Error ? error.message : "The backup could not be created.", true);
+		return false;
+	} finally {
+		if (button) button.disabled = false;
+	}
+}
+
+document.getElementById("download-backup")?.addEventListener("click", () => {
+	void createAndDownloadBackup();
+});
+
+backupFile?.addEventListener("change", async () => {
+	const file = backupFile.files?.[0];
+	if (!file) return;
+	if (file.size > MAX_LEARNING_BACKUP_SIZE) {
+		pendingBackup = undefined;
+		if (restorePreview) restorePreview.hidden = true;
+		showStatus("The selected backup is larger than 50 MB. No data was changed.", true);
+		return;
+	}
+	backupFile.disabled = true;
+	try {
+		const raw = await file.text();
+		const parsed = await service.validateBackup(raw);
+		const snapshot = await service.getSnapshot();
+		pendingBackup = parsed;
+		currentFingerprint = snapshot.fingerprint;
+		const counts = {
+			sessions: parsed.data.sessions.length,
+			questionAttempts: parsed.data.questionAttempts.length,
+			questionProgress: parsed.data.questionProgress.length,
+			studyProgress: parsed.data.studyProgress.length,
+			learningGoals: parsed.data.learningGoals.length,
+		};
+		if (restoreSummary) {
+			restoreSummary.textContent = `${formatCounts(counts)} · ${parsed.data.legacyRecords.length} legacy records · ${parsed.data.legacyProvenance.length} provenance records. Exported ${new Date(parsed.exportedAt).toLocaleString()} from ${parsed.sourceOrigin || "an unspecified origin"}. Integrity and record checks passed. Current browser data will be replaced only after confirmation.`;
+		}
+		if (restorePreview) restorePreview.hidden = false;
+		showStatus(
+			"Backup validated. Review the summary; selecting the file has not changed saved data.",
+		);
+	} catch (error) {
+		pendingBackup = undefined;
+		if (restorePreview) restorePreview.hidden = true;
+		showStatus(error instanceof Error ? error.message : "The backup could not be validated.", true);
+	} finally {
+		backupFile.disabled = false;
+	}
+});
+
+document.getElementById("review-restore")?.addEventListener("click", () => {
+	if (!pendingBackup || !restoreDialog) return;
+	if (restoreCheck) restoreCheck.checked = false;
+	if (restoreConfirm) restoreConfirm.disabled = true;
+	showDialogStatus(restoreDialogStatus, "");
+	restoreDialog.showModal();
+});
+
+document.getElementById("download-before-restore")?.addEventListener("click", () => {
+	void createAndDownloadBackup().then((created) => {
+		if (created && restoreCheck) {
+			restoreCheck.checked = true;
+			if (restoreConfirm) restoreConfirm.disabled = false;
+		}
+	});
+});
+
+restoreCheck?.addEventListener("change", () => {
+	if (restoreConfirm) restoreConfirm.disabled = !restoreCheck.checked;
+});
+
+restoreConfirm?.addEventListener("click", async () => {
+	if (!pendingBackup || !currentFingerprint || !restoreCheck?.checked) return;
+	restoreConfirm.disabled = true;
+	try {
+		await service.restoreBackup(pendingBackup, currentFingerprint);
+		pendingBackup = undefined;
+		restoreDialog?.close();
+		if (restorePreview) restorePreview.hidden = true;
+		if (backupFile) backupFile.value = "";
+		await refreshSummary();
+		showStatus("Learning data was restored. Other open quiz tabs were notified to reload.");
+	} catch (error) {
+		showDialogStatus(
+			restoreDialogStatus,
+			error instanceof Error
+				? error.message
+				: "The backup could not be restored; no data was changed.",
+			true,
+		);
+		showStatus(
+			error instanceof Error
+				? error.message
+				: "The backup could not be restored; no data was changed.",
+			true,
+		);
+	} finally {
+		restoreConfirm.disabled = !restoreCheck?.checked;
+	}
+});
+
+function openResetDialog(certificationId: string | null) {
+	if (!resetDialog || !resetDialogSummary) return;
+	pendingReset = certificationId;
+	showDialogStatus(resetDialogStatus, "");
+	resetDialogSummary.textContent = certificationId
+		? `This permanently removes all quiz history, attempts, question progress, study progress, goals, and active sessions for ${certificationId}. Other certifications and browser appearance preferences will remain unchanged. Legacy recovery archives are retained.`
+		: "This permanently removes all quiz history, attempts, question progress, study progress, goals, and active sessions for every certification. Browser appearance preferences and legacy recovery archives are retained.";
+	resetDialog.showModal();
+}
+
+document.getElementById("reset-certification-button")?.addEventListener("click", () => {
+	if (resetCertification?.value) openResetDialog(resetCertification.value);
+});
+document.getElementById("reset-all-button")?.addEventListener("click", () => openResetDialog(null));
+
+document.getElementById("confirm-reset")?.addEventListener("click", async () => {
+	if (pendingReset === undefined) return;
+	const button = document.getElementById("confirm-reset") as HTMLButtonElement;
+	button.disabled = true;
+	try {
+		await service.reset(pendingReset);
+		resetDialog?.close();
+		pendingReset = undefined;
+		pendingBackup = undefined;
+		if (restorePreview) restorePreview.hidden = true;
+		await refreshSummary();
+		showStatus("Learning data was reset. Other open quiz tabs were notified to reload.");
+	} catch (error) {
+		showDialogStatus(
+			resetDialogStatus,
+			error instanceof Error ? error.message : "Learning data could not be reset.",
+			true,
+		);
+		showStatus(error instanceof Error ? error.message : "Learning data could not be reset.", true);
+	} finally {
+		button.disabled = false;
+	}
+});
+
+for (const closeButton of document.querySelectorAll<HTMLButtonElement>("[data-close-dialog]")) {
+	closeButton.addEventListener("click", () => {
+		const dialog = document.getElementById(
+			closeButton.dataset.closeDialog ?? "",
+		) as HTMLDialogElement | null;
+		dialog?.close();
+	});
+}
+
+persistenceButton?.addEventListener("click", async () => {
+	persistenceButton.disabled = true;
+	try {
+		const granted = await navigator.storage?.persist?.();
+		if (persistenceSummary) {
+			persistenceSummary.textContent = granted
+				? "The browser granted persistent storage. Keep a downloaded backup as well."
+				: "The browser did not grant persistent storage. Download a backup to protect your data.";
+		}
+		showStatus(
+			granted
+				? "Persistent storage was granted by the browser."
+				: "The browser declined persistent storage.",
+		);
+	} catch (error) {
+		persistenceButton.disabled = false;
+		showStatus(error instanceof Error ? error.message : "The storage request failed.", true);
+	}
+});
+
+void Promise.all([refreshSummary(), updateStorageStatus()]).then(
+	() => showStatus("Browser learning data is ready."),
+	(error) =>
+		showStatus(error instanceof Error ? error.message : "Browser data could not be read.", true),
+);
+window.addEventListener("pagehide", () => void service.close(), { once: true });
+</script>
