@@ -573,7 +573,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 					${session.currentIndex > 0 ? `<button class="ghost" data-action="prev">← Previous</button>` : ""}
 					${
 						isExam
-							? `<button class="ghost" data-action="flag">${session.flags.includes(id) ? "⚑ Flagged" : "⚐ Flag for review"}</button>
+							? `<button class="ghost" data-action="flag" aria-pressed="${session.flags.includes(id)}"><span aria-hidden="true">⚑</span> ${session.flags.includes(id) ? "Flagged" : "Flag for review"}</button>
 						<button class="primary" data-action="next">${isLast ? "Go to review" : "Next →"}</button>`
 							: checked
 								? `<button class="primary" data-action="next">${isLast ? "Finish session" : "Next question →"}</button>`
@@ -583,13 +583,25 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 			</div>`;
 
 		const grid = session.ids
-			.map(
-				(qid, k) =>
-					`<button class="qchip${k === session.currentIndex ? " current" : ""}${answered(qid) ? " answered" : ""}${session.flags.includes(qid) ? " flagged" : ""}" data-action="jump" data-value="${k}" title="Question ${k + 1}"${k === session.currentIndex ? ' aria-current="step"' : ""}>${k + 1}</button>`,
-			)
+			.map((qid, k) => {
+				const isCurrent = k === session.currentIndex;
+				const isAnswered = answered(qid);
+				const isFlagged = session.flags.includes(qid);
+				const stateLabel = `${isAnswered ? "answered" : "unanswered"}, ${isFlagged ? "flagged for review" : "not flagged for review"}${isCurrent ? ", current question" : ""}`;
+				const stateMarks = `${isAnswered ? "✓" : "—"}${isFlagged ? " ⚑" : ""}${isCurrent ? " ●" : ""}`;
+
+				return `<button class="qchip${isCurrent ? " current" : ""}${isAnswered ? " answered" : ""}${isFlagged ? " flagged" : ""}" data-action="jump" data-value="${k}" aria-label="Question ${k + 1}, ${stateLabel}"${isCurrent ? ' aria-current="step"' : ""}><span class="qchipNumber">${k + 1}</span><span class="qchipMarks" aria-hidden="true">${stateMarks}</span></button>`;
+			})
 			.join("");
 
-		const navigatorContent = `<p class="small muted">Jump to any question. Flagged items are outlined.</p>
+		const legend = `<ul class="qchipLegend">
+			<li><span aria-hidden="true">✓</span> Answered</li>
+			<li><span aria-hidden="true">—</span> Unanswered</li>
+			<li><span aria-hidden="true">⚑</span> Flagged for review</li>
+			<li><span aria-hidden="true">●</span> Current question</li>
+		</ul>`;
+		const navigatorContent = `<p class="small muted">Jump to any question.</p>
+			${legend}
 			<div class="small muted">${progress}/${session.ids.length} answered · ${session.flags.length} flagged</div>
 			<div class="qgrid">${grid}</div>
 			<button class="ghost" data-action="finish">Submit mock exam</button>`;
@@ -601,6 +613,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 			: `<aside class="panel side">
 				<h3>Study session</h3>
 				<p class="small muted">Immediate rationale and primary-source references after each answer.</p>
+				${legend}
 				<div class="small muted">${progress}/${session.ids.length} answered</div>
 				<div class="qgrid">${grid}</div>
 				<button class="ghost" data-action="home">Pause & go home</button>

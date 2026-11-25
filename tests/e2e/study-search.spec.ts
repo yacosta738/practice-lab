@@ -2,6 +2,25 @@ import { expect, test } from "@playwright/test";
 
 const BASE_PATH = "/practice-lab";
 
+test("generated study search index excludes assessment answers but keeps prompts and instruction", async ({
+	page,
+}) => {
+	const response = await page.request.get(`${BASE_PATH}/search-index.json`);
+	expect(response.ok()).toBe(true);
+
+	const items = (await response.json()) as { text?: string }[];
+	const indexedText = items.map((item) => item.text ?? "").join(" ");
+
+	expect(indexedText).toContain("An agent checks a support case using permitted read-only tools");
+	expect(indexedText).toContain(
+		"Choose based on operational requirements, not framework familiarity alone.",
+	);
+	expect(indexedText).not.toContain(
+		"The harness owns termination and must stop on a terminal outcome",
+	);
+	expect(indexedText).not.toContain("D1.01 — B. Open-ended work with an unknown number");
+});
+
 test("study search finds note-body text, supports keyboard navigation, and announces empty results", async ({
 	page,
 }) => {
