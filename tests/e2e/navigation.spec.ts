@@ -10,7 +10,7 @@ test("mobile drawer closes for same-page navigation and stays open for a cancele
 	await page.goto(path);
 	await page.getByRole("button", { name: "Open workspace navigation" }).click();
 
-	const drawer = page.getByRole("dialog", { name: "practice lab" });
+	const drawer = page.getByRole("dialog", { name: "PRACTICE LAB" });
 	const assess = drawer.getByRole("link", { name: "Assess · Mock exam" });
 	await assess.evaluate((link) =>
 		link.addEventListener("click", (event) => event.preventDefault(), { once: true }),

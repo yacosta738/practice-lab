@@ -1642,3 +1642,73 @@ footer {
 		display: none;
 	}
 }
+
+.examNavigator summary {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	min-height: 44px;
+	cursor: pointer;
+	font-size: 15px;
+	font-weight: 600;
+}
+
+.examNavigator[open] summary {
+	margin-bottom: 12px;
+}
+
+.examNavigator summary:focus-visible {
+	outline: 2px solid var(--brand);
+	outline-offset: 3px;
+}
+
+.examSetup {
+	max-width: 680px;
+	padding: 24px;
+}
+
+.examSetup h3 {
+	margin-top: 0;
+}
+
+.sessionNotice {
+	margin: 16px 0;
+	padding: 12px 16px;
+	background: var(--info-soft);
+	border: 1px solid var(--info-border);
+	border-radius: var(--radius);
+	color: var(--ink);
+}
+
+.modeLink {
+	display: block;
+	color: inherit;
+	text-decoration: none;
+}
+
+.modeLink:hover {
+	border-color: var(--brand);
+}
+
+.pl-shell[data-exam-focus="true"] .examBar {
+	top: var(--topbar-height);
+}
+
+@media (max-width: 860px) {
+	.examNavigator {
+		padding: 12px 16px;
+	}
+
+	.examNavigator[open] {
+		padding-bottom: 16px;
+	}
+
+	.examNavigator summary .small {
+		font-size: 12px;
+	}
+
+	.examBar {
+		align-items: flex-start;
+	}
+}

@@ -145,6 +145,23 @@ dialog::backdrop {
 	color: var(--ink);
 }
 
+.pl-shell[data-exam-focus="true"] {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.pl-shell[data-exam-focus="true"] .pl-sidebar,
+.pl-shell[data-exam-focus="true"] .pl-topbar-right,
+.pl-shell[data-exam-focus="true"] .pl-menu-btn,
+.pl-shell[data-exam-focus="true"] ~ .pl-bottom-nav,
+.pl-shell[data-exam-focus="true"] ~ .pl-drawer,
+.pl-shell[data-exam-focus="true"] ~ .pl-dialog {
+	display: none !important;
+}
+
+.pl-shell[data-exam-focus="true"] .pl-content {
+	max-width: 1240px;
+}
+
 .pl-sidebar {
 	position: sticky;
 	top: 0;
@@ -173,23 +190,33 @@ dialog::backdrop {
 }
 
 .pl-mark {
-	width: 26px;
-	height: 26px;
-	border-radius: 6px;
-	background: var(--brand-strong);
-	color: var(--on-brand);
-	display: grid;
-	place-items: center;
-	font-weight: 700;
-	font-size: 13px;
+	width: 32px;
+	height: 32px;
+	object-fit: contain;
 	flex-shrink: 0;
 }
 
 .pl-brand-title {
-	font-size: 14.5px;
-	font-weight: 600;
-	letter-spacing: -0.015em;
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
 	line-height: 1.2;
+}
+
+.pl-drawer-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 4px 6px;
+}
+
+.pl-drawer-brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 15px;
+	margin: 0;
 }
 
 .pl-nav-section {
@@ -408,8 +435,14 @@ dialog::backdrop {
 	border-bottom: 1px solid var(--border);
 }
 
+.pl-search-field {
+	flex: 1;
+	min-width: 0;
+}
+
 .pl-dialog-input {
 	flex: 1;
+	width: 100%;
 	background: transparent;
 	border: 0;
 	color: var(--ink);
@@ -441,11 +474,46 @@ dialog::backdrop {
 	background: var(--raised);
 }
 
+.pl-search-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.pl-search-list li + li {
+	border-top: 1px solid var(--border-subtle);
+}
+
+.pl-search-result {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: start;
+}
+
+.pl-search-title {
+	font-weight: 600;
+}
+
 .pl-search-meta {
 	font-size: 12px;
 	color: var(--ink-tertiary);
 	font-family: var(--font-mono);
 	flex-shrink: 0;
+}
+
+.pl-search-excerpt {
+	grid-column: 1 / -1;
+	font-size: 13px;
+	line-height: 1.45;
+	color: var(--ink-secondary);
+}
+
+.pl-search-empty {
+	padding: 20px;
+	margin: 0;
+	text-align: center;
+	color: var(--ink-secondary);
+	font-size: 14px;
 }
 
 .pl-confirm-dialog {

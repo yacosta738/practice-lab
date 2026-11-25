@@ -3,13 +3,7 @@ import { getCertificationList } from "../certifications/index";
 import { studyCerts } from "../study/registry";
 import { base } from "./base";
 import { toNoteMeta } from "./study-groups";
-
-export interface SearchItem {
-	title: string;
-	href: string;
-	category: string;
-	badge?: string;
-}
+import { normalizeSearchText, type SearchItem } from "./study-search";
 
 /** Build a lightweight static search index for the ⌘K palette (certifications + study notes). */
 export async function getSearchIndex(): Promise<SearchItem[]> {
@@ -26,6 +20,7 @@ export async function getSearchIndex(): Promise<SearchItem[]> {
 	}
 
 	const studyEntries = await getCollection("study");
+	const studyEntryById = new Map(studyEntries.map((entry) => [entry.id, entry]));
 	for (const cert of studyCerts) {
 		items.push({
 			title: `${cert.title} — Study Library`,
@@ -37,11 +32,13 @@ export async function getSearchIndex(): Promise<SearchItem[]> {
 			.filter((entry) => entry.id.startsWith(`${cert.slug}/`))
 			.map(toNoteMeta);
 		for (const note of notes) {
+			const domain = cert.certification.domains[note.sectionId];
 			items.push({
 				title: note.title,
 				href: `${base}study/${cert.slug}/${note.slug}/`,
 				category: "Study Note",
-				badge: note.sectionId.startsWith("D") ? note.sectionId : cert.subtitle,
+				badge: domain ? `${note.sectionId} · ${domain.name}` : cert.subtitle,
+				text: normalizeSearchText(studyEntryById.get(note.id)?.body ?? ""),
 			});
 		}
 	}

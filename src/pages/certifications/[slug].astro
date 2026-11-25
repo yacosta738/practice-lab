@@ -151,12 +151,27 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 					allowDataAttributes: true,
 				});
 				app.setHTML(html, { sanitizer });
-				return;
 			} catch (_) {
-				/* fallback */
+				app.innerHTML = html;
 			}
+		} else {
+			app.innerHTML = html;
 		}
-		app.innerHTML = html;
+		syncFocusMode();
+		const navigator = app.querySelector("details.examNavigator");
+		navigator?.addEventListener("toggle", () => {
+			examNavigatorExpanded = navigator.open;
+		});
+	}
+
+	function syncFocusMode() {
+		const shell = document.querySelector(".pl-shell");
+		if (!shell) return;
+		const active =
+			session?.mode === "exam" &&
+			!session.submitted &&
+			new URLSearchParams(window.location.search).get("resume") === "1";
+		shell.setAttribute("data-exam-focus", active ? "true" : "false");
 	}
 
 	// --- Storage ---
@@ -538,6 +553,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 				</div>
 				<div class="examBarRight">
 					<div id="clock" class="clock clockInline" aria-label="Time remaining">${clockText()}</div>
+					<button class="ghost small" data-action="exit-exam">Exit exam</button>
 					<button class="ghost small" data-action="finish">Submit exam</button>
 				</div>
 			</div>`
@@ -569,25 +585,26 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		const grid = session.ids
 			.map(
 				(qid, k) =>
-					`<button class="qchip${k === session.currentIndex ? " current" : ""}${answered(qid) ? " answered" : ""}${session.flags.includes(qid) ? " flagged" : ""}" data-action="jump" data-value="${k}" title="Question ${k + 1}">${k + 1}</button>`,
+					`<button class="qchip${k === session.currentIndex ? " current" : ""}${answered(qid) ? " answered" : ""}${session.flags.includes(qid) ? " flagged" : ""}" data-action="jump" data-value="${k}" title="Question ${k + 1}"${k === session.currentIndex ? ' aria-current="step"' : ""}>${k + 1}</button>`,
 			)
 			.join("");
 
-		const side = `<aside class="panel side">
-			<h3>${isExam ? "Question navigator" : "Study session"}</h3>
-			${
-				isExam
-					? `<p class="small muted">Jump to any question. Flagged items are outlined.</p>`
-					: `<p class="small muted">Immediate rationale and primary-source references after each answer.</p>`
-			}
+		const navigatorContent = `<p class="small muted">Jump to any question. Flagged items are outlined.</p>
 			<div class="small muted">${progress}/${session.ids.length} answered · ${session.flags.length} flagged</div>
 			<div class="qgrid">${grid}</div>
-			${
-				isExam
-					? `<button class="ghost" data-action="finish">Submit mock exam</button>`
-					: `<button class="ghost" data-action="home">Pause & go home</button>`
-			}
-		</aside>`;
+			<button class="ghost" data-action="finish">Submit mock exam</button>`;
+		const side = isExam
+			? `<details class="panel side examNavigator" ${examNavigatorExpanded ? "open" : ""}>
+				<summary><span>Question navigator</span><span class="small muted">${progress}/${session.ids.length} answered</span></summary>
+				${navigatorContent}
+			</details>`
+			: `<aside class="panel side">
+				<h3>Study session</h3>
+				<p class="small muted">Immediate rationale and primary-source references after each answer.</p>
+				<div class="small muted">${progress}/${session.ids.length} answered</div>
+				<div class="qgrid">${grid}</div>
+				<button class="ghost" data-action="home">Pause & go home</button>
+			</aside>`;
 
 		setAppHTML(`<div class="split"><div>${main}</div>${side}</div>`);
 	}
