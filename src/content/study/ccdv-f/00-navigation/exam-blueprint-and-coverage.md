@@ -4,7 +4,7 @@ type: moc
 certification: CCDV-F
 status: verified
 source_kind: official-exam-guide
-updated: '2026-11-24'
+updated: '2026-11-25'
 tags:
 - certification/ccdv-f
 - type/blueprint
@@ -90,3 +90,7 @@ The 25 public AI Cert Guides lesson URLs were discovered from the public index a
 ### Phase 0 disposition (2026-11-24)
 
 The evidence-first gap-analysis gate is complete: all 25 official objectives have an assessment against existing Practice Lab material, a source pointer, and an explicit evidence limitation where review was partial. This is **not** an exhaustive review of the public third-party course, video, or practice artifact, nor of the gated Anthropic course. No workshops or practice questions were authored during this phase. Acquisition methods and per-source limits are recorded in the [Source Register](../source-register/); the prioritized next actions are in the [Knowledge Gap Backlog](../knowledge-gap-backlog/).
+
+### Original practice enrichment (2026-11-25)
+
+The local Claude Associate backup was used only as a high-level topic signal. No source questions, answers, explanations, or cheat-sheet text were copied. After mapping the themes against the 25-objective matrix and existing bank, five original scenarios were added to the practice pool: two for **1.2 Agent Construction with Claude** (SDK/runtime choices), one for **2.3 Claude API Mechanics** (interrupted-stream recovery), and two for **6.3 Output Handling** (refusal and truncation handling). These objectives were marked partial in the existing audit; the questions supplement rather than replace the linked study notes. Source excerpts, retrieval method, and review limits are recorded in the [Source Register](../source-register/). The official mock remains 53 questions and its blueprint is unchanged; added items are practice material, not official exam questions or pass predictions.

@@ -1,4 +1,4 @@
-// CCDV-F question bank — 141 hand-authored + 53 from Cert Pro Quest
+// CCDV-F question bank — 146 hand-authored + 53 from Cert Pro Quest
 // Source (CPQ additions): Cert Pro Quest — practice bank by Matthew Purcell (not official exam content)
 
 import type { Question } from "../../lib/quiz-types";
@@ -2791,10 +2791,120 @@ const handAuthored: Question[] = [
 			url: "https://platform.claude.com/docs/en/test-and-evaluate/develop-tests",
 		},
 	},
+	{
+		id: "D1-023",
+		domain: "D1",
+		topic: "1.2 Agent Construction with Claude",
+		question:
+			"A product team needs long-running, asynchronous agent sessions with hosted execution and session-event history, while minimizing runtime operations it owns. Which option best fits?",
+		options: [
+			"A one-shot Messages API request with no client-managed session history",
+			"Claude Managed Agents with a configured agent and environment",
+			"A Claude Code session embedded as the production agent runtime",
+			"A prompt template that asks each response to behave asynchronously",
+		],
+		correctAnswers: [1],
+		explanation:
+			"Managed Agents provides a configurable agent harness and managed infrastructure for long-running, asynchronous work, including session event history. The Messages API gives the application finer control but leaves the agent loop and runtime to it.",
+		whyNot:
+			"A one-shot request does not provide the requested managed agent session. Claude Code is a coding tool, not this hosted production runtime. A prompt cannot create asynchronous execution or persistent session infrastructure.",
+		source: {
+			label: "Claude Platform — Managed Agents overview (selected excerpts)",
+			url: "https://platform.claude.com/docs/en/managed-agents/overview",
+		},
+	},
+	{
+		id: "D1-024",
+		domain: "D1",
+		topic: "1.2 Agent Construction with Claude",
+		question:
+			"A team wants a higher-level agent loop and tool-execution helpers, but the process and environment must run on infrastructure the team operates. Which option best matches?",
+		options: [
+			"Use Claude Managed Agents and delegate runtime operation to Anthropic",
+			"Use one Messages API request and rely on the model to execute tools itself",
+			"Use the Claude Agent SDK inside a process the team operates",
+			"Use a system prompt instead of an application-side agent loop",
+		],
+		correctAnswers: [2],
+		explanation:
+			"The Claude Agent SDK supplies a higher-level agent loop while running in a process the developer operates. Managed Agents instead provides managed infrastructure; a direct Messages API integration requires the application to implement its own loop.",
+		whyNot:
+			"A moves runtime operation to a managed service. B incorrectly assumes the model executes client tools without an application loop. D provides instructions, not agent orchestration or tool execution.",
+		source: {
+			label: "Claude Platform — SDKs, CLI, and libraries (selected excerpts)",
+			url: "https://platform.claude.com/docs/en/cli-sdks-libraries/overview",
+		},
+	},
+	{
+		id: "D2-041",
+		domain: "D2",
+		topic: "2.3 Claude API Mechanics",
+		question:
+			"A streaming request disconnects after text deltas but before the final message events. The partial text ends with a complete-looking sentence. What should the application do before sending it to a downstream system?",
+		options: [
+			"Mark it incomplete, follow the applicable recovery path, and validate the recovered result before use",
+			"Publish it because a sentence boundary is present",
+			"Assume `stop_reason: end_turn` because the HTTP request was accepted",
+			"Repeat any tool actions described in the partial text and compare the results",
+		],
+		correctAnswers: [0],
+		explanation:
+			"Without the completed stream events, the client has not confirmed why generation stopped. Preserve the partial response as incomplete and use the documented recovery strategy for the applicable model before downstream use.",
+		whyNot:
+			"A sentence boundary does not prove stream completion. An accepted HTTP request does not establish a final stop reason. Replaying a tool action from partial text can cause an unauthorized or duplicate side effect.",
+		source: {
+			label: "Claude Platform — Streaming messages (selected excerpts)",
+			url: "https://platform.claude.com/docs/en/build-with-claude/streaming",
+		},
+	},
+	{
+		id: "D6-021",
+		domain: "D6",
+		topic: "6.3 Output Handling",
+		question:
+			"An application requests structured JSON for a regulated form. A response returns HTTP 200 with `stop_reason: refusal`, and its text does not match the requested schema. What is the safest handling?",
+		options: [
+			"Accept the status as success and pass the body to business logic because every HTTP 200 response satisfies the output contract",
+			"Retry with a larger token budget, then parse the refusal text as the requested object",
+			"Branch on the refusal stop reason before schema parsing and use the safe refusal or approved fallback path",
+			"Fill missing fields with defaults and store the result as a completed form",
+		],
+		correctAnswers: [2],
+		explanation:
+			"A refusal can return with HTTP 200 and take precedence over structured-output constraints. Handle the refusal state before parsing or accepting data, then follow the application's safe response or fallback policy.",
+		whyNot:
+			"HTTP success does not turn a refusal into schema data. Increasing the token budget does not resolve a refusal. Defaults can create fabricated or unsafe business records.",
+		source: {
+			label: "Claude Platform — Structured outputs (selected excerpts)",
+			url: "https://platform.claude.com/docs/en/build-with-claude/structured-outputs",
+		},
+	},
+	{
+		id: "D6-022",
+		domain: "D6",
+		topic: "6.3 Output Handling",
+		question:
+			"A structured-output response ends with `stop_reason: max_tokens` and only part of the object has arrived. Which handling is safest?",
+		options: [
+			"Parse the fragment, fill missing required fields with defaults, and commit the record immediately",
+			"Mark it incomplete, use a documented continuation or retry path, and validate the completed result before use",
+			"Treat the token limit as a schema constraint and discard fields that were not generated",
+			"Assume the schema makes truncation impossible and skip stop-reason handling",
+		],
+		correctAnswers: [1],
+		explanation:
+			"`max_tokens` indicates generation stopped at the output limit; a partial result is not a completed contract. Continue or retry safely, then validate the complete response before passing it downstream.",
+		whyNot:
+			"Parsing or defaulting a partial object can commit invented or missing data. Dropping fields does not repair truncation. Structured output does not remove the need to inspect stop reasons.",
+		source: {
+			label: "Claude Platform — Stop reasons and fallback (selected excerpts)",
+			url: "https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons",
+		},
+	},
 ];
 
 /**
- * Combined CCDV-F question bank: 141 hand-authored + 53 CPQ additions = 194 total.
+ * Combined CCDV-F question bank: 146 hand-authored + 53 CPQ additions = 199 total.
  * CPQ questions are prefixed with "CPQ-" to avoid ID collisions.
  */
 export const questions: Question[] = [...handAuthored, ...cpqQuestions];
