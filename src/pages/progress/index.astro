@@ -1,9 +1,11 @@
 ---
+import { getCollection } from "astro:content";
 import { getCertificationList, loadCertification } from "../../certifications";
 import AppShell from "../../components/AppShell.astro";
 import Layout from "../../layouts/Layout.astro";
 import { base } from "../../lib/base";
 import type { ProgressBank } from "../../lib/progress/analytics";
+import { groupNotes, toNoteMeta } from "../../lib/study-groups";
 import "../../styles/tokens.css";
 import "../../styles/quiz.css";
 
@@ -34,6 +36,22 @@ const certificationLabels = Object.fromEntries(
 		},
 	]),
 );
+const studyEntries = await getCollection("study");
+const studyNotes = certifications.flatMap((certification) => {
+	const notes = studyEntries
+		.filter((entry) => entry.id.startsWith(`${certification.slug}/`))
+		.map(toNoteMeta);
+	return groupNotes(notes, certification.domains).flatMap((section) =>
+		section.notes.map((note) => ({
+			certificationId: certification.slug,
+			noteId: note.id,
+			aliases: note.aliases,
+			revision: note.revision,
+			title: note.title,
+			href: `${base}study/${certification.slug}/${note.slug}/`,
+		})),
+	);
+});
 const flagship = certifications.find((certification) => certification.slug === "ccdv-f");
 const sidebarDomains = flagship
 	? Object.entries(flagship.domains).map(([id, domain]) => ({
@@ -43,12 +61,16 @@ const sidebarDomains = flagship
 			href: `${base}study/${flagship.slug}/#${id}`,
 		}))
 	: [];
-const clientData = JSON.stringify({ banks, certificationLabels }).replaceAll("<", "\\u003c");
+const clientData = JSON.stringify({ banks, certificationLabels, studyNotes }).replaceAll(
+	"<",
+	"\\u003c",
+);
 ---
 
 <Layout
 	title="My Progress | Practice Lab"
 	description="Review certification quiz progress, mock-exam history, saved questions, and performance by exam domain. Your practice data stays private in this browser."
+	disableAnalytics={true}
 >
 	<AppShell
 		activeNav="progress"
@@ -129,6 +151,68 @@ const clientData = JSON.stringify({ banks, certificationLabels }).replaceAll("<"
 					<span class="small muted" id="metric-scope">All certifications</span>
 				</div>
 				<div class="progressMetricGrid" id="progress-metrics" aria-live="polite"></div>
+			</section>
+
+			<section class="progressStudy panel" aria-labelledby="study-progress-title">
+				<div class="progressStudyHeader">
+					<div>
+						<h2 id="study-progress-title">Study notes and goals</h2>
+						<p class="muted">Reading state, bookmarks, and targets stay in this browser.</p>
+					</div>
+					<label class="progressStudyCertification" for="study-certification">
+						<span>Certification</span>
+						<select id="study-certification">
+							{certifications.map((certification) => (
+								<option value={certification.slug}>{certification.subtitle}</option>
+							))}
+						</select>
+					</label>
+				</div>
+				<p id="study-progress-status" class="progressStudyStatus" role="status" aria-live="polite">
+					Loading study progress…
+				</p>
+				<p id="study-progress-error" class="progressError" role="alert" hidden></p>
+				<div class="progressStudyGrid">
+					<div id="study-progress-overview" aria-live="polite"></div>
+					<form id="study-goals-form" class="progressStudyGoals">
+						<h3>Study goals</h3>
+						<label for="study-target-date">Exam target date</label>
+						<input id="study-target-date" name="targetDate" type="date">
+						<p class="small muted">
+							A date-only value in this device’s local calendar; it is not converted to UTC or
+							treated as a time.
+						</p>
+						<label for="study-target-questions">Question target</label>
+						<input
+							id="study-target-questions"
+							name="targetQuestionCount"
+							type="number"
+							min="0"
+							max="1000000"
+							step="1"
+							inputmode="numeric"
+						>
+						<label for="study-target-notes">Completed-note target</label>
+						<input
+							id="study-target-notes"
+							name="targetNoteCount"
+							type="number"
+							min="0"
+							max="1000000"
+							step="1"
+							inputmode="numeric"
+						>
+						<p id="study-legacy-date-notice" class="small muted" hidden></p>
+						<div class="progressStudyActions">
+							<button class="primary" type="submit">Save goals</button>
+						</div>
+						<p id="study-goals-status" class="small muted" role="status" aria-live="polite"></p>
+					</form>
+				</div>
+				<p class="progressStudyPrivacy">
+					Bookmarks, completion, reading anchors, and goals are browser-local and are not sent to
+					analytics.
+				</p>
 			</section>
 
 			<details class="progressDefinitions panel">
@@ -470,6 +554,16 @@ async function load(): Promise<void> {
 	}
 }
 
+let historyLoadTimer: number | undefined;
+
+function scheduleLoad(): void {
+	if (historyLoadTimer !== undefined) window.clearTimeout(historyLoadTimer);
+	historyLoadTimer = window.setTimeout(() => {
+		historyLoadTimer = undefined;
+		void load();
+	}, 100);
+}
+
 function applyQueryToFilters(): void {
 	const params = new URLSearchParams(location.search);
 	const certification = params.get("certification");
@@ -490,7 +584,7 @@ function applyQueryToFilters(): void {
 for (const filter of [certificationFilter, modeFilter, statusFilter, fromFilter, throughFilter]) {
 	filter.addEventListener("change", () => {
 		currentPage = 1;
-		void load();
+		scheduleLoad();
 	});
 }
 byId("history-previous").addEventListener("click", () => {
@@ -508,7 +602,7 @@ window.addEventListener("popstate", () => {
 window.addEventListener("online", () => byId("progress-offline").setAttribute("hidden", ""));
 window.addEventListener("offline", () => byId("progress-offline").removeAttribute("hidden"));
 window.addEventListener("storage", (event) => {
-	if (event.key?.includes("practice-lab-v2")) void load();
+	if (event.key?.includes("practice-lab-v2")) scheduleLoad();
 });
 let progressChannel: BroadcastChannel | undefined;
 
@@ -522,12 +616,13 @@ function setupProgressChannel(): void {
 			typeof message.certificationId === "string" &&
 			(certificationFilter.value === "all" || certificationFilter.value === message.certificationId)
 		) {
-			void load();
+			scheduleLoad();
 		}
 	});
 }
 
 window.addEventListener("pagehide", () => {
+	if (historyLoadTimer !== undefined) window.clearTimeout(historyLoadTimer);
 	progressChannel?.close();
 	progressChannel = undefined;
 });
@@ -540,6 +635,233 @@ setupProgressChannel();
 if (!navigator.onLine) byId("progress-offline").removeAttribute("hidden");
 applyQueryToFilters();
 void load();
+</script>
+
+<script>
+import type { ProgressBank } from "../../lib/progress/analytics";
+import { createProgressRepository } from "../../lib/progress/indexeddb-repository";
+import type { LearningGoalRecord, StudyProgressRecord } from "../../lib/progress/model";
+import {
+	getStudyStatus,
+	resolveStudyRecord,
+	type StudyNoteReference,
+	summarizeStudyProgress,
+} from "../../lib/progress/study-domain";
+import { StudyProgressService } from "../../lib/progress/study-service";
+
+interface DashboardStudyNote extends StudyNoteReference {
+	title: string;
+	href: string;
+}
+
+interface StudyDashboardData {
+	banks: ProgressBank[];
+	studyNotes: DashboardStudyNote[];
+}
+
+const data = JSON.parse(
+	document.getElementById("progress-client-data")?.textContent ?? "{}",
+) as StudyDashboardData;
+const repository = createProgressRepository();
+const service = new StudyProgressService(repository);
+const certificationSelect = document.getElementById("study-certification") as HTMLSelectElement;
+const status = document.getElementById("study-progress-status") as HTMLParagraphElement;
+const error = document.getElementById("study-progress-error") as HTMLParagraphElement;
+const overview = document.getElementById("study-progress-overview") as HTMLDivElement;
+const goalForm = document.getElementById("study-goals-form") as HTMLFormElement;
+const targetDate = document.getElementById("study-target-date") as HTMLInputElement;
+const targetQuestions = document.getElementById("study-target-questions") as HTMLInputElement;
+const targetNotes = document.getElementById("study-target-notes") as HTMLInputElement;
+const legacyDateNotice = document.getElementById(
+	"study-legacy-date-notice",
+) as HTMLParagraphElement;
+const goalStatus = document.getElementById("study-goals-status") as HTMLParagraphElement;
+let records: StudyProgressRecord[] = [];
+let goal: LearningGoalRecord | undefined;
+let loadSequence = 0;
+let studyRefreshTimer: number | undefined;
+
+function escapeHtml(value: string): string {
+	return value.replace(
+		/[&<>"']/g,
+		(character) =>
+			({
+				"&": "&amp;",
+				"<": "&lt;",
+				">": "&gt;",
+				'"': "&quot;",
+				"'": "&#39;",
+			})[character] ?? character,
+	);
+}
+
+function linkFor(note: DashboardStudyNote, record: StudyProgressRecord | undefined): string {
+	const anchor =
+		record?.contentRevision === note.revision ? record.readingPositionAnchor : undefined;
+	return `${note.href}${anchor ? `#${encodeURIComponent(anchor)}` : ""}`;
+}
+
+function renderNoteLinks(
+	recordsForNotes: Array<{ note: DashboardStudyNote; record: StudyProgressRecord }>,
+): string {
+	if (recordsForNotes.length === 0) return '<p class="small muted">None yet.</p>';
+	return `<ul class="progressStudyNoteList">${recordsForNotes
+		.map(({ note, record }) => {
+			const state = getStudyStatus(record, note.revision);
+			const label =
+				state === "completed"
+					? "Completed"
+					: state === "in_progress"
+						? "In progress"
+						: "Not started";
+			return `<li><a href="${escapeHtml(linkFor(note, record))}">${escapeHtml(note.title)}</a><span>${label}</span></li>`;
+		})
+		.join("")}</ul>`;
+}
+
+function renderOverview(
+	certificationId: string,
+	notes: DashboardStudyNote[],
+	practiceCount: number,
+): void {
+	const counts = summarizeStudyProgress(notes, records);
+	const noteRecords = notes.flatMap((note) => {
+		const record = resolveStudyRecord(note, records);
+		return record ? [{ note, record }] : [];
+	});
+	const recent = noteRecords
+		.filter(({ record }) => record.lastOpenedAt !== undefined)
+		.toSorted((a, b) => (b.record.lastOpenedAt ?? 0) - (a.record.lastOpenedAt ?? 0))
+		.slice(0, 8);
+	const bookmarks = noteRecords.filter(({ record }) => record.bookmarked);
+	const targetDateText = goal?.targetDate
+		? `<p>Exam target date: <strong>${escapeHtml(goal.targetDate)}</strong> (floating local calendar date).</p>`
+		: "";
+	const questionGoal =
+		goal?.targetQuestionCount === null || goal?.targetQuestionCount === undefined
+			? "No question target set."
+			: `${Math.min(practiceCount, goal.targetQuestionCount)} of ${goal.targetQuestionCount} distinct current-bank questions practiced.`;
+	const noteGoal =
+		goal?.targetNoteCount === null || goal?.targetNoteCount === undefined
+			? "No note target set."
+			: `${Math.min(counts.completed, goal.targetNoteCount)} of ${goal.targetNoteCount} notes completed.`;
+	const archived = counts.archived.length
+		? `<details class="progressStudyArchive"><summary>Archived note history (${counts.archived.length})</summary><ul>${counts.archived.map((record) => `<li><span>${escapeHtml(record.noteId)}</span><span>${record.status.replaceAll("_", " ")}${record.bookmarked ? " · bookmarked" : ""}</span></li>`).join("")}</ul></details>`
+		: '<p class="small muted">No archived note records.</p>';
+
+	overview.innerHTML = `
+			<section class="progressStudyCompletion" aria-label="Study-note completion">
+				<strong>${counts.completed} of ${counts.eligible} notes completed</strong>
+				<progress max="${Math.max(1, counts.eligible)}" value="${counts.completed}" aria-label="${counts.completed} of ${counts.eligible} eligible study notes completed"></progress>
+				<p>${counts.inProgress} in progress · ${counts.bookmarked} bookmarks</p>
+			</section>
+			<section class="progressStudyGoalsSummary" aria-label="Goal progress">
+				<h3>Goal progress</h3>
+				<p>${questionGoal}</p><p>${noteGoal}</p>${targetDateText}
+			</section>
+			<section><h3>Recently opened notes</h3>${renderNoteLinks(recent)}</section>
+			<section><h3>Bookmarks</h3>${renderNoteLinks(bookmarks)}</section>
+			${archived}
+			${notes.length === 0 ? `<p class="small muted">No eligible study notes are currently published for ${escapeHtml(certificationId)}; saved records remain in archived history.</p>` : ""}
+		`;
+}
+
+function scheduleStudyRefresh(): void {
+	if (studyRefreshTimer !== undefined) window.clearTimeout(studyRefreshTimer);
+	studyRefreshTimer = window.setTimeout(() => {
+		studyRefreshTimer = undefined;
+		void loadStudyProgress();
+	}, 300);
+}
+
+async function loadStudyProgress(): Promise<void> {
+	const sequence = ++loadSequence;
+	const certificationId = certificationSelect.value;
+	const notes = data.studyNotes.filter((note) => note.certificationId === certificationId);
+	status.textContent = "Loading study progress…";
+	error.hidden = true;
+	try {
+		await service.initialize(certificationId);
+		const [loadedRecords, loadedGoal] = await Promise.all([
+			service.getProgress(certificationId),
+			service.getGoal(certificationId),
+		]);
+		if (sequence !== loadSequence) return;
+		records = loadedRecords;
+		goal = loadedGoal;
+		let practiceCount = 0;
+		if (goal?.targetQuestionCount !== null && goal?.targetQuestionCount !== undefined) {
+			const progressData = await repository.getProgressSummaryData([certificationId]);
+			if (sequence !== loadSequence) return;
+			const bankQuestions = new Set(
+				(data.banks.find((bank) => bank.certificationId === certificationId)?.questions ?? []).map(
+					(question) => question.questionId,
+				),
+			);
+			practiceCount = progressData.questionProgress.filter(
+				(progress) => bankQuestions.has(progress.questionId) && progress.attemptCount > 0,
+			).length;
+		}
+		targetDate.value = goal?.targetDate ?? "";
+		targetQuestions.value = goal?.targetQuestionCount?.toString() ?? "";
+		targetNotes.value = goal?.targetNoteCount?.toString() ?? "";
+		legacyDateNotice.hidden = goal?.legacyTargetDate === undefined;
+		legacyDateNotice.textContent =
+			goal?.legacyTargetDate === undefined
+				? ""
+				: "An older timestamped target is retained in backups but cannot safely be converted to a local calendar date. Choose a new date to replace it.";
+		renderOverview(certificationId, notes, practiceCount);
+		status.textContent = "Study progress is up to date.";
+	} catch (cause) {
+		if (sequence !== loadSequence) return;
+		status.textContent = "Study progress could not be loaded.";
+		error.hidden = false;
+		error.textContent = cause instanceof Error ? cause.message : "Browser storage is unavailable.";
+	}
+}
+
+goalForm.addEventListener("submit", (event) => {
+	event.preventDefault();
+	if (!goalForm.reportValidity()) return;
+	const certificationId = certificationSelect.value;
+	const input = {
+		targetDate: targetDate.value || null,
+		targetQuestionCount: targetQuestions.value === "" ? null : Number(targetQuestions.value),
+		targetNoteCount: targetNotes.value === "" ? null : Number(targetNotes.value),
+	};
+	goalStatus.textContent = "Saving goals…";
+	void service
+		.saveGoals(certificationId, input)
+		.then(() => {
+			goalStatus.textContent = "Goals saved in this browser.";
+			return loadStudyProgress();
+		})
+		.catch((cause: unknown) => {
+			goalStatus.textContent = "Goals could not be saved.";
+			error.hidden = false;
+			error.textContent =
+				cause instanceof Error ? cause.message : "Browser storage is unavailable.";
+		});
+});
+
+certificationSelect.addEventListener("change", () => {
+	goalStatus.textContent = "";
+	void loadStudyProgress();
+});
+service.onChange((kind) => {
+	if (kind === "practice" && goal?.targetQuestionCount == null) return;
+	scheduleStudyRefresh();
+});
+window.addEventListener(
+	"pagehide",
+	() => {
+		if (studyRefreshTimer !== undefined) window.clearTimeout(studyRefreshTimer);
+		service.close();
+		void repository.close();
+	},
+	{ once: true },
+);
+void loadStudyProgress();
 </script>
 
 <style>
@@ -607,6 +929,169 @@ void load();
 .progressError {
 	background: var(--error-soft);
 	color: var(--error-ink);
+}
+
+.progressStudy {
+	margin: 24px 0;
+	padding: 18px;
+}
+
+.progressStudyHeader,
+.progressStudyGrid {
+	display: grid;
+	gap: 16px;
+}
+
+.progressStudyHeader {
+	align-items: end;
+	grid-template-columns: minmax(0, 1fr) minmax(200px, 280px);
+}
+
+.progressStudyHeader h2,
+.progressStudyHeader p {
+	margin: 0 0 6px;
+}
+
+.progressStudyCertification,
+.progressStudyGoals label {
+	display: grid;
+	font-size: 13px;
+	font-weight: 600;
+	gap: 6px;
+}
+
+.progressStudyCertification select,
+.progressStudyGoals input {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	color: var(--ink);
+	font: inherit;
+	min-height: 42px;
+	padding: 8px;
+	width: 100%;
+}
+
+.progressStudyStatus {
+	color: var(--muted);
+	font-size: 13px;
+	margin: 10px 0;
+}
+
+.progressStudyGrid {
+	grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
+	margin-top: 16px;
+}
+
+.progressStudyGrid > div,
+.progressStudyGoals,
+.progressStudyGoalsSummary {
+	background: var(--raised);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	min-width: 0;
+	padding: 14px;
+}
+
+.progressStudyGrid section + section {
+	margin-top: 16px;
+}
+
+.progressStudyGrid h3 {
+	font-size: 14px;
+	margin: 0 0 8px;
+}
+
+.progressStudyCompletion strong {
+	display: block;
+	font-size: 17px;
+}
+
+.progressStudyCompletion progress {
+	height: 12px;
+	margin: 10px 0;
+	width: 100%;
+}
+
+.progressStudyCompletion p,
+.progressStudyGoalsSummary p,
+.progressStudyGoals > p {
+	color: var(--muted);
+	font-size: 13px;
+	line-height: 1.5;
+	margin: 5px 0;
+}
+
+.progressStudyGoals {
+	align-content: start;
+	display: grid;
+	gap: 8px;
+}
+
+.progressStudyGoals h3 {
+	font-size: 16px;
+	margin-bottom: 4px;
+}
+
+.progressStudyGoals .progressStudyActions button {
+	min-height: 42px;
+}
+
+.progressStudyActions {
+	margin-top: 4px;
+}
+
+.progressStudyNoteList,
+.progressStudyArchive ul {
+	display: grid;
+	font-size: 13px;
+	gap: 8px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.progressStudyNoteList li,
+.progressStudyArchive li {
+	align-items: baseline;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 12px;
+	justify-content: space-between;
+}
+
+.progressStudyNoteList a {
+	color: var(--brand-strong);
+	font-weight: 600;
+}
+
+.progressStudyNoteList span,
+.progressStudyArchive li span:last-child {
+	color: var(--muted);
+	white-space: nowrap;
+}
+
+.progressStudyArchive {
+	border-top: 1px solid var(--border);
+	margin-top: 16px;
+	padding-top: 12px;
+}
+
+.progressStudyArchive summary {
+	cursor: pointer;
+	font-weight: 600;
+	margin-bottom: 10px;
+}
+
+.progressStudyArchive ul {
+	max-height: 220px;
+	overflow: auto;
+}
+
+.progressStudyPrivacy {
+	color: var(--muted);
+	font-size: 12px;
+	margin: 12px 0 0;
 }
 
 .progressFilters,
@@ -818,7 +1303,9 @@ void load();
 
 @media (max-width: 760px) {
 	.progressHeader,
-	.progressVisualGrid {
+	.progressVisualGrid,
+	.progressStudyHeader,
+	.progressStudyGrid {
 		grid-template-columns: 1fr;
 	}
 

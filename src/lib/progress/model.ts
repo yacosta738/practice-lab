@@ -200,16 +200,28 @@ export interface QuestionProgress {
 export interface StudyProgressRecord {
 	certificationId: string;
 	noteId: string;
-	completed: boolean;
+	status: StudyProgressStatus;
 	completedAt?: number;
+	completedRevision?: string;
 	bookmarked: boolean;
+	lastOpenedAt?: number;
+	readingPositionAnchor?: string;
+	contentRevision?: string;
 	updatedAt: number;
 }
+
+export type StudyProgressStatus = "not_started" | "in_progress" | "completed";
 
 export interface LearningGoalRecord {
 	certificationId: string;
 	dailyQuestionTarget: number | null;
-	targetDate: number | null;
+	targetQuestionCount: number | null;
+	targetNoteCount: number | null;
+	/** A floating local calendar date, not a UTC timestamp or an instant. */
+	targetDate: string | null;
+	targetDateTimezone: "floating-local";
+	/** Preserves a timestamp from pre-calendar-date records without guessing its timezone. */
+	legacyTargetDate?: number;
 	updatedAt: number;
 }
 

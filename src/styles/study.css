@@ -374,3 +374,94 @@
 .studyIntro {
 	margin-top: 8px;
 }
+
+.studyProgressPanel,
+.noteProgressPanel {
+	background: var(--raised);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	margin: 20px 0;
+	padding: 16px;
+}
+
+.studyProgressPanel h2,
+.noteProgressPanel h2 {
+	font-size: 16px;
+	margin: 0 0 6px;
+}
+
+.studyProgressPanel p,
+.noteProgressPanel p {
+	margin: 0;
+}
+
+.studyProgressError {
+	background: var(--error-soft);
+	border-radius: var(--radius-sm);
+	color: var(--error-ink);
+	margin-top: 10px !important;
+	padding: 8px 10px;
+}
+
+.studyNoteProgress,
+.noteProgressActions {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+}
+
+.studyNoteProgress {
+	color: var(--ink-secondary);
+	font-size: 13px;
+	justify-content: flex-end;
+	margin: 7px 4px 0;
+}
+
+.studyNoteProgress a,
+.noteProgressActions a {
+	color: var(--brand-strong);
+	font-weight: 600;
+}
+
+.studyNoteProgress [hidden],
+.noteProgressActions [hidden] {
+	display: none;
+}
+
+.studyBookmarkButton {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	color: var(--ink);
+	cursor: pointer;
+	font: inherit;
+	min-height: 40px;
+	padding: 7px 10px;
+}
+
+.studyBookmarkButton:hover:not(:disabled) {
+	border-color: var(--brand);
+}
+
+.studyBookmarkButton:focus-visible,
+.noteProgressActions button:focus-visible,
+.noteProgressActions a:focus-visible {
+	outline: 2px solid var(--brand);
+	outline-offset: 2px;
+}
+
+.noteProgressActions {
+	margin-top: 10px;
+}
+
+@media (max-width: 520px) {
+	.studyNoteProgress {
+		justify-content: flex-start;
+	}
+
+	.noteProgressActions > * {
+		flex: 1 1 100%;
+		text-align: center;
+	}
+}

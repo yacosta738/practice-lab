@@ -46,7 +46,7 @@ export async function getStaticPaths() {
 			const sortedNotes = section.notes;
 			for (let i = 0; i < sortedNotes.length; i++) {
 				const note = sortedNotes[i];
-				const entry = entryMap.get(note.id);
+				const entry = entryMap.get(note.entryId);
 				if (!entry) {
 					throw new Error(`Missing entry for note id "${note.id}" in cert "${cert.slug}"`);
 				}
@@ -83,6 +83,14 @@ const practiceDomain =
 	section.domain && cert.certification.domains[section.domain] ? section.domain : undefined;
 const practiceHref = `${base}${cert.quizPath}/?mode=practice${practiceDomain ? `&domain=${encodeURIComponent(practiceDomain)}` : ""}#session`;
 const practiceLabel = practiceDomain ? `Practice ${practiceDomain}` : `Practice ${cert.subtitle}`;
+const studyClientData = JSON.stringify({
+	note: {
+		certificationId: cert.slug,
+		noteId: note.id,
+		aliases: note.aliases,
+		revision: note.revision,
+	},
+}).replaceAll("<", "\\u003c");
 ---
 
 <StudyLayout
@@ -92,6 +100,7 @@ const practiceLabel = practiceDomain ? `Practice ${practiceDomain}` : `Practice 
 	activeCertCode={cert.subtitle}
 	breadcrumb={note.title}
 	domains={sidebarDomains}
+	disableAnalytics={true}
 >
 	<nav class="breadcrumb" aria-label="Breadcrumb">
 		<a href={base}>Home</a>
@@ -118,7 +127,25 @@ const practiceLabel = practiceDomain ? `Practice ${practiceDomain}` : `Practice 
 				<span>Section: {section.title}</span>
 				{note.updated && <span>Updated {note.updated}</span>}
 			</div>
-			<Content />
+			<section class="noteProgressPanel" aria-labelledby="note-progress-title">
+				<div>
+					<h2 id="note-progress-title">Your study progress</h2>
+					<p id="note-progress-status" class="muted" role="status" aria-live="polite">
+						Loading personal progress…
+					</p>
+				</div>
+				<div class="noteProgressActions">
+					<button type="button" class="primary" data-study-completion disabled>
+						Mark as complete
+					</button>
+					<button type="button" class="ghost" data-study-bookmark disabled>Bookmark note</button>
+					<a class="ghost" data-study-resume hidden href="#study-reading-content">Resume reading</a>
+				</div>
+				<p id="note-progress-error" class="studyProgressError" role="alert" hidden></p>
+			</section>
+			<div id="study-reading-content">
+				<Content />
+			</div>
 			<div class="studyPracticeCta">
 				<div>
 					<strong>Test this topic in Practice Lab</strong>
@@ -177,3 +204,157 @@ const practiceLabel = practiceDomain ? `Practice ${practiceDomain}` : `Practice 
 		</nav>
 	)}
 </StudyLayout>
+
+<script type="application/json" id="study-note-data" set:html={studyClientData}></script>
+
+<script>
+import type { StudyProgressRecord } from "../../../lib/progress/model";
+import type { StudyNoteReference } from "../../../lib/progress/study-domain";
+import { getStudyStatus, resolveStudyRecord } from "../../../lib/progress/study-domain";
+import { StudyProgressService } from "../../../lib/progress/study-service";
+
+interface NoteData {
+	note: StudyNoteReference;
+}
+
+const data = JSON.parse(
+	document.getElementById("study-note-data")?.textContent ?? "{}",
+) as NoteData;
+const note = data.note;
+const service = new StudyProgressService();
+const statusElement = document.getElementById("note-progress-status") as HTMLParagraphElement;
+const errorElement = document.getElementById("note-progress-error") as HTMLParagraphElement;
+const completionButton = document.querySelector<HTMLButtonElement>("[data-study-completion]");
+const bookmarkButton = document.querySelector<HTMLButtonElement>("[data-study-bookmark]");
+const resumeLink = document.querySelector<HTMLAnchorElement>("[data-study-resume]");
+let records: StudyProgressRecord[] = [];
+let pendingAnchor: string | undefined;
+let checkpointTimer: number | undefined;
+let lastSavedAnchor: string | undefined;
+let observers: IntersectionObserver | undefined;
+
+function currentRecord(): StudyProgressRecord | undefined {
+	return resolveStudyRecord(note, records);
+}
+
+async function renderProgress(): Promise<void> {
+	records = await service.getProgress(note.certificationId);
+	const record = currentRecord();
+	const status = getStudyStatus(record, note.revision);
+	statusElement.textContent =
+		status === "completed"
+			? "Completed by you. You can mark this note unread at any time."
+			: status === "in_progress"
+				? "In progress. Visiting or scrolling never marks a note complete."
+				: "Not started. Mark this note complete only when you choose to.";
+	if (completionButton) {
+		completionButton.disabled = false;
+		completionButton.textContent = status === "completed" ? "Mark unread" : "Mark as complete";
+	}
+	if (bookmarkButton) {
+		bookmarkButton.disabled = false;
+		bookmarkButton.textContent = record?.bookmarked ? "Remove bookmark" : "Bookmark note";
+		bookmarkButton.setAttribute("aria-pressed", String(record?.bookmarked ?? false));
+	}
+	if (
+		resumeLink &&
+		record?.readingPositionAnchor &&
+		record.contentRevision === note.revision &&
+		document.getElementById(record.readingPositionAnchor)
+	) {
+		resumeLink.href = `#${encodeURIComponent(record.readingPositionAnchor)}`;
+		resumeLink.hidden = false;
+	} else if (resumeLink) {
+		resumeLink.hidden = true;
+	}
+	lastSavedAnchor = record?.readingPositionAnchor;
+}
+
+function showError(cause: unknown): void {
+	errorElement.hidden = false;
+	errorElement.textContent = `Personal progress could not be loaded or saved. The note remains available.${cause instanceof Error ? ` ${cause.message}` : ""}`;
+}
+
+async function saveAnchor(): Promise<void> {
+	if (!pendingAnchor || pendingAnchor === lastSavedAnchor) return;
+	const anchor = pendingAnchor;
+	pendingAnchor = undefined;
+	try {
+		const record = await service.saveReadingPosition(note, anchor);
+		lastSavedAnchor = record?.readingPositionAnchor ?? lastSavedAnchor;
+		await renderProgress();
+	} catch (cause) {
+		showError(cause);
+	}
+}
+
+function scheduleAnchor(anchor: string): void {
+	pendingAnchor = anchor;
+	if (checkpointTimer !== undefined) window.clearTimeout(checkpointTimer);
+	checkpointTimer = window.setTimeout(() => void saveAnchor(), 1_500);
+}
+
+function trackReadingPosition(): void {
+	const headings = [
+		...document.querySelectorAll<HTMLElement>(
+			"#study-reading-content h2[id], #study-reading-content h3[id]",
+		),
+	];
+	if (!headings.length || typeof IntersectionObserver === "undefined") return;
+	observers = new IntersectionObserver(() => {
+		const active = headings
+			.map((heading) => ({ heading, top: heading.getBoundingClientRect().top }))
+			.filter(
+				({ heading, top }) =>
+					top < window.innerHeight && heading.getBoundingClientRect().bottom > 0,
+			)
+			.toSorted((a, b) => a.top - b.top);
+		const current = active.filter(({ top }) => top <= 160).at(-1)?.heading ?? active[0]?.heading;
+		if (current?.id) scheduleAnchor(current.id);
+	});
+	for (const heading of headings) observers.observe(heading);
+}
+
+async function start(): Promise<void> {
+	try {
+		await service.initialize(note.certificationId);
+		await service.openNote(note);
+		await renderProgress();
+		service.onChange((kind) => {
+			if (kind !== "practice") void renderProgress().catch(showError);
+		});
+		trackReadingPosition();
+	} catch (cause) {
+		showError(cause);
+	}
+}
+
+completionButton?.addEventListener("click", () => {
+	const status = getStudyStatus(currentRecord(), note.revision);
+	void service
+		.setStatus(note, status === "completed" ? "not_started" : "completed")
+		.then(renderProgress)
+		.catch(showError);
+});
+bookmarkButton?.addEventListener("click", () => {
+	void service
+		.setBookmarked(note, !(currentRecord()?.bookmarked ?? false))
+		.then(renderProgress)
+		.catch(showError);
+});
+document.addEventListener("visibilitychange", () => {
+	if (document.visibilityState === "hidden") void saveAnchor();
+});
+window.addEventListener(
+	"pagehide",
+	() => {
+		if (checkpointTimer !== undefined) window.clearTimeout(checkpointTimer);
+		void saveAnchor().finally(() => {
+			observers?.disconnect();
+			service.close();
+		});
+	},
+	{ once: true },
+);
+void start();
+</script>

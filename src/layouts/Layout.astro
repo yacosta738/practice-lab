@@ -8,11 +8,12 @@ interface Props {
 	title: string;
 	description?: string;
 	ogImage?: string;
+	disableAnalytics?: boolean;
 }
 
 const defaultDescription =
 	"Prepare for professional certification exams with interactive quizzes, timed assessments, and domain-based study resources. Practice in your browser and track readiness over time.";
-const { title, description = defaultDescription, ogImage } = Astro.props;
+const { title, description = defaultDescription, ogImage, disableAnalytics = false } = Astro.props;
 const isVercelDeployment = process.env.VERCEL === "1";
 const seoTitle = limitSeoTitle(title);
 const seoDescription = limitMetaDescription(description);
@@ -103,9 +104,12 @@ const isDefaultImage = !ogImage;
 		>
 
 		<!-- Referrer policy hint (server header is preferred) -->
-		<meta name="referrer" content="strict-origin-when-cross-origin">
-		{isVercelDeployment && <Analytics />}
-		<AhrefsAnalytics />
+		<meta
+			name="referrer"
+			content={disableAnalytics ? "no-referrer" : "strict-origin-when-cross-origin"}
+		>
+		{isVercelDeployment && !disableAnalytics && <Analytics />}
+		{!disableAnalytics && <AhrefsAnalytics />}
 	</head>
 	<body>
 		<a class="skip-link" href="#main-content">Skip to main content</a>

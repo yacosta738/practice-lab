@@ -14,6 +14,7 @@ import type {
 	StudyProgressRecord,
 } from "./model";
 import { UUID_PATTERN } from "./model";
+import { isValidLearningGoalRecord, isValidStudyProgressRecord } from "./study-domain";
 
 export const LEARNING_BACKUP_FORMAT = "practice-lab-learning-backup";
 export const MAX_LEARNING_BACKUP_SIZE = 50 * 1024 * 1024;
@@ -21,7 +22,7 @@ export const MAX_LEARNING_BACKUP_RECORDS = 250_000;
 
 export interface LearningBackup {
 	format: typeof LEARNING_BACKUP_FORMAT;
-	schemaVersion: 1;
+	schemaVersion: 2;
 	exportedAt: number;
 	sourceOrigin: string;
 	data: LearningDataRestoreData;
@@ -58,7 +59,7 @@ export async function createLearningBackup(
 	};
 	const payload: Omit<LearningBackup, "integrity"> = {
 		format: LEARNING_BACKUP_FORMAT,
-		schemaVersion: 1,
+		schemaVersion: 2,
 		exportedAt,
 		sourceOrigin,
 		data,
@@ -110,7 +111,7 @@ export async function parseLearningBackup(
 	if (backup.format !== LEARNING_BACKUP_FORMAT) {
 		throw new ProgressValidationError("This file is not a Practice Lab learning data backup.");
 	}
-	if (backup.schemaVersion !== 1) {
+	if (backup.schemaVersion !== 1 && backup.schemaVersion !== 2) {
 		throw new ProgressValidationError("This learning backup version is not supported.");
 	}
 	if (!isTimestamp(backup.exportedAt)) {
@@ -129,6 +130,16 @@ export async function parseLearningBackup(
 		"legacyProvenance",
 		"legacyRecords",
 	]);
+	const sourceStudyProgress = validateArray<Record<string, unknown>>(
+		dataRecord.studyProgress,
+		"study progress",
+		backup.schemaVersion === 1 ? validateLegacyStudyProgressShape : validateStudyProgressShape,
+	);
+	const sourceLearningGoals = validateArray<Record<string, unknown>>(
+		dataRecord.learningGoals,
+		"learning goals",
+		backup.schemaVersion === 1 ? validateLegacyLearningGoalShape : validateLearningGoalShape,
+	);
 	const data: LearningDataRestoreData = {
 		sessions: validateArray<ProgressSession>(dataRecord.sessions, "sessions", validateSessionShape),
 		questionAttempts: validateArray<QuestionAttempt>(
@@ -141,15 +152,15 @@ export async function parseLearningBackup(
 			"question progress",
 			validateQuestionProgressShape,
 		),
-		studyProgress: validateArray<StudyProgressRecord>(
-			dataRecord.studyProgress,
-			"study progress",
-			validateStudyProgressShape,
+		studyProgress: sourceStudyProgress.map((record) =>
+			backup.schemaVersion === 1
+				? normalizeLegacyStudyProgress(record)
+				: (record as unknown as StudyProgressRecord),
 		),
-		learningGoals: validateArray<LearningGoalRecord>(
-			dataRecord.learningGoals,
-			"learning goals",
-			validateLearningGoalShape,
+		learningGoals: sourceLearningGoals.map((record) =>
+			backup.schemaVersion === 1
+				? normalizeLegacyLearningGoal(record)
+				: (record as unknown as LearningGoalRecord),
 		),
 		legacyProvenance: validateArray<{ key: string; value: unknown }>(
 			dataRecord.legacyProvenance,
@@ -178,23 +189,29 @@ export async function parseLearningBackup(
 	) {
 		throw new ProgressValidationError("The learning backup integrity metadata is invalid.");
 	}
-	const payload: Omit<LearningBackup, "integrity"> = {
+	const sourcePayload = {
 		format: LEARNING_BACKUP_FORMAT,
-		schemaVersion: 1,
+		schemaVersion: backup.schemaVersion,
 		exportedAt: backup.exportedAt as number,
 		sourceOrigin: backup.sourceOrigin as string,
-		data,
+		data: dataRecord,
 	};
-	if ((await digest(payload)) !== integrity.digest) {
+	if ((await digest(sourcePayload)) !== integrity.digest) {
 		throw new ProgressValidationError(
 			"The learning backup integrity check failed; no data was changed.",
 		);
 	}
 	validateCertificationData(data, knownCertificationIds, backup.exportedAt);
-	const normalizedPayload = { ...payload, data };
+	const payload: Omit<LearningBackup, "integrity"> = {
+		format: LEARNING_BACKUP_FORMAT,
+		schemaVersion: 2,
+		exportedAt: backup.exportedAt as number,
+		sourceOrigin: backup.sourceOrigin as string,
+		data,
+	};
 	return {
-		...normalizedPayload,
-		integrity: { algorithm: "SHA-256", digest: await digest(normalizedPayload) },
+		...payload,
+		integrity: { algorithm: "SHA-256", digest: await digest(payload) },
 	};
 }
 
@@ -530,6 +547,46 @@ function validateStudyProgressShape(value: unknown): asserts value is StudyProgr
 	const progress = asRecord(value, "A study progress record is invalid.");
 	assertExactKeys(
 		progress,
+		["certificationId", "noteId", "status", "bookmarked", "updatedAt"],
+		[
+			"completedAt",
+			"completedRevision",
+			"lastOpenedAt",
+			"readingPositionAnchor",
+			"contentRevision",
+		],
+	);
+	if (!isValidStudyProgressRecord(progress as unknown as StudyProgressRecord)) {
+		throw new ProgressValidationError("A study progress record has invalid field values.");
+	}
+}
+
+function validateLearningGoalShape(value: unknown): asserts value is LearningGoalRecord {
+	const goal = asRecord(value, "A learning goal record is invalid.");
+	assertExactKeys(
+		goal,
+		[
+			"certificationId",
+			"dailyQuestionTarget",
+			"targetQuestionCount",
+			"targetNoteCount",
+			"targetDate",
+			"targetDateTimezone",
+			"updatedAt",
+		],
+		["legacyTargetDate"],
+	);
+	if (!isValidLearningGoalRecord(goal as unknown as LearningGoalRecord)) {
+		throw new ProgressValidationError("A learning goal record has invalid field values.");
+	}
+}
+
+function validateLegacyStudyProgressShape(
+	value: unknown,
+): asserts value is Record<string, unknown> {
+	const progress = asRecord(value, "A legacy study progress record is invalid.");
+	assertExactKeys(
+		progress,
 		["certificationId", "noteId", "completed", "bookmarked", "updatedAt"],
 		["completedAt"],
 	);
@@ -543,12 +600,12 @@ function validateStudyProgressShape(value: unknown): asserts value is StudyProgr
 		!isTimestamp(progress.updatedAt) ||
 		(progress.completedAt !== undefined && !isTimestamp(progress.completedAt))
 	) {
-		throw new ProgressValidationError("A study progress record has invalid field values.");
+		throw new ProgressValidationError("A legacy study progress record has invalid field values.");
 	}
 }
 
-function validateLearningGoalShape(value: unknown): asserts value is LearningGoalRecord {
-	const goal = asRecord(value, "A learning goal record is invalid.");
+function validateLegacyLearningGoalShape(value: unknown): asserts value is Record<string, unknown> {
+	const goal = asRecord(value, "A legacy learning goal record is invalid.");
 	assertExactKeys(goal, ["certificationId", "dailyQuestionTarget", "targetDate", "updatedAt"]);
 	if (
 		typeof goal.certificationId !== "string" ||
@@ -557,8 +614,32 @@ function validateLearningGoalShape(value: unknown): asserts value is LearningGoa
 		!(goal.targetDate === null || isTimestamp(goal.targetDate)) ||
 		!isTimestamp(goal.updatedAt)
 	) {
-		throw new ProgressValidationError("A learning goal record has invalid field values.");
+		throw new ProgressValidationError("A legacy learning goal record has invalid field values.");
 	}
+}
+
+function normalizeLegacyStudyProgress(record: Record<string, unknown>): StudyProgressRecord {
+	return {
+		certificationId: record.certificationId as string,
+		noteId: record.noteId as string,
+		status: record.completed ? "completed" : "not_started",
+		...(record.completedAt === undefined ? {} : { completedAt: record.completedAt as number }),
+		bookmarked: record.bookmarked as boolean,
+		updatedAt: record.updatedAt as number,
+	};
+}
+
+function normalizeLegacyLearningGoal(record: Record<string, unknown>): LearningGoalRecord {
+	return {
+		certificationId: record.certificationId as string,
+		dailyQuestionTarget: record.dailyQuestionTarget as number | null,
+		targetQuestionCount: null,
+		targetNoteCount: null,
+		targetDate: null,
+		targetDateTimezone: "floating-local",
+		...(record.targetDate === null ? {} : { legacyTargetDate: record.targetDate as number }),
+		updatedAt: record.updatedAt as number,
+	};
 }
 
 function validateLegacyProvenance(value: unknown): { key: string; value: unknown } {

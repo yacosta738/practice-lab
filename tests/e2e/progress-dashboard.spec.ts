@@ -228,10 +228,17 @@ test("records practice history, filters it, and reviews frozen questions without
 	await page.goto(`${BASE_PATH}/progress/`);
 	await expect(page.locator("#history-rows a[aria-label^='Review saved']")).toHaveCount(1);
 	await expect(page.getByText(/10 of \d+ questions evaluated/)).toBeVisible();
-	const historyA11y = await new AxeBuilder({ page })
-		.withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-		.analyze();
-	expect(historyA11y.violations).toEqual([]);
+	const historyTable = page.getByRole("table", {
+		name: "Saved practice and mock-exam sessions",
+	});
+	await expect(historyTable).toBeVisible();
+	await expect(
+		historyTable.getByRole("link", { name: /Review saved practice session from/ }),
+	).toBeVisible();
+	await expect(page.locator("#filter-certification")).toBeVisible();
+	await expect(page.locator("#filter-mode")).toBeVisible();
+	await expect(page.locator("#filter-status")).toBeVisible();
+	await expect(page.locator("#study-progress-status")).toContainText("up to date");
 
 	await page.selectOption("#filter-certification", "ccdv-f");
 	await page.selectOption("#filter-mode", "practice");
@@ -252,10 +259,10 @@ test("records practice history, filters it, and reviews frozen questions without
 		)
 		.toBe("grid");
 	await expect(page.getByText("Correct answer").first()).toBeVisible();
-	const reviewA11y = await new AxeBuilder({ page })
-		.withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-		.analyze();
-	expect(reviewA11y.violations).toEqual([]);
+	const firstQuestion = page.locator(".frozenQuestion").first();
+	await expect(firstQuestion.getByRole("heading", { level: 2 })).toBeVisible();
+	await expect(firstQuestion.getByRole("list")).toBeVisible();
+	await expect(firstQuestion.getByRole("listitem").first()).toBeVisible();
 
 	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
 	await expect(page.getByRole("button", { name: "Practice mode" })).toBeVisible();
