@@ -6,6 +6,7 @@ Date: 2026-11-25
 
 -
 Issue: [#62 — accessible question navigator and study-answer exclusion](https://github.com/yacosta738/practice-lab/issues/62).
+
 - Review follow-up to [PR #63](https://github.com/yacosta738/practice-lab/pull/63), which is merged
   into `main` as `5e65b49`; published in
   successor [PR #66](https://github.com/yacosta738/practice-lab/pull/66) from

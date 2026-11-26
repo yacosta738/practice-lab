@@ -25,8 +25,8 @@ import type {
 } from "./model";
 import {
 	type CheckpointSessionCommand,
-	createProgressUseCases,
 	type CreateSessionCommand,
+	createProgressUseCases,
 	type RecordEvaluationCommand,
 } from "./use-cases";
 

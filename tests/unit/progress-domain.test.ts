@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { ProgressConflictError, ProgressValidationError } from "../../src/lib/progress/errors";
 import {
-	checkpointSession,
 	type ContentProvenance,
+	checkpointSession,
 	createInitialSession,
 	createQuestionAttempt,
 	evaluationMatches,
