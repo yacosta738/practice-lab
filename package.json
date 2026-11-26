@@ -6,6 +6,15 @@
 	"engines": {
 		"node": ">=22.23.4"
 	},
+	"browserslist": [
+		"Chrome >= 123",
+		"Edge >= 123",
+		"Firefox >= 121",
+		"Safari >= 17.5",
+		"ios_saf >= 17.5",
+		"and_chr >= 123",
+		"and_ff >= 121"
+	],
 	"scripts": {
 		"dev": "astro dev",
 		"build": "astro build",
@@ -24,9 +33,12 @@
 		"prepare": "lefthook install"
 	},
 	"dependencies": {
+		"@oddbird/css-anchor-positioning": "0.10.2",
+		"@oddbird/popover-polyfill": "0.7.3",
 		"@vercel/analytics": "^2.0.1",
 		"astro": "^7.4.13",
-		"idb": "8.0.4"
+		"idb": "8.0.4",
+		"interestfor": "1.0.14"
 	},
 	"devDependencies": {
 		"@astrojs/check": "0.9.12",

@@ -18,12 +18,9 @@ export async function openProgressDatabase(onVersionChange: () => void): Promise
 			);
 		}
 		let blockedError: ProgressStorageError | undefined;
-		let rejectWhenBlocked: (error: ProgressStorageError) => void = () => undefined;
 		let database: ProgressDatabase | undefined;
 
-		const blocked = new Promise<never>((_resolve, reject) => {
-			rejectWhenBlocked = reject;
-		});
+		const { promise: blocked, reject: rejectWhenBlocked } = Promise.withResolvers<never>();
 		const opening = openDB<ProgressDatabaseSchema>(
 			PROGRESS_DATABASE_NAME,
 			PROGRESS_DATABASE_VERSION,

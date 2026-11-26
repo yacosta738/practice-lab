@@ -37,15 +37,6 @@ const {
 	isToggletip = false,
 	position = "block-start",
 } = Astro.props;
-
-// Position-area value with optional span for width matching
-const positionAreaMap: Record<string, string> = {
-	"block-start": "block-start span-inline-end",
-	"block-end": "block-end span-inline-end",
-	"inline-start": "span-block-end inline-start",
-	"inline-end": "span-block-end inline-end",
-};
-const positionArea = positionAreaMap[position] ?? positionAreaMap["block-start"];
 ---
 
 <!-- Trigger button -->
@@ -53,7 +44,10 @@ const positionArea = positionAreaMap[position] ?? positionAreaMap["block-start"]
 	class="tooltip-trigger"
 	type="button"
 	{...{ interestfor: id } as Record<string, string>}
-	{...{ popovertarget: id, popovertargetaction: "show" } as Record<string, string>}
+	{...(isToggletip ? { popovertarget: id, popovertargetaction: "show" } : {}) as Record<
+		string,
+		string
+	>}
 	aria-label={triggerLabel}
 	aria-describedby={id}
 >
@@ -250,6 +244,10 @@ const positionArea = positionAreaMap[position] ?? positionAreaMap["block-start"]
 	   The polyfill adds a `.\:popover-open` class. Using :is() ensures both
 	   native and polyfilled states work. */
 
+[popover]:is(:popover-open, .\:popover-open) {
+	display: block;
+}
+
 @supports not selector(:popover-open) {
 	/* Hide popovers before polyfill loads to prevent flash */
 	[popover]:not(.\:popover-open) {
@@ -259,24 +257,24 @@ const positionArea = positionAreaMap[position] ?? positionAreaMap["block-start"]
 </style>
 
 <!-- ===== Polyfill loading (client-side, conditional) ===== -->
-<script is:inline>
+<script>
 // Feature-detect and conditionally load polyfills only when needed.
 // MANDATORY: Do NOT load polyfills unconditionally.
 
 (function () {
 	// 1. Popover API polyfill
 	if (!Object.hasOwn(HTMLElement.prototype, "popover")) {
-		import("https://unpkg.com/@oddbird/popover-polyfill@latest/dist/popover.min.js");
+		import("@oddbird/popover-polyfill");
 	}
 
 	// 2. Anchor positioning polyfill
 	if (!CSS.supports("anchor-name: --a")) {
-		import("https://unpkg.com/@oddbird/css-anchor-positioning@latest");
+		import("@oddbird/css-anchor-positioning");
 	}
 
 	// 3. Interest invoker polyfill (interestfor attribute)
 	if (!("interestForElement" in HTMLButtonElement.prototype)) {
-		import("https://unpkg.com/interestfor@latest");
+		import("interestfor");
 	}
 
 	// 4. Wire ARIA attributes for screen readers

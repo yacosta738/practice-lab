@@ -27,7 +27,11 @@ export default defineConfig({
 		trace: "on-first-retry",
 		screenshot: "only-on-failure",
 	},
-	projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+	projects: [
+		{ name: "chromium", use: { ...devices["Desktop Chrome"] } },
+		{ name: "firefox", use: { ...devices["Desktop Firefox"] } },
+		{ name: "webkit", use: { ...devices["Desktop Safari"] } },
+	],
 	webServer: {
 		// ASTRO_PREVIEW_BACKGROUND=0 keeps `astro preview` in the foreground.
 		// Astro 7.2+ daemonizes it when it detects an AI agent, which makes

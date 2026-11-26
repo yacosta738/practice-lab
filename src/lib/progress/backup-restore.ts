@@ -284,8 +284,8 @@ function sameQuestionProgress(a: QuestionProgress, b: QuestionProgress): boolean
 
 function sameStringSet(a: readonly string[], b: readonly string[]): boolean {
 	if (a.length !== b.length) return false;
-	const sortedA = [...a].sort();
-	const sortedB = [...b].sort();
+	const sortedA = a.toSorted();
+	const sortedB = b.toSorted();
 	return sortedA.every((value, index) => value === sortedB[index]);
 }
 
