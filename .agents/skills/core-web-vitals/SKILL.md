@@ -18,7 +18,7 @@ user experience.
 ## The three metrics
 
 | Metric  | Measures         | Good    | Needs work    | Poor    |
-| ------- | ---------------- | ------- | ------------- | ------- |
+|---------|------------------|---------|---------------|---------|
 | **LCP** | Loading          | ≤ 2.5s  | 2.5s – 4s     | > 4s    |
 | **INP** | Interactivity    | ≤ 200ms | 200ms – 500ms | > 500ms |
 | **CLS** | Visual Stability | ≤ 0.1   | 0.1 – 0.25    | > 0.25  |
@@ -121,7 +121,7 @@ It reports the worst interaction (at 98th percentile for high-traffic pages).
 Total INP = **Input Delay** + **Processing Time** + **Presentation Delay**
 
 | Phase        | Target  | Optimization                |
-| ------------ | ------- | --------------------------- |
+|--------------|---------|-----------------------------|
 | Input Delay  | < 50ms  | Reduce main thread blocking |
 | Processing   | < 100ms | Optimize event handlers     |
 | Presentation | < 50ms  | Minimize rendering work     |

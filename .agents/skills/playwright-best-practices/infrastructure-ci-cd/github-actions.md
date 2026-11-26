@@ -429,7 +429,7 @@ jobs:
 ## Scenario Guide
 
 | Scenario                   | Approach                                   |
-| -------------------------- | ------------------------------------------ |
+|----------------------------|--------------------------------------------|
 | Small suite (< 5 min)      | Single job, no sharding                    |
 | Medium suite (5-20 min)    | 2-4 shards with matrix                     |
 | Large suite (20+ min)      | 4-8 shards + blob merge                    |
@@ -442,7 +442,7 @@ jobs:
 ## Common Mistakes
 
 | Mistake                         | Problem                      | Fix                                                         |
-| ------------------------------- | ---------------------------- | ----------------------------------------------------------- |
+|---------------------------------|------------------------------|-------------------------------------------------------------|
 | No `concurrency` group          | Duplicate runs waste minutes | Add `concurrency: { group: ..., cancel-in-progress: true }` |
 | `fail-fast: true` with sharding | One failure cancels others   | Set `fail-fast: false`                                      |
 | No browser caching              | 60-90 seconds wasted per run | Cache `~/.cache/ms-playwright`                              |

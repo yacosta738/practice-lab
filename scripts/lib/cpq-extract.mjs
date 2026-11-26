@@ -3,9 +3,12 @@ import { parse } from "acorn";
 function literal(node, bindings, resolving = new Set()) {
 	switch (node.type) {
 		case "Identifier": {
-			if (!bindings.has(node.name))
+			if (!bindings.has(node.name)) {
 				throw new Error(`Unsupported non-literal identifier: ${node.name}`);
-			if (resolving.has(node.name)) throw new Error(`Literal binding cycle: ${node.name}`);
+			}
+			if (resolving.has(node.name)) {
+				throw new Error(`Literal binding cycle: ${node.name}`);
+			}
 			resolving.add(node.name);
 			const value = literal(bindings.get(node.name), bindings, resolving);
 			resolving.delete(node.name);
@@ -14,18 +17,23 @@ function literal(node, bindings, resolving = new Set()) {
 		case "MemberExpression": {
 			const object = literal(node.object, bindings, resolving);
 			if (node.computed) {
-				if (node.property.type !== "Literal" || !Number.isInteger(node.property.value))
+				if (node.property.type !== "Literal" || !Number.isInteger(node.property.value)) {
 					throw new Error("Unsupported computed catalog value");
-				if (!Array.isArray(object) || node.property.value < 0)
+				}
+				if (!Array.isArray(object) || node.property.value < 0) {
 					throw new Error("Unsupported static catalog index");
+				}
 				return object[node.property.value];
 			}
-			if (!object || typeof object !== "object" || !Object.hasOwn(object, node.property.name))
+			if (!object || typeof object !== "object" || !Object.hasOwn(object, node.property.name)) {
 				throw new Error("Unsupported static catalog property");
+			}
 			return object[node.property.name];
 		}
 		case "TemplateLiteral":
-			if (node.expressions.length === 0) return node.quasis[0].value.cooked;
+			if (node.expressions.length === 0) {
+				return node.quasis[0].value.cooked;
+			}
 			break;
 		case "Literal":
 			if (
@@ -33,21 +41,24 @@ function literal(node, bindings, resolving = new Set()) {
 				typeof node.value === "number" ||
 				typeof node.value === "boolean" ||
 				node.value === null
-			)
+			) {
 				return node.value;
+			}
 			break;
 		case "UnaryExpression":
 			if (
 				node.operator === "-" &&
 				node.argument.type === "Literal" &&
 				typeof node.argument.value === "number"
-			)
+			) {
 				return -node.argument.value;
+			}
 			break;
 		case "ArrayExpression":
 			return node.elements.map((element) => {
-				if (!element || element.type === "SpreadElement")
+				if (!element || element.type === "SpreadElement") {
 					throw new Error("Unsupported non-literal catalog value");
+				}
 				return literal(element, bindings, resolving);
 			});
 		case "ObjectExpression": {
@@ -58,10 +69,13 @@ function literal(node, bindings, resolving = new Set()) {
 					property.computed ||
 					property.kind !== "init" ||
 					property.method
-				)
+				) {
 					throw new Error("Unsupported non-literal catalog value");
+				}
 				const key = property.key.name ?? property.key.value;
-				if (typeof key !== "string") throw new Error("Unsupported catalog key");
+				if (typeof key !== "string") {
+					throw new Error("Unsupported catalog key");
+				}
 				value[key] = literal(property.value, bindings, resolving);
 			}
 			return value;
@@ -73,10 +87,14 @@ function literal(node, bindings, resolving = new Set()) {
 function children(node) {
 	const values = [];
 	for (const [key, value] of Object.entries(node)) {
-		if (key === "parent" || key === "loc") continue;
-		if (Array.isArray(value))
+		if (key === "parent" || key === "loc") {
+			continue;
+		}
+		if (Array.isArray(value)) {
 			values.push(...value.filter((item) => item && typeof item.type === "string"));
-		else if (value && typeof value.type === "string") values.push(value);
+		} else if (value && typeof value.type === "string") {
+			values.push(value);
+		}
 	}
 	return values;
 }
@@ -86,23 +104,40 @@ function reassignedBindings(ast) {
 	const scopes = new Map();
 	const writes = [];
 	const root = { parent: null, names: new Map(), functionScope: true };
+
 	function targets(node) {
-		if (!node) return [];
-		if (node.type === "Identifier") return [node.name];
-		if (node.type === "RestElement") return targets(node.argument);
-		if (node.type === "AssignmentPattern") return targets(node.left);
-		if (node.type === "ArrayPattern") return node.elements.flatMap(targets);
-		if (node.type === "ObjectPattern")
+		if (!node) {
+			return [];
+		}
+		if (node.type === "Identifier") {
+			return [node.name];
+		}
+		if (node.type === "RestElement") {
+			return targets(node.argument);
+		}
+		if (node.type === "AssignmentPattern") {
+			return targets(node.left);
+		}
+		if (node.type === "ArrayPattern") {
+			return node.elements.flatMap(targets);
+		}
+		if (node.type === "ObjectPattern") {
 			return node.properties.flatMap((p) => targets(p.value ?? p.argument));
+		}
 		return [];
 	}
+
 	function visit(node, parentScope) {
 		let scope = parentScope;
 		const isFunction = /^(FunctionDeclaration|FunctionExpression|ArrowFunctionExpression)$/.test(
 			node.type,
 		);
-		if (node.type === "FunctionDeclaration" && node.id) scope.names.set(node.id.name, node.id);
-		if (node.type === "ClassDeclaration" && node.id) scope.names.set(node.id.name, node.id);
+		if (node.type === "FunctionDeclaration" && node.id) {
+			scope.names.set(node.id.name, node.id);
+		}
+		if (node.type === "ClassDeclaration" && node.id) {
+			scope.names.set(node.id.name, node.id);
+		}
 		if (
 			isFunction ||
 			[
@@ -116,39 +151,69 @@ function reassignedBindings(ast) {
 		) {
 			scope = { parent: scope, names: new Map(), functionScope: isFunction };
 			if (isFunction) {
-				if (node.id) scope.names.set(node.id.name, node.id);
-				for (const param of node.params)
-					for (const name of targets(param)) scope.names.set(name, param);
+				if (node.id) {
+					scope.names.set(node.id.name, node.id);
+				}
+				for (const param of node.params) {
+					for (const name of targets(param)) {
+						scope.names.set(name, param);
+					}
+				}
 			}
-			if (node.param) for (const name of targets(node.param)) scope.names.set(name, node.param);
+			if (node.param) {
+				for (const name of targets(node.param)) {
+					scope.names.set(name, node.param);
+				}
+			}
 		}
 		scopes.set(node, scope);
 		if (node.type === "VariableDeclaration") {
 			let owner = scope;
-			if (node.kind === "var") while (!owner.functionScope) owner = owner.parent;
+			if (node.kind === "var") {
+				while (!owner.functionScope) {
+					owner = owner.parent;
+				}
+			}
 			for (const declaration of node.declarations) {
 				for (const name of targets(declaration.id)) {
-					if (owner.names.has(name) && declaration.init) writes.push([declaration.id, node]);
+					if (owner.names.has(name) && declaration.init) {
+						writes.push([declaration.id, node]);
+					}
 					owner.names.set(name, declaration);
 				}
 			}
 		}
-		if (node.type === "AssignmentExpression") writes.push([node.left, node]);
-		if (node.type === "UpdateExpression") writes.push([node.argument, node]);
-		if (["ForInStatement", "ForOfStatement"].includes(node.type)) {
-			if (node.left.type !== "VariableDeclaration") writes.push([node.left, node]);
-			else if (node.left.kind === "var")
-				for (const declaration of node.left.declarations) writes.push([declaration.id, node]);
+		if (node.type === "AssignmentExpression") {
+			writes.push([node.left, node]);
 		}
-		for (const child of children(node)) visit(child, scope);
+		if (node.type === "UpdateExpression") {
+			writes.push([node.argument, node]);
+		}
+		if (["ForInStatement", "ForOfStatement"].includes(node.type)) {
+			if (node.left.type !== "VariableDeclaration") {
+				writes.push([node.left, node]);
+			} else if (node.left.kind === "var") {
+				for (const declaration of node.left.declarations) {
+					writes.push([declaration.id, node]);
+				}
+			}
+		}
+		for (const child of children(node)) {
+			visit(child, scope);
+		}
 	}
+
 	visit(ast, root);
 	const reassigned = new Set();
 	for (const [target, write] of writes) {
 		for (const name of targets(target)) {
 			let scope = scopes.get(write);
-			while (scope && !scope.names.has(name)) scope = scope.parent;
-			if (scope === root) reassigned.add(name);
+			while (scope && !scope.names.has(name)) {
+				scope = scope.parent;
+			}
+			if (scope === root) {
+				reassigned.add(name);
+			}
 		}
 	}
 	return reassigned;
@@ -164,11 +229,14 @@ export function extractExamCatalog(source) {
 	const bindings = new Map();
 	const reassigned = reassignedBindings(ast);
 	for (const statement of ast.body) {
-		if (statement.type !== "VariableDeclaration") continue;
+		if (statement.type !== "VariableDeclaration") {
+			continue;
+		}
 		for (const declaration of statement.declarations) {
 			if (declaration.id.type === "Identifier" && declaration.init) {
-				if (bindings.has(declaration.id.name))
+				if (bindings.has(declaration.id.name)) {
 					throw new Error(`Duplicate top-level binding: ${declaration.id.name}`);
+				}
 				bindings.set(declaration.id.name, declaration.init);
 			}
 		}
@@ -176,7 +244,9 @@ export function extractExamCatalog(source) {
 	// Keep duplicate detection intact, but make changed bindings unresolvable.
 	const changedInitializers = new Set();
 	for (const name of reassigned) {
-		if (!bindings.has(name)) continue;
+		if (!bindings.has(name)) {
+			continue;
+		}
 		changedInitializers.add(bindings.get(name));
 		bindings.set(name, { type: "ReassignedBinding" });
 	}
@@ -188,7 +258,9 @@ export function extractExamCatalog(source) {
 			node.elements.every((element) => element?.type === "ObjectExpression")
 		) {
 			try {
-				if (changedInitializers.has(node)) throw new Error("Reassigned catalog binding");
+				if (changedInitializers.has(node)) {
+					throw new Error("Reassigned catalog binding");
+				}
 				const value = literal(node, bindings);
 				if (
 					value.every(
@@ -201,8 +273,9 @@ export function extractExamCatalog(source) {
 							typeof item.code === "string" &&
 							typeof item.title === "string",
 					)
-				)
+				) {
 					candidates.push(value);
+				}
 			} catch {
 				// A matching shape with executable values is not data and is rejected below.
 				const keys = node.elements.map((item) =>
@@ -212,16 +285,20 @@ export function extractExamCatalog(source) {
 					keys.every((item) =>
 						["id", "code", "title", "domains", "questions"].every((key) => item.includes(key)),
 					)
-				)
+				) {
 					throw new Error("Unsupported non-literal catalog expression");
+				}
 			}
 		}
-		for (const child of children(node)) visit(child);
+		for (const child of children(node)) {
+			visit(child);
+		}
 	};
 	visit(ast);
-	if (candidates.length !== 1)
+	if (candidates.length !== 1) {
 		throw new Error(
 			`Could not identify one supported literal exam catalog (found ${candidates.length})`,
 		);
+	}
 	return candidates[0];
 }

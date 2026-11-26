@@ -13,16 +13,23 @@ tags:
 - domain/tools-mcp
 - type/concept
 ---
-> Model Context Protocol separates a host, clients and servers that expose capabilities through a standard protocol.
 
-**Blueprint area:** [D8 - Tools and MCPs MOC](../d8-tools-and-mcps-moc/) (official domain weight 10.6%).
+> Model Context Protocol separates a host, clients and servers that expose capabilities through a
+> standard protocol.
+
+**Blueprint area:** [D8 - Tools and MCPs MOC](../d8-tools-and-mcps-moc/) (official domain weight
+10.6%).
 
 ## Engineering principles
 
-- **Tools** are callable operations generally selected by the model in suitable hosts; their security and confirmation are host responsibilities.
-- **Resources** expose data and context for host/application selection; **prompts** expose reusable prompting templates.
-- The host owns user interaction, model orchestration and policy; a server exposes declared capabilities and serves requests.
-- Understand initialization and capability negotiation rather than assuming every MCP server supports the same features.
+- **Tools** are callable operations generally selected by the model in suitable hosts; their
+  security and confirmation are host responsibilities.
+- **Resources** expose data and context for host/application selection; **prompts** expose reusable
+  prompting templates.
+- The host owns user interaction, model orchestration and policy; a server exposes declared
+  capabilities and serves requests.
+- Understand initialization and capability negotiation rather than assuming every MCP server
+  supports the same features.
 
 ## Failure modes
 
@@ -40,9 +47,11 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [mcp-overview](https://modelcontextprotocol.io/specification/2026-07-28)
-  - [mcp-tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [mcp-overview](https://modelcontextprotocol.io/specification/2026-07-28)
+    - [mcp-tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

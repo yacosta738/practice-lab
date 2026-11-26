@@ -18,7 +18,7 @@
 > **When to use**: Testing Next.js applications with App Router, Pages Router, API routes,
 > middleware, SSR, dynamic routes, and server components.
 >
-**Prerequisites**: [configuration.md](../core/configuration.md), [locators.md](../core/locators.md)
+> **Prerequisites**: [configuration.md](../core/configuration.md), [locators.md](../core/locators.md)
 
 ## Setup
 
@@ -412,7 +412,7 @@ test("authenticated user sees dashboard", async ({ page }) => {
 ### Dev Server vs Production Build
 
 | Scenario          | Command                          | Trade-off                              |
-| ----------------- | -------------------------------- | -------------------------------------- |
+|-------------------|----------------------------------|----------------------------------------|
 | Local development | `npm run dev`                    | Fast iteration, no production behavior |
 | CI pipeline       | `npm run build && npm run start` | Tests real production bundle           |
 
@@ -448,7 +448,7 @@ webServer: [
 ## Anti-Patterns
 
 | Don't Do This                               | Problem                             | Do This Instead                                                           |
-| ------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------- |
+|---------------------------------------------|-------------------------------------|---------------------------------------------------------------------------|
 | `await page.waitForTimeout(3000)`           | Arbitrary waits are fragile         | `await page.waitForURL('/path')` or `await expect(locator).toBeVisible()` |
 | Test `getServerSideProps` directly          | Depends on req/res context          | Navigate to page and verify rendered output                               |
 | Mock your own API routes                    | Hides real API bugs                 | Let real API handle requests; mock only external services                 |

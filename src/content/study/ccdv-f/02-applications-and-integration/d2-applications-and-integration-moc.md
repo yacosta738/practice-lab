@@ -11,7 +11,9 @@ tags:
 - type/moc
 domain: D2
 ---
-> **Official exam domain weight:** **33.1%** from the CCDV-F Exam Guide v1.0 (July 2026). The weights are approximate scored-item proportions, not a guarantee of exact questions.
+
+> **Official exam domain weight:** **33.1%** from the CCDV-F Exam Guide v1.0 (July 2026). The
+> weights are approximate scored-item proportions, not a guarantee of exact questions.
 
 ## Official sub-objectives
 
@@ -36,11 +38,15 @@ domain: D2
 
 ## Applied workshop
 
-- [Application Integration Design Workshop](../application-integration-design-workshop/) — turn an interactive support scenario into API, reliability, configuration, and release decisions.
+- [Application Integration Design Workshop](../application-integration-design-workshop/) — turn an
+  interactive support scenario into API, reliability, configuration, and release decisions.
 
 ## Study strategy
 
-Priority A: practical hands-on API integration, tracing, auth boundaries and error recovery. Complete the [Application Integration Design Workshop](../application-integration-design-workshop/) after reviewing the atomic notes; use its case to connect the six sub-objectives rather than memorizing each interface in isolation.
+Priority A: practical hands-on API integration, tracing, auth boundaries and error recovery.
+Complete the [Application Integration Design Workshop](../application-integration-design-workshop/)
+after reviewing the atomic notes; use its case to connect the six sub-objectives rather than
+memorizing each interface in isolation.
 
 ## Cross-domain navigation
 
@@ -48,7 +54,10 @@ Priority A: practical hands-on API integration, tracing, auth boundaries and err
 
 ## Sources
 
-- [Official exam guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view) — objective labels and weights
-- [Foundations prep course](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations) — public curriculum
-- [Course Access Coverage](../course-access-coverage/) — exactly which authenticated lesson screens are in the existing notes
+- [Official exam guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view) —
+  objective labels and weights
+- [Foundations prep course](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations) —
+  public curriculum
+- [Course Access Coverage](../course-access-coverage/) — exactly which authenticated lesson screens
+  are in the existing notes
 - [Source Register](../source-register/) — official documentation and provenance

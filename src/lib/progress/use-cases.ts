@@ -28,13 +28,17 @@ export type RecordEvaluationCommand = Omit<RecordEvaluationInput, "evaluatedAt">
 
 export interface ProgressUseCases {
 	createSession(command: CreateSessionCommand): Promise<ProgressSession>;
+
 	replaceSession(
 		command: CreateSessionCommand,
 		previousSessionId: string,
 		previousExpectedRevision: number,
 	): Promise<ProgressSession>;
+
 	checkpointSession(command: CheckpointSessionCommand): Promise<ProgressSession>;
+
 	recordEvaluation(command: RecordEvaluationCommand): Promise<QuestionAttempt>;
+
 	finalizeSession(
 		sessionId: string,
 		expectedRevision: number,
@@ -42,39 +46,55 @@ export interface ProgressUseCases {
 		expectedGenerationToken?: string,
 		evaluations?: readonly RecordEvaluationCommand[],
 	): Promise<ProgressSession>;
+
 	migrateLegacyData(
 		command: Omit<LegacyProgressMigrationInput, "migratedAt">,
 	): Promise<LegacyProgressMigrationResult>;
+
 	reconcileLegacyWrite(
 		certificationId: string,
 		backup: LegacyProgressBackup,
 		expectedGenerationToken: string,
 	): Promise<LegacyProgressMigrationResult>;
+
 	saveLegacyBackup(backup: LegacyRecordsBackup): Promise<string>;
+
 	resetCertificationProgress(certificationId: string): Promise<string>;
+
 	getSessionHistory(certificationId: string): Promise<SessionHistoryEntry[]>;
+
 	getProgressSummaryData(certificationIds: readonly string[]): Promise<ProgressSummaryData>;
+
 	getCertificationProgressSnapshot(certificationId: string): Promise<CertificationProgressSnapshot>;
+
 	restoreCertificationProgress(
 		snapshots: readonly CertificationProgressRestoreSnapshot[],
 		expectedGenerationTokens: Readonly<Record<string, string>>,
 	): Promise<Record<string, string>>;
+
 	getSession(sessionId: string): Promise<ProgressSession | undefined>;
+
 	getQuestionProgressForCertification(certificationId: string): Promise<QuestionProgress[]>;
+
 	getMetadata(key: string): Promise<unknown>;
+
 	getDataGenerationToken(certificationId: string): Promise<string>;
+
 	getSessionHistoryPage(query: SessionHistoryQuery): Promise<SessionHistoryPage>;
 
 	getSessionById(sessionId: string): Promise<SessionHistoryEntry | undefined>;
+
 	getQuestionProgress(
 		certificationId: string,
 		questionId: string,
 	): Promise<QuestionProgress | undefined>;
+
 	setLegacyBaseline(
 		certificationId: string,
 		questionId: string,
 		baseline: QuestionProgressBaseline,
 	): Promise<QuestionProgress>;
+
 	rebuildQuestionProgress(certificationId: string): Promise<QuestionProgress[]>;
 }
 

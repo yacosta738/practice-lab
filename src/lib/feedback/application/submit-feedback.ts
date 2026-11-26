@@ -1,6 +1,6 @@
 import {
-	type CreateFeedbackInput,
 	createFeedback,
+	type CreateFeedbackInput,
 	type Feedback,
 	type FeedbackDraft,
 } from "../domain/feedback";
@@ -28,10 +28,15 @@ export interface SubmitFeedbackResult {
 
 export interface FeedbackUseCases {
 	getAvailableChannels(): readonly FeedbackChannel[];
+
 	getPrimaryChannel(): FeedbackChannel | null;
+
 	submit(command: SubmitFeedbackCommand): Promise<SubmitFeedbackResult>;
+
 	loadDraft(target: FeedbackTarget): FeedbackDraft | null;
+
 	saveDraft(target: FeedbackTarget, draft: FeedbackDraft): void;
+
 	clearDraft(target: FeedbackTarget): void;
 }
 

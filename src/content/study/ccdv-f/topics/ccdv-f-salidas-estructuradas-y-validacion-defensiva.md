@@ -9,16 +9,24 @@ aliases:
   - "Output Handling"
 dominio: D6
 ---
+
 [Índice](../ccdv-f-indice-de-certificacion/) · [Dominio D6](../ccdv-f-indice-de-certificacion/#d6-ingenieria-de-prompts-y-contexto)
 
-Cuando el consumidor requiere datos, usa un esquema explícito y salida estructurada si la combinación de modelo y API lo permite. Distingue el esquema de la respuesta del esquema de entrada de cada herramienta. Trata stop reasons, truncamientos, rechazos y errores antes de consumir el objeto.
+Cuando el consumidor requiere datos, usa un esquema explícito y salida estructurada si la
+combinación de modelo y API lo permite. Distingue el esquema de la respuesta del esquema de entrada
+de cada herramienta. Trata stop reasons, truncamientos, rechazos y errores antes de consumir el
+objeto.
 
-Valida tipos, rangos, pertenencia a catálogos, permisos y reglas entre campos. Distingue formato de veracidad. Una respuesta convincente puede contener datos erróneos. Si falla, devuelve un estado explícito y evita efectos parciales. Registra el fallo con redacción de datos.
+Valida tipos, rangos, pertenencia a catálogos, permisos y reglas entre campos. Distingue formato de
+veracidad. Una respuesta convincente puede contener datos erróneos. Si falla, devuelve un estado
+explícito y evita efectos parciales. Registra el fallo con redacción de datos.
 
-**Caso.** El JSON puede contener un ID correcto en sintaxis pero perteneciente a otro cliente. El consumidor comprueba tenant y autorización antes de acceder al registro.
+**Caso.** El JSON puede contener un ID correcto en sintaxis pero perteneciente a otro cliente. El
+consumidor comprueba tenant y autorización antes de acceder al registro.
 
 > [!question]- ¿Qué garantiza un esquema?
-> Estructura dentro de su contrato. Exactitud, reglas de negocio y autorización necesitan comprobaciones propias.
+> Estructura dentro de su contrato. Exactitud, reglas de negocio y autorización necesitan
+> comprobaciones propias.
 
 ## Conexiones
 

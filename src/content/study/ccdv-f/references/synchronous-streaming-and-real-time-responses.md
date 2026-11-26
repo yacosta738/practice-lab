@@ -15,7 +15,14 @@ aliases:
 - Response delivery modes
 updated: '2026-11-15'
 ---
-A **synchronous** request is the simplest pattern: you send the request and wait for the complete response to come back in one piece, then act on it. That is fine for short responses and backend jobs where no one is waiting. When a response is long or a user is watching, **streaming** sends the response in pieces as the model generates it. Output appears immediately rather than after a blank-screen wait, and your code reassembles the pieces into the final message. Claude exposes streaming over the same HTTP connection using server-sent events. Module 2 teaches how to consume a stream safely and recover when it is interrupted.
+
+A **synchronous** request is the simplest pattern: you send the request and wait for the complete
+response to come back in one piece, then act on it. That is fine for short responses and backend
+jobs where no one is waiting. When a response is long or a user is watching, **streaming** sends the
+response in pieces as the model generates it. Output appears immediately rather than after a
+blank-screen wait, and your code reassembles the pieces into the final message. Claude exposes
+streaming over the same HTTP connection using server-sent events. Module 2 teaches how to consume a
+stream safely and recover when it is interrupted.
 
 ## Connections
 

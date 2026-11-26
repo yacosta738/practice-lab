@@ -21,6 +21,7 @@ const inlineAnswerPattern = /^\s*\*\*Best answer:\s*([A-E](?:\s*,\s*[A-E])*)\.\*
 /** @typedef {{ letter: AnswerLetter, text: string }} PracticeOption */
 /** @typedef {{ startLine: number, endLine: number, options: PracticeOption[] }} OptionBlock */
 /** @typedef {{ id: string, line: number }} QuestionHeading */
+
 /** @typedef {{ answers: AnswerLetter[], line: number }} AnswerKeyEntry */
 
 /**
@@ -60,7 +61,10 @@ function findFencedLines(lines) {
 		}
 
 		fencedLines.add(lineIndex);
-		activeFence = { character: openingFence[1][0], length: openingFence[1].length };
+		activeFence = {
+			character: openingFence[1][0],
+			length: openingFence[1].length,
+		};
 	}
 
 	return fencedLines;

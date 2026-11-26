@@ -53,7 +53,9 @@ const PDF_DEST_NAME = "ccdv-f-exam-guide.pdf";
  * @returns {string[]} Absolute paths to .md files
  */
 function collectMarkdownFiles(dirPath) {
-	if (!fs.existsSync(dirPath)) return [];
+	if (!fs.existsSync(dirPath)) {
+		return [];
+	}
 
 	/** @type {string[]} */
 	const results = [];
@@ -81,7 +83,9 @@ function collectMarkdownFiles(dirPath) {
  * @returns {string[]}
  */
 function collectTopLevelMarkdown(sourcePath) {
-	if (!fs.existsSync(sourcePath)) return [];
+	if (!fs.existsSync(sourcePath)) {
+		return [];
+	}
 
 	return fs
 		.readdirSync(sourcePath, { withFileTypes: true })

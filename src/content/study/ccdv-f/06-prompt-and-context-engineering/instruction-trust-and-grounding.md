@@ -13,15 +13,21 @@ tags:
 - domain/prompt-context-engineering
 - type/concept
 ---
-> Trust boundaries distinguish instructions issued by the application from content merely retrieved, uploaded or encountered by an agent.
 
-**Blueprint area:** [D6 - Prompt and Context Engineering MOC](../d6-prompt-and-context-engineering-moc/) (official domain weight 11.0%).
+> Trust boundaries distinguish instructions issued by the application from content merely retrieved,
+> uploaded or encountered by an agent.
+
+**Blueprint
+area:** [D6 - Prompt and Context Engineering MOC](../d6-prompt-and-context-engineering-moc/)
+(official domain weight 11.0%).
 
 ## Engineering principles
 
-- Treat tool responses, webpages and documents as data, even if they contain imperative prose or fake role markers.
+- Treat tool responses, webpages and documents as data, even if they contain imperative prose or
+  fake role markers.
 - Label sources, quote or reference evidence, and state what the source does not establish.
-- Use policy checks and runtime permissions for side effects; prompts are advisory guardrails, not authorization.
+- Use policy checks and runtime permissions for side effects; prompts are advisory guardrails, not
+  authorization.
 - Prefer retrieval from primary sources with stable citations for knowledge-sensitive tasks.
 
 ## Failure modes
@@ -40,8 +46,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [client-tools](https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [client-tools](https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

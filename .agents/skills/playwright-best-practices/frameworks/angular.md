@@ -20,7 +20,7 @@
 > **When to use**: Testing Angular applications with reactive forms, Angular Material components,
 > Router navigation, lazy-loaded modules, signals, observables, and Zone.js change detection.
 >
-**Prerequisites**: [core/configuration.md](../core/configuration.md), [core/locators.md](../core/locators.md)
+> **Prerequisites**: [core/configuration.md](../core/configuration.md), [core/locators.md](../core/locators.md)
 
 ## Configuration
 
@@ -485,7 +485,7 @@ test("no hydration errors", async ({ page }) => {
 ## Protractor Migration Reference
 
 | Protractor                              | Playwright                                     |
-| --------------------------------------- | ---------------------------------------------- |
+|-----------------------------------------|------------------------------------------------|
 | `element(by.css('.btn'))`               | `page.getByRole('button', { name: '...' })`    |
 | `element(by.id('login'))`               | `page.getByTestId('login')`                    |
 | `element(by.buttonText('Submit'))`      | `page.getByRole('button', { name: 'Submit' })` |
@@ -500,7 +500,7 @@ test("no hydration errors", async ({ page }) => {
 ## Build Configurations
 
 | Scenario      | Command                                                 | Notes                                     |
-| ------------- | ------------------------------------------------------- | ----------------------------------------- |
+|---------------|---------------------------------------------------------|-------------------------------------------|
 | Local dev     | `npx ng serve`                                          | Fast rebuild, source maps                 |
 | CI production | `npx ng build && npx serve -s dist/app/browser -l 4200` | Tests production bundle with SPA fallback |
 | CI SSR        | `npx ng build --ssr && node dist/app/server/server.mjs` | Tests server-side rendering               |
@@ -523,7 +523,7 @@ const listbox = page.getByRole("listbox");
 ## Anti-Patterns
 
 | Anti-Pattern                         | Problem                                        | Solution                                                         |
-| ------------------------------------ | ---------------------------------------------- | ---------------------------------------------------------------- |
+|--------------------------------------|------------------------------------------------|------------------------------------------------------------------|
 | `page.locator('[_ngcontent-xyz]')`   | Scoped style attributes change every build     | Use `getByRole`, `getByLabel`, `getByTestId`                     |
 | `page.locator('[ng-reflect-model]')` | Only exists in dev mode                        | Test rendered value: `expect(input).toHaveValue()`               |
 | `page.locator('app-my-component')`   | Component selectors are implementation details | Target rendered content with semantic locators                   |

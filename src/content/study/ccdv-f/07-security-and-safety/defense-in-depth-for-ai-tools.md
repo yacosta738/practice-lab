@@ -13,16 +13,23 @@ tags:
 - domain/security-safety
 - type/concept
 ---
-> No one guardrail is sufficient. Layer code-level validation, sandboxing, credentials, approval and model-facing instructions.
 
-**Blueprint area:** [D7 - Security and Safety MOC](../d7-security-and-safety-moc/) (official domain weight 8.1%).
+> No one guardrail is sufficient. Layer code-level validation, sandboxing, credentials, approval and
+> model-facing instructions.
+
+**Blueprint area:** [D7 - Security and Safety MOC](../d7-security-and-safety-moc/) (official domain
+weight 8.1%).
 
 ## Engineering principles
 
-- Scope tool permissions in code, add explicit allowlists and enforce authentication/authorization in the underlying service.
-- Use hooks for deterministic pre-execution checks where available and always evaluate their documented failure mode.
-- Use sandboxed environments and isolated credentials for risky code execution; never trust freeform generated shell commands by default.
-- Continuously run prompt-injection, exfiltration and privilege-escalation probes as part of release gates.
+- Scope tool permissions in code, add explicit allowlists and enforce authentication/authorization
+  in the underlying service.
+- Use hooks for deterministic pre-execution checks where available and always evaluate their
+  documented failure mode.
+- Use sandboxed environments and isolated credentials for risky code execution; never trust freeform
+  generated shell commands by default.
+- Continuously run prompt-injection, exfiltration and privilege-escalation probes as part of release
+  gates.
 
 ## Failure modes
 
@@ -40,8 +47,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [code-hooks](https://code.claude.com/docs/en/hooks)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [code-hooks](https://code.claude.com/docs/en/hooks)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

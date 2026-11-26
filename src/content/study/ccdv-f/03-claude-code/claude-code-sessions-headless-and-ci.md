@@ -13,16 +13,22 @@ tags:
 - domain/claude-code
 - type/concept
 ---
-> Interactive coding, headless automation and CI execution need different guardrails and result contracts.
+
+> Interactive coding, headless automation and CI execution need different guardrails and result
+> contracts.
 
 **Blueprint area:** [D3 - Claude Code MOC](../d3-claude-code-moc/) (official domain weight 3.1%).
 
 ## Engineering principles
 
-- Use interactive plan/review for ambiguous work; automate only when inputs, permission scope and success criteria are documented.
-- In CI, constrain filesystem and network access, protect secrets and avoid privileged runners where not necessary.
-- Use exit status, structured outputs and artifacts so automation can tell success from partial progress.
-- Preserve logs, changesets and test evidence; an AI-generated code diff still needs review and reproducible checks.
+- Use interactive plan/review for ambiguous work; automate only when inputs, permission scope and
+  success criteria are documented.
+- In CI, constrain filesystem and network access, protect secrets and avoid privileged runners where
+  not necessary.
+- Use exit status, structured outputs and artifacts so automation can tell success from partial
+  progress.
+- Preserve logs, changesets and test evidence; an AI-generated code diff still needs review and
+  reproducible checks.
 
 ## Failure modes
 
@@ -40,8 +46,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [code-settings](https://code.claude.com/docs/en/settings)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [code-settings](https://code.claude.com/docs/en/settings)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

@@ -230,7 +230,7 @@ test.describe("payments", {
 ## Common Tag Categories
 
 | Category        | Tags                                          | Purpose                       |
-| --------------- | --------------------------------------------- | ----------------------------- |
+|-----------------|-----------------------------------------------|-------------------------------|
 | **Speed**       | `@fast`, `@slow`                              | Execution time classification |
 | **Priority**    | `@critical`, `@p0`, `@p1`, `@p2`              | Business importance           |
 | **Type**        | `@smoke`, `@regression`, `@e2e`               | Test suite categorization     |
@@ -243,7 +243,7 @@ test.describe("payments", {
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern             | Problem                  | Solution                                       |
-| ------------------------ | ------------------------ | ---------------------------------------------- |
+|--------------------------|--------------------------|------------------------------------------------|
 | Too many tags per test   | Hard to maintain         | Limit to 2-3 relevant tags                     |
 | Inconsistent naming      | Confusing filtering      | Establish naming conventions                   |
 | Missing `@` prefix       | Tags won't match filters | Always prefix with `@`                         |

@@ -205,7 +205,7 @@ vitest --merge-reports --coverage --reporter=json
 - **Glob thresholds don't inherit top-level `perFile`** — set `perFile` on each glob that needs it.
 - **`coverage.autoAttachSubprocess`** (v8) tracks child-process/worker-thread coverage.
 - **Istanbul moved to the maintained [
-`@vitest/istanbuljs`](https://github.com/vitest-dev/istanbuljs) fork**; the v8 provider merges
+  `@vitest/istanbuljs`](https://github.com/vitest-dev/istanbuljs) fork**; the v8 provider merges
   reports with bounded memory.
 
 ## v4 Changes

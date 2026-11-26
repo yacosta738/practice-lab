@@ -139,7 +139,7 @@ test("page with JS animations", async ({ page }) => {
 cause false failures.
 
 | Option              | Controls                             | Typical Value                                |
-| ------------------- | ------------------------------------ | -------------------------------------------- |
+|---------------------|--------------------------------------|----------------------------------------------|
 | `maxDiffPixels`     | Absolute pixel count that can differ | `100` for pages, `10` for components         |
 | `maxDiffPixelRatio` | Fraction of total pixels (0-1)       | `0.01` (1%) for pages                        |
 | `threshold`         | Per-pixel color tolerance (0-1)      | `0.2` for most UIs, `0.1` for design systems |
@@ -525,7 +525,7 @@ export default defineConfig({
 ## Decision Guide
 
 | Scenario                    | Approach                                    | Rationale                                       |
-| --------------------------- | ------------------------------------------- | ----------------------------------------------- |
+|-----------------------------|---------------------------------------------|-------------------------------------------------|
 | Key landing/marketing pages | Full page, `fullPage: true`                 | Catches layout shifts, spacing, overall harmony |
 | Individual components       | Element screenshot                          | Isolated, fast, immune to unrelated changes     |
 | Page with dynamic content   | Full page + `mask`                          | Covers layout while ignoring volatile content   |
@@ -540,7 +540,7 @@ export default defineConfig({
 ## Anti-Patterns
 
 | Don't                                           | Problem                                         | Do Instead                                    |
-| ----------------------------------------------- | ----------------------------------------------- | --------------------------------------------- |
+|-------------------------------------------------|-------------------------------------------------|-----------------------------------------------|
 | Visual test every page                          | Massive maintenance, constant false failures    | Pick 5-10 key pages and critical components   |
 | Skip masking dynamic content                    | Screenshots differ every run, permanently flaky | Use `mask` for all volatile elements          |
 | Run across macOS, Linux, Windows                | Font rendering differs, snapshots never match   | Standardize on Linux via Docker               |

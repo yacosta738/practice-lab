@@ -13,16 +13,23 @@ tags:
 - domain/applications-integration
 - type/concept
 ---
-> Claude workloads may use a first-party API or supported cloud provider integrations, with differences in identity, region, APIs, billing and observability.
 
-**Blueprint area:** [D2 - Applications and Integration MOC](../d2-applications-and-integration-moc/) (official domain weight 33.1%).
+> Claude workloads may use a first-party API or supported cloud provider integrations, with
+> differences in identity, region, APIs, billing and observability.
+
+**Blueprint area:** [D2 - Applications and Integration MOC](../d2-applications-and-integration-moc/)
+(official domain weight 33.1%).
 
 ## Engineering principles
 
-- Compare Anthropic first-party, Amazon Bedrock and Google Vertex AI using current platform documentation and contractual requirements.
-- Identify where secrets live, which service principal performs a call, and the boundaries for logs, model data and retention.
-- Test tool-use, streaming, model selection and support of each feature for the specific platform rather than assuming parity.
-- Isolate platform-specific request mapping and error taxonomy in adapters; document migration and fallback behavior.
+- Compare Anthropic first-party, Amazon Bedrock and Google Vertex AI using current platform
+  documentation and contractual requirements.
+- Identify where secrets live, which service principal performs a call, and the boundaries for logs,
+  model data and retention.
+- Test tool-use, streaming, model selection and support of each feature for the specific platform
+  rather than assuming parity.
+- Isolate platform-specific request mapping and error taxonomy in adapters; document migration and
+  fallback behavior.
 
 ## Failure modes
 
@@ -40,8 +47,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [skilljar](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [skilljar](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

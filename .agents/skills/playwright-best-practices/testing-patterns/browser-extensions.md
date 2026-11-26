@@ -475,7 +475,7 @@ test("request permissions", async ({ context, extensionId }) => {
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern                     | Problem               | Solution                                                         |
-| -------------------------------- | --------------------- | ---------------------------------------------------------------- |
+|----------------------------------|-----------------------|------------------------------------------------------------------|
 | Using the default headless shell | Extensions don't load | Use headed mode or `channel: "chromium"` for headless extensions |
 | Not waiting for service worker   | Race conditions       | Wait for `serviceworker` event                                   |
 | Hardcoding extension ID          | ID changes on reload  | Extract ID from service worker URL                               |

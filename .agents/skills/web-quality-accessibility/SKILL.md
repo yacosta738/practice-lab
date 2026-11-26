@@ -34,7 +34,7 @@ is not WCAG conformance, and a low score does not replace issue-level evidence.
 ## WCAG Principles: POUR
 
 | Principle          | Description                                       |
-| ------------------ | ------------------------------------------------- |
+|--------------------|---------------------------------------------------|
 | **P**erceivable    | Content can be perceived through different senses |
 | **O**perable       | Interface can be operated by all users            |
 | **U**nderstandable | Content and interface are understandable          |
@@ -43,7 +43,7 @@ is not WCAG conformance, and a low score does not replace issue-level evidence.
 ## Conformance levels
 
 | Level   | Requirement            | Target                                                |
-| ------- | ---------------------- | ----------------------------------------------------- |
+|---------|------------------------|-------------------------------------------------------|
 | **A**   | Minimum accessibility  | Must pass                                             |
 | **AA**  | Standard compliance    | Should pass (legal requirement in many jurisdictions) |
 | **AAA** | Enhanced accessibility | Nice to have                                          |
@@ -113,7 +113,7 @@ is not WCAG conformance, and a low score does not replace issue-level evidence.
 ### Color contrast (1.4.3, 1.4.6)
 
 | Text Size                          | AA minimum | AAA enhanced |
-| ---------------------------------- | ---------- | ------------ |
+|------------------------------------|------------|--------------|
 | Normal text (< 18px / < 14px bold) | 4.5:1      | 7:1          |
 | Large text (≥ 18px / ≥ 14px bold)  | 3:1        | 4.5:1        |
 | UI components & graphics           | 3:1        | 3:1          |

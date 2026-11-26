@@ -32,7 +32,7 @@ HTTP inspection. A Lighthouse SEO score covers a useful subset of technical chec
 prediction of rankings.
 
 | Area                             | What this skill can verify                                         |
-| -------------------------------- | ------------------------------------------------------------------ |
+|----------------------------------|--------------------------------------------------------------------|
 | Crawl and index controls         | Technical configuration and consistency                            |
 | Rendered metadata and semantics  | Presence, validity, and page-template issues                       |
 | Structured data                  | Syntax and eligibility signals, not guaranteed rich results        |
@@ -311,7 +311,7 @@ descriptions, schemas, and form annotations with Lighthouse.
 Audit each documented user agent separately instead of applying a blanket "AI bot" rule:
 
 | Control                            | Documented purpose                                                           | Effect of blocking                                                                                                                            |
-| ---------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+|------------------------------------|------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
 | `OAI-SearchBot`                    | ChatGPT search discovery                                                     | Prevents page content from being included in ChatGPT summaries and snippets; a link and title may still surface through third-party discovery |
 | `PerplexityBot`                    | Perplexity search indexing                                                   | Prevents that crawler from indexing the blocked content for search results                                                                    |
 | `Claude-SearchBot` / `Claude-User` | Claude search indexing / user-directed retrieval                             | May reduce search visibility / prevents retrieval for user-directed requests                                                                  |
@@ -443,7 +443,7 @@ body {
 ## Tools
 
 | Tool                                                            | Use                                                 |
-| --------------------------------------------------------------- | --------------------------------------------------- |
+|-----------------------------------------------------------------|-----------------------------------------------------|
 | Google Search Console                                           | Monitor indexing, fix issues                        |
 | Google PageSpeed Insights                                       | Performance + Core Web Vitals                       |
 | Rich Results Test                                               | Validate structured data                            |

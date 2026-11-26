@@ -13,15 +13,21 @@ tags:
 - domain/model-selection-optimization
 - type/concept
 ---
-> End-to-end costs include input, cache writes/reads, generated output, reasoning tokens, tool processing and retried or parallel agent calls.
 
-**Blueprint area:** [D5 - Model Selection and Optimization MOC](../d5-model-selection-and-optimization-moc/) (official domain weight 16.8%).
+> End-to-end costs include input, cache writes/reads, generated output, reasoning tokens, tool
+> processing and retried or parallel agent calls.
+
+**Blueprint
+area:** [D5 - Model Selection and Optimization MOC](../d5-model-selection-and-optimization-moc/)
+(official domain weight 16.8%).
 
 ## Engineering principles
 
 - Measure cost **per successful business operation** and track failure/retry multipliers.
-- Add request-budget policy: allowed model, maximum turns, max generated tokens, parallel fan-out, wall-time and quota.
-- Use batching for non-urgent bulk jobs and caching for repeated prefixes when current economics justify them.
+- Add request-budget policy: allowed model, maximum turns, max generated tokens, parallel fan-out,
+  wall-time and quota.
+- Use batching for non-urgent bulk jobs and caching for repeated prefixes when current economics
+  justify them.
 - Cap output length appropriately but do not truncate structured data needed by consumers.
 
 ## Failure modes
@@ -40,9 +46,11 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [batches](https://platform.claude.com/docs/en/build-with-claude/batch-processing)
-  - [caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [batches](https://platform.claude.com/docs/en/build-with-claude/batch-processing)
+    - [caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

@@ -9,14 +9,21 @@ aliases:
   - "Configuration Management"
 dominio: D2
 ---
+
 [Índice](../ccdv-f-indice-de-certificacion/) · [Dominio D2](../ccdv-f-indice-de-certificacion/#d2-aplicaciones-e-integracion)
 
-Mantén instrucciones de proyecto en CLAUDE.md y configura permisos y opciones en el ámbito de settings apropiado. Versiona de forma explícita el modelo, el prompt, el esquema y las dependencias del plugin. Guarda las credenciales separadas de la configuración revisable. Registra qué combinación generó un resultado y qué evaluación aprobó el cambio.
+Mantén instrucciones de proyecto en CLAUDE.md y configura permisos y opciones en el ámbito de
+settings apropiado. Versiona de forma explícita el modelo, el prompt, el esquema y las dependencias
+del plugin. Guarda las credenciales separadas de la configuración revisable. Registra qué
+combinación generó un resultado y qué evaluación aprobó el cambio.
 
-**Caso.** Si un alias de modelo se actualiza y cambia el output, reproduce con la combinación anterior y nueva, ejecuta la suite de regresión y publica gradualmente. Conserva una configuración conocida para volver atrás.
+**Caso.** Si un alias de modelo se actualiza y cambia el output, reproduce con la combinación
+anterior y nueva, ejecuta la suite de regresión y publica gradualmente. Conserva una configuración
+conocida para volver atrás.
 
 > [!question]- ¿Qué necesitas para reproducir un fallo seis semanas después?
-> Identidad de modelo, prompt y herramientas, condiciones de entrada y ejecución, estadísticas y trazas con datos sensibles excluidos.
+> Identidad de modelo, prompt y herramientas, condiciones de entrada y ejecución, estadísticas y
+> trazas con datos sensibles excluidos.
 
 ## Conexiones
 

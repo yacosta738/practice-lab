@@ -13,16 +13,23 @@ tags:
 - domain/security-safety
 - type/concept
 ---
-> Prompt injection happens when lower-trust content tries to instruct the agent to cross a trust boundary or misuse capabilities.
 
-**Blueprint area:** [D7 - Security and Safety MOC](../d7-security-and-safety-moc/) (official domain weight 8.1%).
+> Prompt injection happens when lower-trust content tries to instruct the agent to cross a trust
+> boundary or misuse capabilities.
+
+**Blueprint area:** [D7 - Security and Safety MOC](../d7-security-and-safety-moc/) (official domain
+weight 8.1%).
 
 ## Engineering principles
 
-- Explicitly separate trusted policy, user intent and untrusted web/file/tool data; do not promote retrieved text to system rules.
-- Apply least privilege and tool-side authorization; a model must never be the only control guarding secrets or writes.
-- Require explicit confirmation for sensitive external actions and log the original user authorization.
-- Use defense in depth: scoped credentials, allowlists, safe parsing, approvals, monitoring and adversarial tests.
+- Explicitly separate trusted policy, user intent and untrusted web/file/tool data; do not promote
+  retrieved text to system rules.
+- Apply least privilege and tool-side authorization; a model must never be the only control guarding
+  secrets or writes.
+- Require explicit confirmation for sensitive external actions and log the original user
+  authorization.
+- Use defense in depth: scoped credentials, allowlists, safe parsing, approvals, monitoring and
+  adversarial tests.
 
 ## Failure modes
 
@@ -40,8 +47,12 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [Anthropic Research: How we contain Claude](https://www.anthropic.com/research/how-we-contain-claude) — selected public search excerpts only; see [Source Register](../source-register/) for access limits.
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [Anthropic Research: How we contain Claude](https://www.anthropic.com/research/how-we-contain-claude) —
+      selected public search excerpts only; see [Source Register](../source-register/) for access
+      limits.
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

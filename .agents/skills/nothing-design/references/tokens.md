@@ -5,7 +5,7 @@
 ### Font Stack
 
 | Role              | Font              | Fallback                                 | Weight                                       |
-| ----------------- | ----------------- | ---------------------------------------- | -------------------------------------------- |
+|-------------------|-------------------|------------------------------------------|----------------------------------------------|
 | **Display**       | `"Doto"`          | `"Space Mono", monospace`                | 400–700, variable dot-size                   |
 | **Body / UI**     | `"Space Grotesk"` | `"DM Sans", system-ui, sans-serif`       | Light 300, Regular 400, Medium 500, Bold 700 |
 | **Data / Labels** | `"Space Mono"`    | `"JetBrains Mono", "SF Mono", monospace` | Regular 400, Bold 700                        |
@@ -16,7 +16,7 @@ Colophon Foundry — same foundry as Nothing's actual typefaces. Shared design D
 ### Type Scale
 
 | Token          | Size | Line Height | Letter Spacing | Use                         |
-| -------------- | ---- | ----------- | -------------- | --------------------------- |
+|----------------|------|-------------|----------------|-----------------------------|
 | `--display-xl` | 72px | 1.0         | -0.03em        | Hero numbers, time displays |
 | `--display-lg` | 48px | 1.05        | -0.02em        | Section heroes, percentages |
 | `--display-md` | 36px | 1.1         | -0.02em        | Page titles                 |
@@ -42,7 +42,7 @@ Colophon Foundry — same foundry as Nothing's actual typefaces. Shared design D
 ### Primary Palette (Dark Mode)
 
 | Token              | Hex       | Contrast on #000 | Role                                 |
-| ------------------ | --------- | ---------------- | ------------------------------------ |
+|--------------------|-----------|------------------|--------------------------------------|
 | `--black`          | `#000000` | —                | Primary background (OLED)            |
 | `--surface`        | `#111111` | 1.3:1            | Elevated surfaces, cards             |
 | `--surface-raised` | `#1A1A1A` | 1.5:1            | Secondary elevation                  |
@@ -56,7 +56,7 @@ Colophon Foundry — same foundry as Nothing's actual typefaces. Shared design D
 ### Accent & Status Colors
 
 | Token             | Hex                    | Usage                                                                                             |
-| ----------------- | ---------------------- | ------------------------------------------------------------------------------------------------- |
+|-------------------|------------------------|---------------------------------------------------------------------------------------------------|
 | `--accent`        | `#D71921`              | Signal light: active states, destructive, urgent. One per screen as UI element. Never decorative. |
 | `--accent-subtle` | `rgba(215,25,33,0.15)` | Accent tint backgrounds                                                                           |
 | `--success`       | `#4A9E5C`              | Confirmed, completed, connected                                                                   |
@@ -72,7 +72,7 @@ Labels stay `--text-secondary`. Trend arrows inherit value color.
 ### Dark / Light Mode
 
 | Token              | Dark      | Light     |
-| ------------------ | --------- | --------- |
+|--------------------|-----------|-----------|
 | `--black`          | `#000000` | `#F5F5F5` |
 | `--surface`        | `#111111` | `#FFFFFF` |
 | `--surface-raised` | `#1A1A1A` | `#F0F0F0` |
@@ -98,7 +98,7 @@ off-white page = subtle elevation without shadows.
 ### Spacing Scale (8px base)
 
 | Token         | Value | Use                               |
-| ------------- | ----- | --------------------------------- |
+|---------------|-------|-----------------------------------|
 | `--space-2xs` | 2px   | Optical adjustments only          |
 | `--space-xs`  | 4px   | Icon-to-label gaps, tight padding |
 | `--space-sm`  | 8px   | Component internal spacing        |

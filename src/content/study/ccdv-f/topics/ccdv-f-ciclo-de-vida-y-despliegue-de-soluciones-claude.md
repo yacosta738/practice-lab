@@ -9,13 +9,21 @@ aliases:
   - "Systems Life Cycle"
 dominio: D2
 ---
+
 [Índice](../ccdv-f-indice-de-certificacion/) · [Dominio D2](../ccdv-f-indice-de-certificacion/#d2-aplicaciones-e-integracion)
 
-Organiza el ciclo como requisitos, diseño, implementación, validación, despliegue, operación y retirada. Versiona prompts, modelos, esquemas y herramientas junto con las evaluaciones que justifican su publicación. Un canario compara resultados con la versión estable, usa métricas de negocio y operativas y tiene una ruta de reversión ensayada.
+Organiza el ciclo como requisitos, diseño, implementación, validación, despliegue, operación y
+retirada. Versiona prompts, modelos, esquemas y herramientas junto con las evaluaciones que
+justifican su publicación. Un canario compara resultados con la versión estable, usa métricas de
+negocio y operativas y tiene una ruta de reversión ensayada.
 
-Al desplegar en la API de Claude, AWS o Google Cloud, comprueba de forma independiente disponibilidad, identificadores, IAM, región, cuotas, características y términos de tratamiento aplicables. Para reutilizar una entrega, parametriza valores específicos del cliente y empaqueta guía de instalación, un conjunto de evals y contrato de auditoría.
+Al desplegar en la API de Claude, AWS o Google Cloud, comprueba de forma independiente
+disponibilidad, identificadores, IAM, región, cuotas, características y términos de tratamiento
+aplicables. Para reutilizar una entrega, parametriza valores específicos del cliente y empaqueta
+guía de instalación, un conjunto de evals y contrato de auditoría.
 
-**Caso.** Una migración a otro proveedor conserva casos y expectativas, pero repite integración, permisos y pruebas de carga con credenciales y endpoint de destino.
+**Caso.** Una migración a otro proveedor conserva casos y expectativas, pero repite integración,
+permisos y pruebas de carga con credenciales y endpoint de destino.
 
 > [!question]- ¿Por qué un eval de calidad no basta para un cambio de plataforma?
 > Porque las rutas de autenticación, despliegue y operación también pueden cambiar.

@@ -13,16 +13,23 @@ tags:
 - domain/agents-workflows
 - type/concept
 ---
-> A subagent executes a bounded task in an isolated context, using a restricted toolset and returning a compact result to its caller.
 
-**Blueprint area:** [D1 - Agents and Workflows MOC](../d1-agents-and-workflows-moc/) (official domain weight 14.7%).
+> A subagent executes a bounded task in an isolated context, using a restricted toolset and
+> returning a compact result to its caller.
+
+**Blueprint area:** [D1 - Agents and Workflows MOC](../d1-agents-and-workflows-moc/) (official
+domain weight 14.7%).
 
 ## Engineering principles
 
-- Use isolation for specialized research, code search, or verification that otherwise pollutes the main context with raw tool output.
-- Define purpose, authority, allowed tools, expected output format, and failure/blocked protocol in its configuration.
-- Pass only necessary input and avoid copying entire histories into each worker; synthesize results into durable decisions.
-- Compare subagents with tasks inside a single agent: subagents bring independence but increase orchestration cost.
+- Use isolation for specialized research, code search, or verification that otherwise pollutes the
+  main context with raw tool output.
+- Define purpose, authority, allowed tools, expected output format, and failure/blocked protocol in
+  its configuration.
+- Pass only necessary input and avoid copying entire histories into each worker; synthesize results
+  into durable decisions.
+- Compare subagents with tasks inside a single agent: subagents bring independence but increase
+  orchestration cost.
 
 ## Failure modes
 
@@ -40,8 +47,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [code-agents](https://code.claude.com/docs/en/sub-agents)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [code-agents](https://code.claude.com/docs/en/sub-agents)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

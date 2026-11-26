@@ -725,7 +725,7 @@ test.describe("unauthenticated access", () => {
 ## Decision Guide
 
 | Scenario                         | Approach                       | Speed    | Isolation      | When to Choose                                                 |
-| -------------------------------- | ------------------------------ | -------- | -------------- | -------------------------------------------------------------- |
+|----------------------------------|--------------------------------|----------|----------------|----------------------------------------------------------------|
 | Most tests need auth             | Global setup + `storageState`  | Fastest  | Shared session | Default for nearly every project                               |
 | Tests modify user state          | Per-worker fixture             | Fast     | Per worker     | Tests update profile, change settings, or mutate data          |
 | Multiple user roles              | Per-project `storageState`     | Fastest  | Per role       | App has admin/member/guest roles                               |
@@ -752,7 +752,7 @@ Need to test the login page itself?
 ## Anti-Patterns
 
 | Don't Do This                                                             | Problem                                     | Do This Instead                                                           |
-| ------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------- |
+|---------------------------------------------------------------------------|---------------------------------------------|---------------------------------------------------------------------------|
 | Log in via UI before every test                                           | Adds 2-5 seconds per test                   | Use `storageState` to skip login entirely                                 |
 | Share a single auth state file across parallel workers that mutate state  | Race conditions                             | Use per-worker fixtures with `{ scope: 'worker' }`                        |
 | Hardcode credentials in test files                                        | Security risk                               | Use environment variables and `.env` files                                |

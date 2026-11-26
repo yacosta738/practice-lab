@@ -16,8 +16,12 @@
 		}
 	},
 	"rules": [
-		{ "type": "deletion" },
-		{ "type": "non_fast_forward" },
+		{
+			"type": "deletion"
+		},
+		{
+			"type": "non_fast_forward"
+		},
 		{
 			"type": "pull_request",
 			"parameters": {
@@ -33,11 +37,21 @@
 			"type": "required_status_checks",
 			"parameters": {
 				"required_status_checks": [
-					{ "context": "🔍 Lint" },
-					{ "context": "🔧 Type Check" },
-					{ "context": "🧪 Unit Tests" },
-					{ "context": "🏗️ Build" },
-					{ "context": "♿ Accessibility" }
+					{
+						"context": "🔍 Lint"
+					},
+					{
+						"context": "🔧 Type Check"
+					},
+					{
+						"context": "🧪 Unit Tests"
+					},
+					{
+						"context": "🏗️ Build"
+					},
+					{
+						"context": "♿ Accessibility"
+					}
 				],
 				"strict_required_status_checks_policy": true,
 				"do_not_enforce_on_create": false

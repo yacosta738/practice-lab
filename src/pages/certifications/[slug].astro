@@ -136,6 +136,7 @@ function showProgressFailure(error: unknown) {
 		app.innerHTML = `<section class="panel padded" role="alert"><h1>Progress storage unavailable</h1><p>${safeMessage}</p><p>Your existing data has not been replaced by browser-only fallback state.</p><button class="primary" data-storage-action="retry">Retry storage</button><button class="ghost" data-storage-action="backup">Download recovery backup</button></section>`;
 	}
 }
+
 document.addEventListener("click", (event: MouseEvent) => {
 	const target = event.target instanceof Element ? event.target : null;
 	const action = target?.closest("[data-storage-action]")?.getAttribute("data-storage-action");

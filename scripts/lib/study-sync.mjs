@@ -66,7 +66,9 @@ export function parseWikilink(raw) {
 		return part.replace(/\\\|/g, "|").replace(/\\$/, "");
 	}
 
-	if (parts.length === 0) return result;
+	if (parts.length === 0) {
+		return result;
+	}
 
 	const targetPart = unescapePart(parts[0]).trim();
 
@@ -112,7 +114,9 @@ export function convertWikilinks(markdown, knownSlugs) {
 	const segments = splitCodeSegments(markdown);
 
 	const processed = segments.map((seg) => {
-		if (seg.type === "code") return seg.content;
+		if (seg.type === "code") {
+			return seg.content;
+		}
 		return convertWikilinksInText(seg.content, knownSlugs, unresolved);
 	});
 
@@ -232,7 +236,9 @@ export function convertTaskLists(markdown) {
 	const segments = splitCodeSegments(markdown);
 
 	const processed = segments.map((seg) => {
-		if (seg.type === "code") return seg.content;
+		if (seg.type === "code") {
+			return seg.content;
+		}
 		return seg.content.replace(/^(\s*[-*+]\s+)\[([ xX])\]\s/gm, (_match, prefix, check) => {
 			const box = check === " " ? "☐" : "☑";
 			return `${prefix}${box} `;
@@ -288,7 +294,9 @@ export function extractLeadingH1(body) {
 		}
 	}
 
-	if (h1LineIdx === -1) return { heading: null, rest: body };
+	if (h1LineIdx === -1) {
+		return { heading: null, rest: body };
+	}
 
 	const h1Line = lines[h1LineIdx];
 	if (!h1Line.startsWith("# ")) {

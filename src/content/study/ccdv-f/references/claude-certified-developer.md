@@ -7,6 +7,7 @@ tags:
   - claude
 course-pre: https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations
 ---
+
 Thank you. Your order ID is: 57EX8G7S
 
 [Claude Certified Developer - Foundations Prep Course](../claude-certified-developer-foundations-prep-course/)

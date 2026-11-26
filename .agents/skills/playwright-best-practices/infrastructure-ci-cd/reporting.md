@@ -58,7 +58,7 @@ export default defineConfig({
 ### Reporter Types
 
 | Reporter | Output                | Use Case            |
-| -------- | --------------------- | ------------------- |
+|----------|-----------------------|---------------------|
 | `list`   | One line per test     | Local development   |
 | `line`   | Single updating line  | Local, less verbose |
 | `dot`    | `.` pass, `F` fail    | CI logs             |
@@ -196,7 +196,7 @@ export default defineConfig({
 ### Trace Options
 
 | Value                       | Behavior                         | Overhead |
-| --------------------------- | -------------------------------- | -------- |
+|-----------------------------|----------------------------------|----------|
 | `'off'`                     | Never records                    | None     |
 | `'on'`                      | Every test                       | High     |
 | `'on-first-retry'`          | On first retry after failure     | Minimal  |
@@ -242,7 +242,7 @@ use: {
 ### Screenshot Options
 
 | Value               | Captures     | Disk Cost |
-| ------------------- | ------------ | --------- |
+|---------------------|--------------|-----------|
 | `'off'`             | Never        | None      |
 | `'on'`              | Every test   | High      |
 | `'only-on-failure'` | Failed tests | Low       |
@@ -250,7 +250,7 @@ use: {
 ### Video Options
 
 | Value                 | Records    | Keeps   | Disk Cost |
-| --------------------- | ---------- | ------- | --------- |
+|-----------------------|------------|---------|-----------|
 | `'off'`               | Never      | —       | None      |
 | `'on'`                | Every test | All     | Very high |
 | `'on-first-retry'`    | On retry   | Retried | Low       |
@@ -303,7 +303,7 @@ blob-report/
 ## Decision Guide
 
 | Scenario               | Reporter Configuration                                |
-| ---------------------- | ----------------------------------------------------- |
+|------------------------|-------------------------------------------------------|
 | Local development      | `[['list'], ['html', { open: 'on-failure' }]]`        |
 | GitHub Actions         | `[['dot'], ['html'], ['github']]`                     |
 | GitLab CI              | `[['dot'], ['html'], ['junit']]`                      |
@@ -312,7 +312,7 @@ blob-report/
 | Custom dashboard       | `[['json', { outputFile: '...' }]]` + custom reporter |
 
 | Artifact    | When to Collect  | Retention | Upload Condition          |
-| ----------- | ---------------- | --------- | ------------------------- |
+|-------------|------------------|-----------|---------------------------|
 | HTML report | Always           | 14 days   | `if: ${{ !cancelled() }}` |
 | Traces      | On failure       | 7 days    | `if: failure()`           |
 | Screenshots | On failure       | 7 days    | `if: failure()`           |
@@ -323,7 +323,7 @@ blob-report/
 ## Anti-Patterns
 
 | Anti-Pattern                        | Problem                                   | Solution                              |
-| ----------------------------------- | ----------------------------------------- | ------------------------------------- |
+|-------------------------------------|-------------------------------------------|---------------------------------------|
 | No reporter configured              | Default `list` only; no persistent report | Configure `html` + CI reporter        |
 | `trace: 'on'` in CI                 | Massive artifacts, slow uploads           | Use `trace: 'on-first-retry'`         |
 | `video: 'on'` in CI                 | Enormous storage, slower tests            | Use `video: 'retain-on-failure'`      |

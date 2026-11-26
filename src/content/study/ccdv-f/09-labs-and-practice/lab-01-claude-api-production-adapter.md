@@ -10,16 +10,21 @@ tags:
 - type/lab
 - method/hands-on
 ---
-**Goal:** build a reliable provider adapter behind a clean application port, with a fake client for tests.
+
+**Goal:** build a reliable provider adapter behind a clean application port, with a fake client for
+tests.
 
 **Scope:** TypeScript or Python SDK; custom API client optional. No real credentials in Git.
 
 ## Deliverables
 
 - A `generate()` port and a provider adapter mapping typed request/response blocks.
-- A tool dispatcher that pairs `tool_use` to `tool_result`, including parallel requests and `is_error` responses.
-- An SSE consumer that handles `message_start`, content deltas, stop reasons, late error events and disconnects.
-- A bounded retry policy with max attempts, timeouts, jitter and a test confirming no retry of invalid requests.
+- A tool dispatcher that pairs `tool_use` to `tool_result`, including parallel requests and
+  `is_error` responses.
+- An SSE consumer that handles `message_start`, content deltas, stop reasons, late error events and
+  disconnects.
+- A bounded retry policy with max attempts, timeouts, jitter and a test confirming no retry of
+  invalid requests.
 - A fixture demonstrating that partial generated JSON is rejected; usage/cost telemetry.
 
 ## Acceptance tests

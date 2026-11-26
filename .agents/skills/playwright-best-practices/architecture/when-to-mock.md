@@ -23,7 +23,7 @@ Tests should prove YOUR code works, not that third-party APIs are available.
 ## Decision Matrix
 
 | Scenario                          | Mock?                    | Strategy                                        |
-| --------------------------------- | ------------------------ | ----------------------------------------------- |
+|-----------------------------------|--------------------------|-------------------------------------------------|
 | Your own REST/GraphQL API         | Never                    | Hit real API against staging or local dev       |
 | Your database (through your API)  | Never                    | Seed via API or fixtures                        |
 | Authentication (your auth system) | Mostly no                | Use `storageState` to skip login in most tests  |
@@ -374,7 +374,7 @@ test.describe("contract validation", () => {
 ## Anti-Patterns
 
 | Don't Do This                             | Problem                                                       | Do This Instead                                               |
-| ----------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
+|-------------------------------------------|---------------------------------------------------------------|---------------------------------------------------------------|
 | Mock your own API                         | Tests pass, app breaks. Zero integration coverage.            | Hit your real API. Mock only third-party services.            |
 | Mock everything for speed                 | You test a fiction. Frontend and backend may be incompatible. | Mock only external boundaries.                                |
 | Never mock anything                       | Tests are slow, flaky, fail when third parties have outages.  | Mock third-party services.                                    |

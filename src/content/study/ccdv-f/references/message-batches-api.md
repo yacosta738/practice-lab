@@ -15,7 +15,9 @@ aliases:
 - Claude batch processing
 updated: '2026-11-15'
 ---
-A separate pattern for bulk offline workloads: submit a large set of requests in one call, receive an identifier, and poll for completion. Can take up to 24 hours and runs at a lower per-token cost.
+
+A separate pattern for bulk offline workloads: submit a large set of requests in one call, receive
+an identifier, and poll for completion. Can take up to 24 hours and runs at a lower per-token cost.
 
 ## Connections
 

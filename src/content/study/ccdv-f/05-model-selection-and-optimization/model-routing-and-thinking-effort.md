@@ -13,16 +13,24 @@ tags:
 - domain/model-selection-optimization
 - type/concept
 ---
-> Pick model capability independently from thinking/effort. Evaluate the smallest configuration that satisfies the task’s measured quality and latency needs.
 
-**Blueprint area:** [D5 - Model Selection and Optimization MOC](../d5-model-selection-and-optimization-moc/) (official domain weight 16.8%).
+> Pick model capability independently from thinking/effort. Evaluate the smallest configuration that
+> satisfies the task’s measured quality and latency needs.
+
+**Blueprint
+area:** [D5 - Model Selection and Optimization MOC](../d5-model-selection-and-optimization-moc/)
+(official domain weight 16.8%).
 
 ## Engineering principles
 
-- Haiku suits bounded high-volume tasks; Sonnet balances capability and efficiency; Opus addresses harder reasoning. Current families, features and availability can change.
-- Adjust prompt and evidence quality before paying for extra reasoning; compare effort configurations using the same fixtures.
-- Routing can classify easy/complex requests and send them to different models, but the router itself needs accuracy evals.
-- Reasoning tokens can affect output-token billing and latency; cache interactions depend on the current model and settings.
+- Haiku suits bounded high-volume tasks; Sonnet balances capability and efficiency; Opus addresses
+  harder reasoning. Current families, features and availability can change.
+- Adjust prompt and evidence quality before paying for extra reasoning; compare effort
+  configurations using the same fixtures.
+- Routing can classify easy/complex requests and send them to different models, but the router
+  itself needs accuracy evals.
+- Reasoning tokens can affect output-token billing and latency; cache interactions depend on the
+  current model and settings.
 
 ## Failure modes
 
@@ -40,8 +48,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [thinking](https://platform.claude.com/docs/en/build-with-claude/thinking)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [thinking](https://platform.claude.com/docs/en/build-with-claude/thinking)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

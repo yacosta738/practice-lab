@@ -13,16 +13,23 @@ tags:
 - domain/agents-workflows
 - type/concept
 ---
-> Parallelization is suitable when subtasks are known independently; orchestrator–workers is for dynamic decomposition and synthesis.
 
-**Blueprint area:** [D1 - Agents and Workflows MOC](../d1-agents-and-workflows-moc/) (official domain weight 14.7%).
+> Parallelization is suitable when subtasks are known independently; orchestrator–workers is for
+> dynamic decomposition and synthesis.
+
+**Blueprint area:** [D1 - Agents and Workflows MOC](../d1-agents-and-workflows-moc/) (official
+domain weight 14.7%).
 
 ## Engineering principles
 
-- **Sectioning:** split known documents or components and aggregate results with deterministic checks.
-- **Voting:** run independent alternatives and compare against a rubric when diversity helps; do not confuse agreement with truth.
-- **Orchestrator–workers:** the manager discovers subtasks, delegates to constrained workers, tracks dependencies and merges outcomes.
-- Only parallelize independent work. Rate limits, shared state, authorization and resource contention remain application responsibilities.
+- **Sectioning:** split known documents or components and aggregate results with deterministic
+  checks.
+- **Voting:** run independent alternatives and compare against a rubric when diversity helps; do not
+  confuse agreement with truth.
+- **Orchestrator–workers:** the manager discovers subtasks, delegates to constrained workers, tracks
+  dependencies and merges outcomes.
+- Only parallelize independent work. Rate limits, shared state, authorization and resource
+  contention remain application responsibilities.
 
 ## Failure modes
 
@@ -40,8 +47,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [building-agents](https://www.anthropic.com/engineering/building-effective-agents)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [building-agents](https://www.anthropic.com/engineering/building-effective-agents)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

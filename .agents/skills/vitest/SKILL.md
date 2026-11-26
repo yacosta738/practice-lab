@@ -27,7 +27,7 @@ transformers, resolvers, and plugins with your Vite app.
 ## Core
 
 | Topic         | Description                                                     | Reference                                    |
-| ------------- | --------------------------------------------------------------- | -------------------------------------------- |
+|---------------|-----------------------------------------------------------------|----------------------------------------------|
 | Configuration | Vitest and Vite config integration, defineConfig usage          | [core-config](references/core-config.md)     |
 | CLI           | Command line interface, commands and options                    | [core-cli](references/core-cli.md)           |
 | Test API      | test/it function, modifiers like skip, only, concurrent         | [core-test-api](references/core-test-api.md) |
@@ -38,7 +38,7 @@ transformers, resolvers, and plugins with your Vite app.
 ## Features
 
 | Topic        | Description                                                    | Reference                                                    |
-| ------------ | -------------------------------------------------------------- | ------------------------------------------------------------ |
+|--------------|----------------------------------------------------------------|--------------------------------------------------------------|
 | Mocking      | Mock functions, modules, timers, dates with vi utilities       | [features-mocking](references/features-mocking.md)           |
 | Snapshots    | Snapshot testing with toMatchSnapshot and inline snapshots     | [features-snapshots](references/features-snapshots.md)       |
 | Coverage     | Code coverage with V8 or Istanbul providers                    | [features-coverage](references/features-coverage.md)         |
@@ -52,7 +52,7 @@ transformers, resolvers, and plugins with your Vite app.
 ## Advanced
 
 | Topic        | Description                                             | Reference                                                    |
-| ------------ | ------------------------------------------------------- | ------------------------------------------------------------ |
+|--------------|---------------------------------------------------------|--------------------------------------------------------------|
 | Vi Utilities | vi helper: mock, spyOn, fake timers, hoisted, waitFor   | [advanced-vi](references/advanced-vi.md)                     |
 | Environments | Test environments: node, jsdom, happy-dom, custom       | [advanced-environments](references/advanced-environments.md) |
 | Type Testing | Type-level testing with expectTypeOf and assertType     | [advanced-type-testing](references/advanced-type-testing.md) |

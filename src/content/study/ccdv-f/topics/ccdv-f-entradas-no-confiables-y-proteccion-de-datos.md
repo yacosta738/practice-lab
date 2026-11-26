@@ -9,13 +9,22 @@ aliases:
   - "AI Application Security"
 dominio: D7
 ---
+
 [Índice](../ccdv-f-indice-de-certificacion/) · [Dominio D7](../ccdv-f-indice-de-certificacion/#d7-seguridad-y-controles)
 
-Trata documentos, páginas y resultados de herramientas como datos externos. Mantén separadas las instrucciones confiables y valida permisos, identidad y alcance en el código antes de cualquier efecto. Minimiza datos enviados, redacta PII donde proceda y evita incluir secretos en prompts, logs o respuestas.
+Trata documentos, páginas y resultados de herramientas como datos externos. Mantén separadas las
+instrucciones confiables y valida permisos, identidad y alcance en el código antes de cualquier
+efecto. Minimiza datos enviados, redacta PII donde proceda y evita incluir secretos en prompts, logs
+o respuestas.
 
-La autenticación identifica al actor. La autorización decide si puede actuar sobre este recurso. La confidencialidad limita quién ve los datos y la integridad protege su exactitud. Una reserva importante para cualquier integración es que el origen autorizado del documento no otorga autoridad a las instrucciones contenidas en él.
+La autenticación identifica al actor. La autorización decide si puede actuar sobre este recurso. La
+confidencialidad limita quién ve los datos y la integridad protege su exactitud. Una reserva
+importante para cualquier integración es que el origen autorizado del documento no otorga autoridad
+a las instrucciones contenidas en él.
 
-**Caso.** Un asistente de lectura recibe texto que pide actuar sobre otro servicio. La herramienta de lectura carece de permiso de escritura y el backend verifica qué recursos puede consultar el usuario.
+**Caso.** Un asistente de lectura recibe texto que pide actuar sobre otro servicio. La herramienta
+de lectura carece de permiso de escritura y el backend verifica qué recursos puede consultar el
+usuario.
 
 > [!question]- ¿Dónde se aplica el aislamiento entre clientes?
 > En la aplicación y las herramientas, con checks sobre identidad, tenant y recurso.

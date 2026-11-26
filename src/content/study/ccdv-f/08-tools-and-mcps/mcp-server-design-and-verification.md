@@ -13,15 +13,20 @@ tags:
 - domain/tools-mcp
 - type/concept
 ---
-> An MCP server is an integration boundary: define clear contracts and test capability exposure, validation, authorization and failure semantics.
 
-**Blueprint area:** [D8 - Tools and MCPs MOC](../d8-tools-and-mcps-moc/) (official domain weight 10.6%).
+> An MCP server is an integration boundary: define clear contracts and test capability exposure,
+> validation, authorization and failure semantics.
+
+**Blueprint area:** [D8 - Tools and MCPs MOC](../d8-tools-and-mcps-moc/) (official domain weight
+10.6%).
 
 ## Engineering principles
 
 - Keep tools narrow and action-specific; validate input schema and business permissions in handlers.
-- Provide typed outputs or structured error results and avoid leaking stack traces, tokens or unrelated data.
-- Document local vs remote installation, environment needs, capabilities, transport and credential scope.
+- Provide typed outputs or structured error results and avoid leaking stack traces, tokens or
+  unrelated data.
+- Document local vs remote installation, environment needs, capabilities, transport and credential
+  scope.
 - Test with an MCP inspector/client and repeat authorization, malformed-input and concurrency cases.
 
 ## Failure modes
@@ -40,9 +45,11 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [mcp-overview](https://modelcontextprotocol.io/specification/2026-07-28)
-  - [mcp-tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [mcp-overview](https://modelcontextprotocol.io/specification/2026-07-28)
+    - [mcp-tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

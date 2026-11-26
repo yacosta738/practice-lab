@@ -186,7 +186,9 @@ export function normalizeQuestion(certId, cpqQ, domainMap = {}) {
  */
 export function deriveBlueprint(domainCounts, target) {
 	const domains = Object.keys(domainCounts).filter((d) => domainCounts[d] > 0);
-	if (!domains.length) return {};
+	if (!domains.length) {
+		return {};
+	}
 
 	const total = Object.values(domainCounts).reduce((s, v) => s + v, 0);
 
@@ -232,7 +234,9 @@ export function deriveBlueprint(domainCounts, target) {
 
 	remainders.sort((a, b) => b.remainder - a.remainder || a.domain.localeCompare(b.domain));
 	for (const { domain } of remainders) {
-		if (apportioned >= remaining) break;
+		if (apportioned >= remaining) {
+			break;
+		}
 		if (allocation[domain] < domainCounts[domain]) {
 			allocation[domain] += 1;
 			apportioned += 1;
@@ -242,7 +246,9 @@ export function deriveBlueprint(domainCounts, target) {
 	const allocated = Object.values(allocation).reduce((s, v) => s + v, 0);
 	if (allocated !== target) {
 		throw new Error(
-			`deriveBlueprint: allocated ${allocated} of ${target} questions (domain counts: ${JSON.stringify(domainCounts)})`,
+			`deriveBlueprint: allocated ${allocated} of ${target} questions (domain counts: ${JSON.stringify(
+				domainCounts,
+			)})`,
 		);
 	}
 

@@ -15,7 +15,13 @@ aliases:
 - Prompt cost trade-off
 updated: '2026-11-15'
 ---
-Each example you add costs tokens on every call and consumes context budget, so the choice trades quality against cost. Reach for zero-shot when the task is simple and the output shape is obvious. Move to one-shot or multi-shot when the output has a specific structure, casing, or edge case that a description keeps missing. Often one or two correct examples usually fix the issue faster than another paragraph of instructions. The general discipline, which Module 2 reinforces, is to add the smallest amount of prompt that produces a reliable result.
+
+Each example you add costs tokens on every call and consumes context budget, so the choice trades
+quality against cost. Reach for zero-shot when the task is simple and the output shape is obvious.
+Move to one-shot or multi-shot when the output has a specific structure, casing, or edge case that a
+description keeps missing. Often one or two correct examples usually fix the issue faster than
+another paragraph of instructions. The general discipline, which Module 2 reinforces, is to add the
+smallest amount of prompt that produces a reliable result.
 
 ## Connections
 

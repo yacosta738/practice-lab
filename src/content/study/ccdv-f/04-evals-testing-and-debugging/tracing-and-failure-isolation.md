@@ -13,15 +13,21 @@ tags:
 - domain/eval-testing-debugging
 - type/concept
 ---
-> Failures may arise in input retrieval, request construction, transport, tool dispatch, model reasoning, output parsing or downstream side effects.
 
-**Blueprint area:** [D4 - Eval, Testing, and Debugging MOC](../d4-eval-testing-and-debugging-moc/) (official domain weight 2.6%).
+> Failures may arise in input retrieval, request construction, transport, tool dispatch, model
+> reasoning, output parsing or downstream side effects.
+
+**Blueprint area:** [D4 - Eval, Testing, and Debugging MOC](../d4-eval-testing-and-debugging-moc/)
+(official domain weight 2.6%).
 
 ## Engineering principles
 
-- Emit correlated IDs for user request, model call, tool call and external operation; avoid logging raw secrets or unnecessary PII.
-- Record model version, prompt revision, selected tools, stop reason, token usage and latency to reproduce decisions.
-- Distinguish protocol/transport errors, schema mismatch, insufficient context, hallucination, authorization denial and non-idempotent side effects.
+- Emit correlated IDs for user request, model call, tool call and external operation; avoid logging
+  raw secrets or unnecessary PII.
+- Record model version, prompt revision, selected tools, stop reason, token usage and latency to
+  reproduce decisions.
+- Distinguish protocol/transport errors, schema mismatch, insufficient context, hallucination,
+  authorization denial and non-idempotent side effects.
 - Use trace-based hypotheses and targeted repro fixtures before changing prompts or models.
 
 ## Failure modes
@@ -40,8 +46,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [streaming](https://platform.claude.com/docs/en/build-with-claude/streaming)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [streaming](https://platform.claude.com/docs/en/build-with-claude/streaming)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

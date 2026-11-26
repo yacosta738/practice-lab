@@ -14,7 +14,12 @@ aliases:
 - Prompting mode vs model
 updated: '2026-11-15'
 ---
-Prompting mode and model choice are related levers. A more capable model often succeeds zero-shot on a task where a smaller model needs a few examples to match the structure, so adding examples can let a cheaper model do the job. The two decisions are worth making together: try the simplest model and the fewest examples that meet your eval, and add capability or examples only where the eval says you need them.
+
+Prompting mode and model choice are related levers. A more capable model often succeeds zero-shot on
+a task where a smaller model needs a few examples to match the structure, so adding examples can let
+a cheaper model do the job. The two decisions are worth making together: try the simplest model and
+the fewest examples that meet your eval, and add capability or examples only where the eval says you
+need them.
 
 ## Connections
 

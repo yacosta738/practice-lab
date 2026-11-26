@@ -25,8 +25,8 @@ import type {
 } from "./model";
 import {
 	type CheckpointSessionCommand,
-	type CreateSessionCommand,
 	createProgressUseCases,
+	type CreateSessionCommand,
 	type RecordEvaluationCommand,
 } from "./use-cases";
 
@@ -574,24 +574,6 @@ export class BrowserProgressService {
 		return this.useCases.getSession(sessionId);
 	}
 
-	private async exportCertificationData() {
-		return Promise.all(
-			this.options.knownCertificationIds.map(async (certificationId) => ({
-				certificationId,
-				...(await this.useCases.getCertificationProgressSnapshot(certificationId)),
-			})),
-		);
-	}
-
-	private async readPreviousMigrationBackups() {
-		return Promise.all(
-			this.options.knownCertificationIds.map(async (certificationId) => ({
-				certificationId,
-				backup: await this.useCases.getMetadata(legacyBackupKey(certificationId)),
-			})),
-		);
-	}
-
 	async checkForExternalChanges(sessionId?: string, revision?: number): Promise<boolean> {
 		this.assertInitialized();
 		const [token, history] = await Promise.all([
@@ -630,6 +612,24 @@ export class BrowserProgressService {
 		window.removeEventListener("storage", this.onStorageChange);
 		this.channel?.close();
 		this.channel = undefined;
+	}
+
+	private async exportCertificationData() {
+		return Promise.all(
+			this.options.knownCertificationIds.map(async (certificationId) => ({
+				certificationId,
+				...(await this.useCases.getCertificationProgressSnapshot(certificationId)),
+			})),
+		);
+	}
+
+	private async readPreviousMigrationBackups() {
+		return Promise.all(
+			this.options.knownCertificationIds.map(async (certificationId) => ({
+				certificationId,
+				backup: await this.useCases.getMetadata(legacyBackupKey(certificationId)),
+			})),
+		);
 	}
 
 	private assertInitialized(): void {

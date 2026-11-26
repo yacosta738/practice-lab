@@ -25,7 +25,7 @@ runtime efficiency, and resource optimization.
 ## Performance budget
 
 | Resource                | Budget   | Rationale                |
-| ----------------------- | -------- | ------------------------ |
+|-------------------------|----------|--------------------------|
 | Total page weight       | < 1.5 MB | 3G loads in ~4s          |
 | JavaScript (compressed) | < 300 KB | Parsing + execution time |
 | CSS (compressed)        | < 100 KB | Render blocking          |
@@ -122,7 +122,7 @@ debounce(fn, 300);
 ### Format selection
 
 | Format | Use case                    | Browser support |
-| ------ | --------------------------- | --------------- |
+|--------|-----------------------------|-----------------|
 | AVIF   | Photos, best compression    | 92%+            |
 | WebP   | Photos, good fallback       | 97%+            |
 | PNG    | Graphics with transparency  | Universal       |
@@ -367,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
 ### Key metrics
 
 | Metric      | Target  | Tool             |
-| ----------- | ------- | ---------------- |
+|-------------|---------|------------------|
 | LCP         | < 2.5s  | Lighthouse, CrUX |
 | FCP         | < 1.8s  | Lighthouse       |
 | Speed Index | < 3.4s  | Lighthouse       |

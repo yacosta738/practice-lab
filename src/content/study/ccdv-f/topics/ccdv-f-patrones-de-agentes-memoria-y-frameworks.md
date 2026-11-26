@@ -9,16 +9,26 @@ aliases:
   - "Agent Patterns and Frameworks"
 dominio: D1
 ---
+
 [Índice](../ccdv-f-indice-de-certificacion/) · [Dominio D1](../ccdv-f-indice-de-certificacion/#d1-agentes-y-flujos-de-trabajo)
 
-Encadenamiento divide una tarea con dependencias conocidas. Routing elige una rama según una señal. Paralelización ejecuta ramas independientes y requiere una estrategia de agregación. Evaluador–optimizador itera con criterios y un límite. Un subagente recibe un objetivo y contexto acotados y devuelve un artefacto que el coordinador puede revisar.
+Encadenamiento divide una tarea con dependencias conocidas. Routing elige una rama según una señal.
+Paralelización ejecuta ramas independientes y requiere una estrategia de agregación.
+Evaluador–optimizador itera con criterios y un límite. Un subagente recibe un objetivo y contexto
+acotados y devuelve un artefacto que el coordinador puede revisar.
 
-Guarda memoria durable solo cuando una decisión deba sobrevivir a la sesión. Registra origen, alcance y política de actualización. Al reanudar, verifica estado y versiones antes de confiar en un resumen persistido. Strands, LangGraph y PydanticAI ofrecen abstracciones distintas. Al compararlos, verifica persistencia, control de flujo, visibilidad del estado y las facilidades para probar fallos.
+Guarda memoria durable solo cuando una decisión deba sobrevivir a la sesión. Registra origen,
+alcance y política de actualización. Al reanudar, verifica estado y versiones antes de confiar en un
+resumen persistido. Strands, LangGraph y PydanticAI ofrecen abstracciones distintas. Al compararlos,
+verifica persistencia, control de flujo, visibilidad del estado y las facilidades para probar
+fallos.
 
-**Caso.** Para resumir cinco informes, procesa cada uno con contexto aislado y combina resultados con referencias. Si un informe falta, devuelve cobertura parcial.
+**Caso.** Para resumir cinco informes, procesa cada uno con contexto aislado y combina resultados
+con referencias. Si un informe falta, devuelve cobertura parcial.
 
 > [!question]- ¿Qué añade un framework a un bucle de herramientas?
-> Abstracciones de ejecución y estado. Los límites de confianza y los criterios de parada siguen siendo decisiones de diseño.
+> Abstracciones de ejecución y estado. Los límites de confianza y los criterios de parada siguen
+> siendo decisiones de diseño.
 
 ## Conexiones
 

@@ -9,13 +9,20 @@ aliases:
   - "Cost and Token Management"
 dominio: D5
 ---
+
 [Índice](../ccdv-f-indice-de-certificacion/) · [Dominio D5](../ccdv-f-indice-de-certificacion/#d5-seleccion-y-optimizacion-de-modelos)
 
-Mide entrada, escritura y lectura de caché, salida, cantidad de llamadas y herramientas facturables. Estima coste por tarea terminada, con intentos y llamadas de evaluación si forman parte del flujo. Cuenta el request real y controla el crecimiento de contexto y salida.
+Mide entrada, escritura y lectura de caché, salida, cantidad de llamadas y herramientas facturables.
+Estima coste por tarea terminada, con intentos y llamadas de evaluación si forman parte del flujo.
+Cuenta el request real y controla el crecimiento de contexto y salida.
 
-Prompt caching reutiliza un prefijo elegible. Mantén referencias e instrucciones estables antes de los datos variables y coloca puntos de caché según el patrón de reutilización. La identidad exacta del prefijo, el mínimo elegible y la expiración influyen en el hit rate. Comprueba métricas de escritura y lectura en vez de inferir éxitos por latencia.
+Prompt caching reutiliza un prefijo elegible. Mantén referencias e instrucciones estables antes de
+los datos variables y coloca puntos de caché según el patrón de reutilización. La identidad exacta
+del prefijo, el mínimo elegible y la expiración influyen en el hit rate. Comprueba métricas de
+escritura y lectura en vez de inferir éxitos por latencia.
 
-**Caso.** Un catálogo de reglas compartido precede a la solicitud del usuario. Una regla que cambia con cada usuario reduce la reutilización de todo lo que aparece detrás.
+**Caso.** Un catálogo de reglas compartido precede a la solicitud del usuario. Una regla que cambia
+con cada usuario reduce la reutilización de todo lo que aparece detrás.
 
 > [!question]- ¿Cómo sabes si cachear compensa?
 > Compara el coste total de escrituras, lecturas y misses con el escenario equivalente sin caché.

@@ -23,7 +23,7 @@ and Playwright is built around them.
 ## Pattern Comparison
 
 | Aspect            | Page Objects                            | Custom Fixtures                            | Helper Functions                  |
-| ----------------- | --------------------------------------- | ------------------------------------------ | --------------------------------- |
+|-------------------|-----------------------------------------|--------------------------------------------|-----------------------------------|
 | **Purpose**       | Encapsulate UI interactions             | Provide resources with setup/teardown      | Stateless utilities               |
 | **Lifecycle**     | Manual (constructor/methods)            | Built-in (`use()` with automatic teardown) | None                              |
 | **Composability** | Constructor injection or fixture wiring | Depend on other fixtures                   | Call other functions              |
@@ -289,7 +289,7 @@ playwright.config.ts
 **Layer responsibilities:**
 
 | Layer            | Pattern         | Responsibility                                      |
-| ---------------- | --------------- | --------------------------------------------------- |
+|------------------|-----------------|-----------------------------------------------------|
 | **Test file**    | `test()`        | Describes behavior, orchestrates layers             |
 | **Fixtures**     | `test.extend()` | Resource lifecycle — setup, provide, teardown       |
 | **Page objects** | Classes         | UI interaction — navigation, actions, locators      |

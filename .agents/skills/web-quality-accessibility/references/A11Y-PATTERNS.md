@@ -229,7 +229,7 @@ Clear the container before writing to ensure the same message triggers a new ann
 Quick reference for the most common screen reader shortcuts.
 
 | Action        | VoiceOver (Mac)     | NVDA (Windows) |
-| ------------- | ------------------- | -------------- |
+|---------------|---------------------|----------------|
 | Start/Stop    | ⌘ + F5              | Ctrl + Alt + N |
 | Next item     | VO + →              | ↓              |
 | Previous item | VO + ←              | ↑              |

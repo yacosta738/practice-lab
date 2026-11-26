@@ -9,14 +9,21 @@ aliases:
   - "Claude Hooks"
 dominio: D7
 ---
+
 [Índice](../ccdv-f-indice-de-certificacion/) · [Dominio D7](../ccdv-f-indice-de-certificacion/#d7-seguridad-y-controles)
 
-Un hook corre al producirse un evento de Claude Code o en el harness que lo soporte. Un hook previo a una herramienta puede revisar argumentos y detener la operación según reglas verificables. Un hook posterior sirve para observar o validar el resultado cuando el efecto ya ocurrió. Comprueba los eventos, formatos y comportamiento de fallo en la documentación de la versión.
+Un hook corre al producirse un evento de Claude Code o en el harness que lo soporte. Un hook previo
+a una herramienta puede revisar argumentos y detener la operación según reglas verificables. Un hook
+posterior sirve para observar o validar el resultado cuando el efecto ya ocurrió. Comprueba los
+eventos, formatos y comportamiento de fallo en la documentación de la versión.
 
-**Caso.** Bloquea ediciones en una ruta protegida antes de ejecutar una herramienta, con validación de la ruta normalizada. Registra la decisión sin incluir el contenido del archivo y prueba tanto una acción permitida como una denegada.
+**Caso.** Bloquea ediciones en una ruta protegida antes de ejecutar una herramienta, con validación
+de la ruta normalizada. Registra la decisión sin incluir el contenido del archivo y prueba tanto una
+acción permitida como una denegada.
 
 > [!question]- ¿Qué evento usarías para impedir una operación?
-> Un evento previo a la acción con capacidad de denegar y comprobación adicional en la herramienta cuando aplique.
+> Un evento previo a la acción con capacidad de denegar y comprobación adicional en la herramienta
+> cuando aplique.
 
 ## Conexiones
 

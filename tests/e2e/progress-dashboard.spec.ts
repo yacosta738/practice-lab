@@ -46,7 +46,12 @@ test("does not load every session and attempt to refresh dashboard aggregates", 
 	await expect
 		.poll(() =>
 			page.evaluate(
-				() => (window as unknown as Window & { fullProgressReads: string[] }).fullProgressReads,
+				() =>
+					(
+						window as unknown as Window & {
+							fullProgressReads: string[];
+						}
+					).fullProgressReads,
 			),
 		)
 		.toEqual([]);

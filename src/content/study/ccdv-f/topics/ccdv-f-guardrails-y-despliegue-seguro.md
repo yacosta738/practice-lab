@@ -9,13 +9,20 @@ aliases:
   - "Guardrails and Safe Deployment"
 dominio: D7
 ---
+
 [Índice](../ccdv-f-indice-de-certificacion/) · [Dominio D7](../ccdv-f-indice-de-certificacion/#d7-seguridad-y-controles)
 
-Combina minimización de capacidades, permisos mínimos, validación de entrada y salida, controles de contenido, revisión humana en acciones sensibles y monitorización. Diseña un estado seguro si falta identidad, contexto o aprobación. Registra el motivo y expón el estado al operador.
+Combina minimización de capacidades, permisos mínimos, validación de entrada y salida, controles de
+contenido, revisión humana en acciones sensibles y monitorización. Diseña un estado seguro si falta
+identidad, contexto o aprobación. Registra el motivo y expón el estado al operador.
 
-Evalúa controles con casos sintéticos de cruce de tenant, falta de aprobación, datos sensibles y llamadas duplicadas. Vigila falsos positivos y eficacia por caso de uso. Revisa cambios de permisos junto con cualquier nuevo plugin o herramienta.
+Evalúa controles con casos sintéticos de cruce de tenant, falta de aprobación, datos sensibles y
+llamadas duplicadas. Vigila falsos positivos y eficacia por caso de uso. Revisa cambios de permisos
+junto con cualquier nuevo plugin o herramienta.
 
-**Caso.** Para un asistente interno con capacidad de escritura, exige que el operador vea recurso, cambio exacto e identidad ejecutora antes de confirmar. El backend vuelve a validar esos datos en el momento de ejecutar.
+**Caso.** Para un asistente interno con capacidad de escritura, exige que el operador vea recurso,
+cambio exacto e identidad ejecutora antes de confirmar. El backend vuelve a validar esos datos en el
+momento de ejecutar.
 
 > [!question]- ¿Por qué combinar filtros, permisos y confirmaciones?
 > Cada control cubre una capa distinta de decisión, ejecución y supervisión.

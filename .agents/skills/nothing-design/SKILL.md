@@ -46,7 +46,7 @@ the user explicitly asks for Nothing design language or invokes `/nothing-design
 Every screen has exactly **three layers of importance.** Not two, not five. Three.
 
 | Layer         | What                                                              | How                                                                                                        |
-| ------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+|---------------|-------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
 | **Primary**   | The ONE thing the user sees first. A number, a headline, a state. | Doto or Space Grotesk at display size. `--text-display`. 48–96px breathing room.                           |
 | **Secondary** | Supporting context. Labels, descriptions, related data.           | Space Grotesk at body/subheading. `--text-primary`. Grouped tight (8–16px) to the primary.                 |
 | **Tertiary**  | Metadata, navigation, system info. Visible but never competing.   | Space Mono at caption/label. `--text-secondary` or `--text-disabled`. ALL CAPS. Pushed to edges or bottom. |
@@ -70,7 +70,7 @@ Think of it as a budget. Every additional size/weight costs visual coherence. Be
 size, ask: can I create this distinction with spacing or color instead?
 
 | Decision                  | Size |  Weight  | Color |
-| ------------------------- | :--: | :------: | :---: |
+|---------------------------|:----:|:--------:|:-----:|
 | Heading vs. body          | Yes  |    No    |  No   |
 | Label vs. value           |  No  |    No    |  Yes  |
 | Active vs. inactive nav   |  No  |    No    |  Yes  |
@@ -161,7 +161,7 @@ Balance heavy elements with more empty space, not with more heavy elements.
 When 3+ data sections appear on one screen, vary the visual form:
 
 | Form                                | Best for                     | Weight           |
-| ----------------------------------- | ---------------------------- | ---------------- |
+|-------------------------------------|------------------------------|------------------|
 | Hero number (large Doto/Space Mono) | Single key metric            | Heavy — use once |
 | Segmented progress bar              | Progress toward goal         | Medium           |
 | Concentric rings / arcs             | Multiple related percentages | Medium           |
@@ -212,26 +212,26 @@ When this skill is used for any design or implementation request, structure the 
 order:
 
 1. **Fonts required**
-   - List exact Google Fonts needed
-   - Show how to load them (`<link>` / `@import` / package import)
+    - List exact Google Fonts needed
+    - Show how to load them (`<link>` / `@import` / package import)
 2. **Mode**
-   - State whether the solution starts with dark or light mode
-   - If unspecified, stop and ask before producing final UI code
+    - State whether the solution starts with dark or light mode
+    - If unspecified, stop and ask before producing final UI code
 3. **Three-layer hierarchy**
-   - Primary
-   - Secondary
-   - Tertiary
+    - Primary
+    - Secondary
+    - Tertiary
 4. **Layout strategy**
-   - Main composition pattern
-   - Spacing rhythm
-   - Where the single expressive break appears
+    - Main composition pattern
+    - Spacing rhythm
+    - Where the single expressive break appears
 5. **Component mapping**
-   - Which components/patterns are being used
-   - Why they fit the hierarchy
+    - Which components/patterns are being used
+    - Why they fit the hierarchy
 6. **Token mapping**
-   - Relevant typography, color, spacing, radius, and motion tokens
+    - Relevant typography, color, spacing, radius, and motion tokens
 7. **Final output**
-   - Design guidance, implementation code, or both depending on the user request
+    - Design guidance, implementation code, or both depending on the user request
 
 Do not jump straight into code without covering items 1 to 4 first.
 

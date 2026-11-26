@@ -10,12 +10,16 @@ tags:
 - type/lab
 - method/hands-on
 ---
-**Goal:** implement a small MCP service for querying an inventory source, then harden the authorization boundary.
+
+**Goal:** implement a small MCP service for querying an inventory source, then harden the
+authorization boundary.
 
 ## Deliverables
 
-- Local stdio server with `list_inventory` (read-only) and `adjust_stock` (write) tool schemas; optionally a resource and a prompt.
-- Test client/inspector confirming initialization, capabilities, tool discovery, expected input and structured output.
+- Local stdio server with `list_inventory` (read-only) and `adjust_stock` (write) tool schemas;
+  optionally a resource and a prompt.
+- Test client/inspector confirming initialization, capabilities, tool discovery, expected input and
+  structured output.
 - Explicit tenant identity and per-action authorization; the model cannot authorize itself.
 - Human approval policy for `adjust_stock`, audit event and idempotency key.
 - Design note comparing stdio against Streamable HTTP remote deployment and security implications.

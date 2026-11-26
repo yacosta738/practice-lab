@@ -19,7 +19,7 @@ Run different test configurations in the same Vitest process.
   providing _nested projects_ named `app (unit)`, `app (e2e)`, etc. In v4 a referenced config's
   `projects` field was silently ignored, so audit merged configs that pull one in.
 - **Inline projects share the declaring config's Vite server by default** ([
-`sharedViteServer`](core-config.md)) — the declaring config runs once, so plugin `config` hooks no
+  `sharedViteServer`](core-config.md)) — the declaring config runs once, so plugin `config` hooks no
   longer run per project. A project gets its own server only when it changes the Vite config
   (`plugins`, `alias`, `css`, `deps.optimizer`, `root`, `browser`, `mode`). Set
   `sharedViteServer: false` if a plugin must be re-instantiated per project.

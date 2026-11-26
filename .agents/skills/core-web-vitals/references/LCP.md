@@ -207,7 +207,7 @@ new PerformanceObserver((entryList) => {
 ## Common issues
 
 | Issue                    | Impact      | Fix                        |
-| ------------------------ | ----------- | -------------------------- |
+|--------------------------|-------------|----------------------------|
 | No preload for LCP image | +500-1000ms | Add `<link rel="preload">` |
 | Large unoptimized image  | +300-800ms  | Compress, use WebP/AVIF    |
 | Render-blocking CSS      | +200-500ms  | Inline critical CSS        |

@@ -9,14 +9,21 @@ aliases:
   - "Understanding Requirements"
 dominio: D2
 ---
+
 [Índice](../ccdv-f-indice-de-certificacion/) · [Dominio D2](../ccdv-f-indice-de-certificacion/#d2-aplicaciones-e-integracion)
 
-Traduce el objetivo de negocio a entradas, salidas, reglas, excepciones y acciones permitidas. Distingue requisitos funcionales de restricciones de infraestructura como región, autenticación, capacidad, disponibilidad, coste y latencia. Define quién valida el resultado y cómo se mide antes de elegir modelo o arquitectura.
+Traduce el objetivo de negocio a entradas, salidas, reglas, excepciones y acciones permitidas.
+Distingue requisitos funcionales de restricciones de infraestructura como región, autenticación,
+capacidad, disponibilidad, coste y latencia. Define quién valida el resultado y cómo se mide antes
+de elegir modelo o arquitectura.
 
-**Caso.** Para priorizar solicitudes de soporte, acuerda clases, qué hacer con entradas ambiguas, el umbral para casos urgentes, el tiempo de respuesta y la retención de datos. Convierte cada condición en un caso o una métrica observable.
+**Caso.** Para priorizar solicitudes de soporte, acuerda clases, qué hacer con entradas ambiguas, el
+umbral para casos urgentes, el tiempo de respuesta y la retención de datos. Convierte cada condición
+en un caso o una métrica observable.
 
 > [!question]- ¿Qué haces si dos equipos piden latencia baja y revisión humana universal?
-> Representa ambos requisitos, mide su impacto y acuerda excepciones y umbrales antes de automatizar.
+> Representa ambos requisitos, mide su impacto y acuerda excepciones y umbrales antes de
+> automatizar.
 
 ## Conexiones
 

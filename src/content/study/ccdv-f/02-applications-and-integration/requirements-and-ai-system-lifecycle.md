@@ -13,16 +13,22 @@ tags:
 - domain/applications-integration
 - type/concept
 ---
-> Translate business outcomes into measurable functional and infrastructure constraints before choosing a model, orchestration or hosting.
 
-**Blueprint area:** [D2 - Applications and Integration MOC](../d2-applications-and-integration-moc/) (official domain weight 33.1%).
+> Translate business outcomes into measurable functional and infrastructure constraints before
+> choosing a model, orchestration or hosting.
+
+**Blueprint area:** [D2 - Applications and Integration MOC](../d2-applications-and-integration-moc/)
+(official domain weight 33.1%).
 
 ## Engineering principles
 
-- Capture input/output contract, workload volume, latency SLO, data sensitivity, acceptable error, integrations and authorization.
+- Capture input/output contract, workload volume, latency SLO, data sensitivity, acceptable error,
+  integrations and authorization.
 - Define the human-in-the-loop escalation path for ambiguous cases and irreversible actions.
-- Deliver through SDLC: representative fixtures, test pyramid, staging probes, rollout, feedback, incident response and planned deprecation.
-- Measure baseline performance before introducing AI; optimize for task quality and cost per successful unit, not token count alone.
+- Deliver through SDLC: representative fixtures, test pyramid, staging probes, rollout, feedback,
+  incident response and planned deprecation.
+- Measure baseline performance before introducing AI; optimize for task quality and cost per
+  successful unit, not token count alone.
 
 ## Failure modes
 
@@ -40,8 +46,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [evals](https://platform.claude.com/docs/en/test-and-evaluate/develop-tests)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [evals](https://platform.claude.com/docs/en/test-and-evaluate/develop-tests)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

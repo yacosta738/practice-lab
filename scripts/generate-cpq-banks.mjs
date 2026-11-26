@@ -247,7 +247,9 @@ function generateConfigFile(certId, bank, importPath) {
 
 	for (const [id, domain] of Object.entries(domainsObj)) {
 		lines.push(
-			`\t\t${id}: { id: ${JSON.stringify(id)}, name: ${JSON.stringify(domain.name)}, weight: ${domain.weight} },`,
+			`\t\t${id}: { id: ${JSON.stringify(id)}, name: ${JSON.stringify(
+				domain.name,
+			)}, weight: ${domain.weight} },`,
 		);
 	}
 

@@ -337,7 +337,8 @@ defineConfig({
 ```
 
 > **v5:** `clearMocks` defaults to `true`, so mock call history no longer leaks between tests. Mocks
-> set up outside the test body (setup files, module top level, `beforeAll`) are most affected — their
+> set up outside the test body (setup files, module top level, `beforeAll`) are most affected —
+> their
 > recorded calls are cleared before the asserting test runs. Set `clearMocks: false` to restore the
 > old behavior.
 

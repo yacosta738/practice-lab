@@ -87,7 +87,12 @@ test("exam guide note renders as text with native and fallback HTML renderers", 
 		if (renderer === "setHTML") {
 			expect(
 				await page.evaluate(
-					() => (globalThis as typeof globalThis & { __setHTMLCalled: boolean }).__setHTMLCalled,
+					() =>
+						(
+							globalThis as typeof globalThis & {
+								__setHTMLCalled: boolean;
+							}
+						).__setHTMLCalled,
 				),
 			).toBe(true);
 		}

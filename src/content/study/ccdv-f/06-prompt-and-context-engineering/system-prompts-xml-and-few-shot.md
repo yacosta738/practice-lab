@@ -13,15 +13,22 @@ tags:
 - domain/prompt-context-engineering
 - type/concept
 ---
-> Explicit task descriptions, content delimiters, representative examples and output contracts improve controllability without making untrusted input authoritative.
 
-**Blueprint area:** [D6 - Prompt and Context Engineering MOC](../d6-prompt-and-context-engineering-moc/) (official domain weight 11.0%).
+> Explicit task descriptions, content delimiters, representative examples and output contracts
+> improve controllability without making untrusted input authoritative.
+
+**Blueprint
+area:** [D6 - Prompt and Context Engineering MOC](../d6-prompt-and-context-engineering-moc/)
+(official domain weight 11.0%).
 
 ## Engineering principles
 
-- Put durable behavior rules in the appropriate system/developer context supported by the API; keep user request and retrieved data separate.
-- XML-style tags can delimit `<policy>`, `<user_input>` and `<examples>`; tags clarify structure but do not independently enforce security.
-- Use zero-shot for clear tasks; add one or more examples when edge cases or formatting are repeatedly misread.
+- Put durable behavior rules in the appropriate system/developer context supported by the API; keep
+  user request and retrieved data separate.
+- XML-style tags can delimit `<policy>`, `<user_input>` and `<examples>`; tags clarify structure but
+  do not independently enforce security.
+- Use zero-shot for clear tasks; add one or more examples when edge cases or formatting are
+  repeatedly misread.
 - Optimize prompts empirically against a curated eval set and version every production change.
 
 ## Failure modes
@@ -40,8 +47,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [evals](https://platform.claude.com/docs/en/test-and-evaluate/develop-tests)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [evals](https://platform.claude.com/docs/en/test-and-evaluate/develop-tests)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

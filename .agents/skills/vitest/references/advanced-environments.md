@@ -222,8 +222,10 @@ import { page } from "vitest/browser"; // v4: was '@vitest/browser/context'
 ```
 
 > v5: DOM-environment global assignments (e.g. `window.innerWidth`) now propagate to the underlying
-> jsdom/happy-dom implementation. Locators are exact/strict by default (`getByText('Item')` no longer
-> matches `Item 1`). `browser.api` is deprecated — move it to the top-level `api` option. Browser mode
+> jsdom/happy-dom implementation. Locators are exact/strict by default (`getByText('Item')` no
+> longer
+> matches `Item 1`). `browser.api` is deprecated — move it to the top-level `api` option. Browser
+> mode
 > adds a built-in Trace View (`browser.traceView: true`).
 
 ## CSS and Assets

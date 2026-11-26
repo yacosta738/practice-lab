@@ -9,13 +9,20 @@ aliases:
   - "Model Selection and Tradeoffs"
 dominio: D5
 ---
+
 [Índice](../ccdv-f-indice-de-certificacion/) · [Dominio D5](../ccdv-f-indice-de-certificacion/#d5-seleccion-y-optimizacion-de-modelos)
 
-La guía pide distinguir los perfiles de Haiku, Sonnet y Opus. Usa las familias como punto de partida y confirma modelos actuales, capacidades, ventanas, límites y precios en la documentación del proveedor. Escoge la configuración que cumple el umbral de calidad al menor coste y latencia aceptables. Un routing por dificultad añade complejidad que debe justificar el eval.
+La guía pide distinguir los perfiles de Haiku, Sonnet y Opus. Usa las familias como punto de partida
+y confirma modelos actuales, capacidades, ventanas, límites y precios en la documentación del
+proveedor. Escoge la configuración que cumple el umbral de calidad al menor coste y latencia
+aceptables. Un routing por dificultad añade complejidad que debe justificar el eval.
 
-Evalúa una migración con la misma muestra representativa. Compara calidad, p95, coste por resultado útil, formato de respuestas, stop reasons y soporte de thinking y herramientas. Registra el identificador y despliega de forma gradual.
+Evalúa una migración con la misma muestra representativa. Compara calidad, p95, coste por resultado
+útil, formato de respuestas, stop reasons y soporte de thinking y herramientas. Registra el
+identificador y despliega de forma gradual.
 
-**Caso.** Usa un modelo económico para clasificación clara y considera escalar casos ambiguos cuando la ganancia medida cubra la latencia adicional.
+**Caso.** Usa un modelo económico para clasificación clara y considera escalar casos ambiguos cuando
+la ganancia medida cubra la latencia adicional.
 
 > [!question]- ¿Qué mantienes fijo al comparar esfuerzo de razonamiento?
 > Datos, grader, instrucciones y configuración ajena al esfuerzo.

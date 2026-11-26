@@ -13,16 +13,23 @@ tags:
 - domain/model-selection-optimization
 - type/concept
 ---
-> Thinking configuration, thinking content blocks and tool-use message continuity have model-dependent constraints.
 
-**Blueprint area:** [D5 - Model Selection and Optimization MOC](../d5-model-selection-and-optimization-moc/) (official domain weight 16.8%).
+> Thinking configuration, thinking content blocks and tool-use message continuity have
+> model-dependent constraints.
+
+**Blueprint
+area:** [D5 - Model Selection and Optimization MOC](../d5-model-selection-and-optimization-moc/)
+(official domain weight 16.8%).
 
 ## Engineering principles
 
-- Inspect current support for `thinking` modes and `output_config.effort` before sending a parameter; different model generations differ.
+- Inspect current support for `thinking` modes and `output_config.effort` before sending a
+  parameter; different model generations differ.
 - Budget generated reasoning as output tokens; account for its interaction with response limits.
-- Use the SDK when possible for complex streaming and block continuity; preserve protocol-required thinking blocks across tool turns where documented.
-- Test compatibility on the exact pinned model rather than assuming any reasoning parameter is universally supported.
+- Use the SDK when possible for complex streaming and block continuity; preserve protocol-required
+  thinking blocks across tool turns where documented.
+- Test compatibility on the exact pinned model rather than assuming any reasoning parameter is
+  universally supported.
 
 ## Failure modes
 
@@ -40,8 +47,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [thinking](https://platform.claude.com/docs/en/build-with-claude/thinking)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [thinking](https://platform.claude.com/docs/en/build-with-claude/thinking)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

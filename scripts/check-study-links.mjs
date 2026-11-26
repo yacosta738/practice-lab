@@ -153,7 +153,9 @@ async function main() {
 				const targetHtml = await htmlForFile(targetHtmlPath);
 				if (!hasHtmlFragment(targetHtml, url.hash)) {
 					errors.push(
-						`${route}: ${JSON.stringify(href)} points to a missing HTML fragment ${JSON.stringify(url.hash.slice(1))}`,
+						`${route}: ${JSON.stringify(href)} points to a missing HTML fragment ${JSON.stringify(
+							url.hash.slice(1),
+						)}`,
 					);
 				}
 			}
@@ -201,7 +203,9 @@ async function main() {
 			}
 			if (!rel?.includes("noopener") || !rel.includes("noreferrer")) {
 				errors.push(
-					`${route}: external Markdown link ${JSON.stringify(href)} must use rel="noopener noreferrer"`,
+					`${route}: external Markdown link ${JSON.stringify(
+						href,
+					)} must use rel="noopener noreferrer"`,
 				);
 			}
 		}

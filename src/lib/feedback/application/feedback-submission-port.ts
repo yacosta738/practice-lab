@@ -18,13 +18,18 @@ export type FeedbackSubmissionOutcome =
 
 export interface FeedbackSubmissionPort {
 	readonly channel: FeedbackChannel;
+
 	isAvailable(): boolean;
+
 	buildUrl(feedback: Feedback): string;
+
 	submit(feedback: Feedback): Promise<FeedbackSubmissionOutcome>;
 }
 
 export interface FeedbackDraftStoragePort {
 	load(key: string): FeedbackDraft | null;
+
 	save(key: string, draft: FeedbackDraft): void;
+
 	clear(key: string): void;
 }

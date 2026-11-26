@@ -13,22 +13,32 @@ tags:
 - domain/claude-code
 - type/concept
 ---
-> Claude Code separates durable instructions (CLAUDE.md, rules), user/project settings, executable skills and agent configuration; each has a distinct scope.
+
+> Claude Code separates durable instructions (CLAUDE.md, rules), user/project settings, executable
+> skills and agent configuration; each has a distinct scope.
 
 **Blueprint area:** [D3 - Claude Code MOC](../d3-claude-code-moc/) (official domain weight 3.1%).
 
 ## Engineering principles
 
-- User settings apply to a person across local projects; shared project settings are versioned with the repo; project-local settings are user-specific; managed policy is organization-controlled.
-- Keep stable project architecture and operational expectations in CLAUDE.md or rules rather than pasting them every turn.
-- Use Skills for repeatable, task-triggered procedures and subagents for specialized contexts, not as a substitute for the permission system.
-- Check precedence and cloud-vs-local behavior in the current Claude Code docs before depending on a specific path.
+- User settings apply to a person across local projects; shared project settings are versioned with
+  the repo; project-local settings are user-specific; managed policy is organization-controlled.
+- Keep stable project architecture and operational expectations in CLAUDE.md or rules rather than
+  pasting them every turn.
+- Use Skills for repeatable, task-triggered procedures and subagents for specialized contexts, not
+  as a substitute for the permission system.
+- Check precedence and cloud-vs-local behavior in the current Claude Code docs before depending on a
+  specific path.
 
 ## Configuration and skill precedence
 
-- Settings have managed, user, project, and local scopes. Managed policy and command-line settings have documented interactions, including security-sensitive exceptions; resolve precedence for the specific key in the current reference instead of assuming one universal file-order rule.
-- For same-named skills, the documented order is enterprise over personal over project. Plugin skills are namespaced; a skill does not silently become a permission rule.
-- Confirm the effective configuration in a clean session and test a harmless operation. Enforce sensitive permissions through the runtime or trusted service, not through a skill description.
+- Settings have managed, user, project, and local scopes. Managed policy and command-line settings
+  have documented interactions, including security-sensitive exceptions; resolve precedence for the
+  specific key in the current reference instead of assuming one universal file-order rule.
+- For same-named skills, the documented order is enterprise over personal over project. Plugin
+  skills are namespaced; a skill does not silently become a permission rule.
+- Confirm the effective configuration in a clean session and test a harmless operation. Enforce
+  sensitive permissions through the runtime or trusted service, not through a skill description.
 
 ## Failure modes
 
@@ -46,8 +56,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [code-settings](https://code.claude.com/docs/en/settings)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [code-settings](https://code.claude.com/docs/en/settings)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

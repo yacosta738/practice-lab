@@ -14,7 +14,9 @@ aliases:
 - Python async client
 updated: '2026-11-15'
 ---
-The async client exposed by the Python SDK. Uses non-blocking async/await to make API calls without tying up your application thread while the request returns in real time.
+
+The async client exposed by the Python SDK. Uses non-blocking async/await to make API calls without
+tying up your application thread while the request returns in real time.
 
 ## Connections
 

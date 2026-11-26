@@ -11,7 +11,9 @@ tags:
 - type/moc
 domain: D1
 ---
-> **Official exam domain weight:** **14.7%** from the CCDV-F Exam Guide v1.0 (July 2026). The weights are approximate scored-item proportions, not a guarantee of exact questions.
+
+> **Official exam domain weight:** **14.7%** from the CCDV-F Exam Guide v1.0 (July 2026). The
+> weights are approximate scored-item proportions, not a guarantee of exact questions.
 
 ## Official sub-objectives
 
@@ -30,11 +32,15 @@ domain: D1
 
 ## Applied workshop
 
-- [Agent Architecture Design Workshop](../agent-architecture-design-workshop/) — design a bounded support agent while keeping authorization and irreversible actions in trusted application code.
+- [Agent Architecture Design Workshop](../agent-architecture-design-workshop/) — design a bounded
+  support agent while keeping authorization and irreversible actions in trusted application code.
 
 ## Study strategy
 
-Use the concept notes, reproduce the failure examples, and complete the [Agent Architecture Design Workshop](../agent-architecture-design-workshop/). Be ready to justify when a deterministic workflow is sufficient, what the agent may do, and how the harness detects completion or exhaustion.
+Use the concept notes, reproduce the failure examples, and complete
+the [Agent Architecture Design Workshop](../agent-architecture-design-workshop/). Be ready to
+justify when a deterministic workflow is sufficient, what the agent may do, and how the harness
+detects completion or exhaustion.
 
 ## Cross-domain navigation
 
@@ -42,7 +48,10 @@ Use the concept notes, reproduce the failure examples, and complete the [Agent A
 
 ## Sources
 
-- [Official exam guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view) — objective labels and weights
-- [Foundations prep course](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations) — public curriculum
-- [Course Access Coverage](../course-access-coverage/) — exactly which authenticated lesson screens are in the existing notes
+- [Official exam guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view) —
+  objective labels and weights
+- [Foundations prep course](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations) —
+  public curriculum
+- [Course Access Coverage](../course-access-coverage/) — exactly which authenticated lesson screens
+  are in the existing notes
 - [Source Register](../source-register/) — official documentation and provenance

@@ -23,7 +23,7 @@ axe https://example.com
 ## Screen reader commands
 
 | Action        | VoiceOver (Mac)     | NVDA (Windows) |
-| ------------- | ------------------- | -------------- |
+|---------------|---------------------|----------------|
 | Start/Stop    | ⌘ + F5              | Ctrl + Alt + N |
 | Next item     | VO + →              | ↓              |
 | Previous item | VO + ←              | ↑              |

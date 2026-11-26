@@ -41,7 +41,9 @@ export function validateExamQuestions(exam) {
 		const q = exam.questions[i];
 		const prefix = `${exam.code}[${i}]`;
 
-		if (!q.id) errors.push(`${prefix}: missing id`);
+		if (!q.id) {
+			errors.push(`${prefix}: missing id`);
+		}
 		if (!q.domain) {
 			errors.push(`${prefix}: missing domain`);
 		} else if (!declaredDomains.has(q.domain)) {
@@ -49,20 +51,28 @@ export function validateExamQuestions(exam) {
 			// the generated bank would reference a domain the quiz UI lacks.
 			errors.push(`${prefix}: domain "${q.domain}" is not declared by ${exam.code}`);
 		}
-		if (!q.text) errors.push(`${prefix}: missing text`);
+		if (!q.text) {
+			errors.push(`${prefix}: missing text`);
+		}
 		if (!Array.isArray(q.options) || q.options.length < 2) {
 			errors.push(`${prefix}: invalid options`);
 		}
 		if (!Array.isArray(q.answer) || q.answer.length === 0) {
 			errors.push(`${prefix}: missing answer`);
 		}
-		if (!q.rationale) errors.push(`${prefix}: missing rationale`);
-		if (!q.whyNot) errors.push(`${prefix}: missing whyNot`);
-		if (!q.selectCount) errors.push(`${prefix}: missing selectCount`);
-		else if (Array.isArray(q.answer) && q.answer.length !== q.selectCount)
+		if (!q.rationale) {
+			errors.push(`${prefix}: missing rationale`);
+		}
+		if (!q.whyNot) {
+			errors.push(`${prefix}: missing whyNot`);
+		}
+		if (!q.selectCount) {
+			errors.push(`${prefix}: missing selectCount`);
+		} else if (Array.isArray(q.answer) && q.answer.length !== q.selectCount) {
 			errors.push(
 				`${prefix}: answer length ${q.answer.length} differs from selectCount ${q.selectCount}`,
 			);
+		}
 
 		for (const letter of Array.isArray(q.answer) ? q.answer : []) {
 			if (!OPTION_LETTER_PATTERN.test(letter)) {

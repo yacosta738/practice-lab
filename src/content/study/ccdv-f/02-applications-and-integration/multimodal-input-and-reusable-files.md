@@ -13,16 +13,23 @@ tags:
 - domain/applications-integration
 - type/concept
 ---
-> Applications can send images and PDFs as typed content rather than hoping the model can read inaccessible URLs or arbitrary file paths.
 
-**Blueprint area:** [D2 - Applications and Integration MOC](../d2-applications-and-integration-moc/) (official domain weight 33.1%).
+> Applications can send images and PDFs as typed content rather than hoping the model can read
+> inaccessible URLs or arbitrary file paths.
+
+**Blueprint area:** [D2 - Applications and Integration MOC](../d2-applications-and-integration-moc/)
+(official domain weight 33.1%).
 
 ## Engineering principles
 
-- Check file size, supported MIME type, page count, extraction quality and intended usage before submission.
-- Use correct message content blocks for image/document inputs and an appropriate reusable-file mechanism when available.
-- Chunk or retrieve evidence for very large corpora; preserve document identity and page location for citations.
-- Enforce PII policy and access controls before upload, and define retention/deletion for reused assets.
+- Check file size, supported MIME type, page count, extraction quality and intended usage before
+  submission.
+- Use correct message content blocks for image/document inputs and an appropriate reusable-file
+  mechanism when available.
+- Chunk or retrieve evidence for very large corpora; preserve document identity and page location
+  for citations.
+- Enforce PII policy and access controls before upload, and define retention/deletion for reused
+  assets.
 
 ## Failure modes
 
@@ -40,8 +47,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [api](https://platform.claude.com/docs/en/api/messages)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [api](https://platform.claude.com/docs/en/api/messages)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

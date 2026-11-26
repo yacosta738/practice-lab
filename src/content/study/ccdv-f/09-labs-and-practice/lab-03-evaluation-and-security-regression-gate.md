@@ -10,14 +10,20 @@ tags:
 - type/lab
 - method/hands-on
 ---
-**Goal:** demonstrate promotion of an agent change only after measurable quality, safety and operational evidence.
+
+**Goal:** demonstrate promotion of an agent change only after measurable quality, safety and
+operational evidence.
 
 ## Deliverables
 
-- Dataset: representative normal requests, ambiguous inputs, tool failure, prompt injection, long-context history and unauthorized write attempt.
-- Rule-based validators for required JSON fields and business invariants; LLM/human rubric for nuanced responses.
-- Golden trace per test with prompt version, model ID, tool calls, stop reason, cost and final disposition.
-- Change one prompt/tool/model variable; compare paired results with baseline and decide pass/fail thresholds.
+- Dataset: representative normal requests, ambiguous inputs, tool failure, prompt injection,
+  long-context history and unauthorized write attempt.
+- Rule-based validators for required JSON fields and business invariants; LLM/human rubric for
+  nuanced responses.
+- Golden trace per test with prompt version, model ID, tool calls, stop reason, cost and final
+  disposition.
+- Change one prompt/tool/model variable; compare paired results with baseline and decide pass/fail
+  thresholds.
 - Document rollback criteria and exercise at least one induced security regression.
 
 ## Acceptance tests

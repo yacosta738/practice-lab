@@ -337,7 +337,7 @@ jobs:
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern                              | Risk                                                       | Do Instead                                                            |
-| ----------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------- |
+|-------------------------------------------|------------------------------------------------------------|-----------------------------------------------------------------------|
 | `uses: actions/checkout@v4` (mutable tag) | Supply chain attack — tag can be moved to malicious commit | Pin to full SHA: `@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1` |
 | No `permissions` block                    | `GITHUB_TOKEN` gets default broad access                   | Set `permissions: contents: read` at workflow level                   |
 | `secrets.MY_KEY` in `echo` or logs        | Secret leakage even with masking                           | Never print secrets; use them only in env vars for commands           |
@@ -352,7 +352,7 @@ jobs:
 ## Deployment Strategies Reference
 
 | Strategy        | How It Works                       | Best For                       | Rollback                    |
-| --------------- | ---------------------------------- | ------------------------------ | --------------------------- |
+|-----------------|------------------------------------|--------------------------------|-----------------------------|
 | **Rolling**     | Gradually replaces old instances   | Stateless apps, most cases     | Redeploy previous version   |
 | **Blue/Green**  | Full parallel env, switch traffic  | Zero-downtime critical apps    | Switch traffic back to blue |
 | **Canary**      | Route small % to new version       | Risk-sensitive changes         | Route 100% back to stable   |

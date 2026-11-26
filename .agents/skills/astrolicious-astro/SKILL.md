@@ -52,7 +52,7 @@ Reference [project structure docs](https://docs.astro.build/en/basics/project-st
 ## Core Config Options
 
 | Option | Notes                                                                   |
-| ------ | ----------------------------------------------------------------------- |
+|--------|-------------------------------------------------------------------------|
 | `site` | Your final, deployed URL. Used to generate sitemaps and canonical URLs. |
 
 ### Example `astro.config.ts`

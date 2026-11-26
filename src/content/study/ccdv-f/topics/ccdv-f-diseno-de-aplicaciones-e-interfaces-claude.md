@@ -9,13 +9,21 @@ aliases:
   - "Claude Application Design"
 dominio: D2
 ---
+
 [Índice](../ccdv-f-indice-de-certificacion/) · [Dominio D2](../ccdv-f-indice-de-certificacion/#d2-aplicaciones-e-integracion)
 
-Elige interfaz según operador y control requerido. Claude Code se integra con el repositorio y el entorno de trabajo. Claude.ai y Claude Desktop sirven flujos interactivos con sus superficies disponibles. La API y los SDK permiten diseñar el historial, la autorización, los formatos y la observación dentro de tu aplicación.
+Elige interfaz según operador y control requerido. Claude Code se integra con el repositorio y el
+entorno de trabajo. Claude.ai y Claude Desktop sirven flujos interactivos con sus superficies
+disponibles. La API y los SDK permiten diseñar el historial, la autorización, los formatos y la
+observación dentro de tu aplicación.
 
-Delimita instrucciones, entrada, ejemplos y salida. Esquematiza los datos que ingiere el consumidor y valida reglas de negocio. Separa sesiones por usuario o tarea y transmite el estado mínimo. Revisa plugins y dependencias por versión, permisos y comportamiento antes de distribuirlos.
+Delimita instrucciones, entrada, ejemplos y salida. Esquematiza los datos que ingiere el consumidor
+y valida reglas de negocio. Separa sesiones por usuario o tarea y transmite el estado mínimo. Revisa
+plugins y dependencias por versión, permisos y comportamiento antes de distribuirlos.
 
-**Caso.** Para una aplicación multiusuario, vincula cada conversación con su identidad y tenant y autoriza cada acceso en el backend. Exige campos estructurados para las respuestas que alimenten otros servicios.
+**Caso.** Para una aplicación multiusuario, vincula cada conversación con su identidad y tenant y
+autoriza cada acceso en el backend. Exige campos estructurados para las respuestas que alimenten
+otros servicios.
 
 > [!question]- ¿Qué componente debe impedir que un usuario lea datos de otro tenant?
 > El backend o la herramienta que autoriza el recurso con identidad verificada.

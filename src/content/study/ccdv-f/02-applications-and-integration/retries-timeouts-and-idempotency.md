@@ -13,16 +13,23 @@ tags:
 - domain/applications-integration
 - type/concept
 ---
-> Production integrations must distinguish transient transport/provider failure from permanent validation, authorization and policy failures.
 
-**Blueprint area:** [D2 - Applications and Integration MOC](../d2-applications-and-integration-moc/) (official domain weight 33.1%).
+> Production integrations must distinguish transient transport/provider failure from permanent
+> validation, authorization and policy failures.
+
+**Blueprint area:** [D2 - Applications and Integration MOC](../d2-applications-and-integration-moc/)
+(official domain weight 33.1%).
 
 ## Engineering principles
 
-- Retry eligible conditions such as some rate-limit/overload responses using capped exponential backoff with jitter and applicable server hints.
-- Do not blindly retry malformed requests, invalid credentials or forbidden actions; surface these as actionable faults.
-- Use business idempotency keys, request IDs and dedupe for external mutations; a timeout does not prove the side effect did not occur.
-- Control queue length, max attempts, deadline, circuit breaking and backpressure; log retry reason and exhaustion.
+- Retry eligible conditions such as some rate-limit/overload responses using capped exponential
+  backoff with jitter and applicable server hints.
+- Do not blindly retry malformed requests, invalid credentials or forbidden actions; surface these
+  as actionable faults.
+- Use business idempotency keys, request IDs and dedupe for external mutations; a timeout does not
+  prove the side effect did not occur.
+- Control queue length, max attempts, deadline, circuit breaking and backpressure; log retry reason
+  and exhaustion.
 
 ## Failure modes
 
@@ -40,8 +47,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [api](https://platform.claude.com/docs/en/api/messages)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [api](https://platform.claude.com/docs/en/api/messages)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

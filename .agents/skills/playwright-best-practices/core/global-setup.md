@@ -313,7 +313,7 @@ export default globalSetup;
 ### When to Use Each
 
 | Use Global Setup                      | Use Setup Projects                       |
-| ------------------------------------- | ---------------------------------------- |
+|---------------------------------------|------------------------------------------|
 | One-time setup (migrations, services) | Per-project setup (auth states)          |
 | No access to Playwright fixtures      | Need page, request fixtures              |
 | Runs once before all projects         | Can run per-project or have dependencies |
@@ -401,7 +401,7 @@ export default defineConfig({
 Use **worker-scoped fixtures** instead of globalSetup when:
 
 | Scenario                             | Why Fixtures Are Better                                                                              |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+|--------------------------------------|------------------------------------------------------------------------------------------------------|
 | Each worker needs isolated resources | Fixtures can create per-worker databases, servers                                                    |
 | Setup needs Playwright APIs          | Worker fixtures can use `browser` and `playwright`; `page`, `context`, and `request` are test-scoped |
 | Setup depends on test configuration  | Fixtures receive test context and options                                                            |
@@ -425,7 +425,7 @@ async function globalSetup() {
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern                   | Problem                          | Solution                                   |
-| ------------------------------ | -------------------------------- | ------------------------------------------ |
+|--------------------------------|----------------------------------|--------------------------------------------|
 | Heavy setup in globalSetup     | Slow test startup                | Use setup projects for parallelizable work |
 | Not cleaning up in teardown    | Leaks resources, flaky CI        | Always clean up or use containers          |
 | Hardcoded URLs in setup        | Breaks in different environments | Use config.projects[0].use.baseURL         |

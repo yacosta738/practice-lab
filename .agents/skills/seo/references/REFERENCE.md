@@ -106,7 +106,7 @@ body {
 ## Tools
 
 | Tool                      | Use                           |
-| ------------------------- | ----------------------------- |
+|---------------------------|-------------------------------|
 | Google Search Console     | Monitor indexing, fix issues  |
 | Google PageSpeed Insights | Performance + Core Web Vitals |
 | Rich Results Test         | Validate structured data      |

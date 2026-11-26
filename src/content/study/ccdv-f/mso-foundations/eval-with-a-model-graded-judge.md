@@ -16,7 +16,9 @@ aliases:
 - Model graded eval
 updated: '2026-11-15'
 ---
-An evaluation that uses a model to judge whether a response's meaning meets a rubric, used when you need to judge meaning rather than structure.
+
+An evaluation that uses a model to judge whether a response's meaning meets a rubric, used when you
+need to judge meaning rather than structure.
 
 ## Connections
 

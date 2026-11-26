@@ -31,7 +31,7 @@ DEBUG=pw:api npx playwright test              # verbose logging
 ### Timeout Selection
 
 | Symptom                                   | Setting             | Default                                | Recommended       |
-| ----------------------------------------- | ------------------- | -------------------------------------- | ----------------- |
+|-------------------------------------------|---------------------|----------------------------------------|-------------------|
 | Test takes too long overall               | `timeout`           | 30s                                    | 30-60s (max 120s) |
 | Assertion retries too long/short          | `expect.timeout`    | 5s                                     | 5-10s             |
 | `page.goto()` or `waitForURL()` times out | `navigationTimeout` | 0 (unlimited, bounded by test timeout) | 10-30s            |
@@ -41,7 +41,7 @@ DEBUG=pw:api npx playwright test              # verbose logging
 ### Server Management
 
 | Scenario                     | Approach                                                |
-| ---------------------------- | ------------------------------------------------------- |
+|------------------------------|---------------------------------------------------------|
 | App in same repo             | `webServer` with `reuseExistingServer: !process.env.CI` |
 | Separate repos               | Manual start or Docker Compose                          |
 | Testing deployed environment | No `webServer`; set `baseURL` via env                   |
@@ -50,7 +50,7 @@ DEBUG=pw:api npx playwright test              # verbose logging
 ### Single vs Multi-Project
 
 | Scenario               | Approach                                   |
-| ---------------------- | ------------------------------------------ |
+|------------------------|--------------------------------------------|
 | Early development      | Single project (chromium only)             |
 | Pre-release validation | Multi-project: chromium + firefox + webkit |
 | Mobile-responsive app  | Add mobile projects alongside desktop      |
@@ -60,7 +60,7 @@ DEBUG=pw:api npx playwright test              # verbose logging
 ### globalSetup vs Setup Projects vs Fixtures
 
 | Need                    | Use                                |
-| ----------------------- | ---------------------------------- |
+|-------------------------|------------------------------------|
 | One-time DB seed        | `globalSetup`                      |
 | Shared browser auth     | Setup project with `dependencies`  |
 | Per-test isolated state | Custom fixture via `test.extend()` |
@@ -356,7 +356,7 @@ npx playwright test --project=regression
 ### Artifact Collection Strategy
 
 | Setting      | Local   | CI                    | Reason                                    |
-| ------------ | ------- | --------------------- | ----------------------------------------- |
+|--------------|---------|-----------------------|-------------------------------------------|
 | `trace`      | `'off'` | `'on-first-retry'`    | Traces are large; collect on failure only |
 | `screenshot` | `'off'` | `'only-on-failure'`   | Useful for CI debugging                   |
 | `video`      | `'off'` | `'retain-on-failure'` | Recording slows tests                     |
@@ -378,7 +378,7 @@ export default defineConfig({
 ## Anti-Patterns
 
 | Don't                                                            | Problem                                | Do Instead                          |
-| ---------------------------------------------------------------- | -------------------------------------- | ----------------------------------- |
+|------------------------------------------------------------------|----------------------------------------|-------------------------------------|
 | `timeout: 300_000` globally                                      | Masks flaky tests; slow CI             | Fix root cause; keep 30s default    |
 | Hardcoded URLs: `page.goto('http://localhost:4000/login')`       | Breaks in other environments           | Use `baseURL` + relative paths      |
 | All browsers on every PR                                         | 3x CI time                             | Chromium on PRs; all on main        |

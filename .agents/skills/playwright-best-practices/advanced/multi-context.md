@@ -200,7 +200,8 @@ test("mock OAuth flow", async ({ page, context }) => {
 ### OAuth Fixture
 
 > **For comprehensive OAuth mocking patterns** (fixtures, multiple providers, SAML SSO),
-> see [third-party.md](third-party.md#oauthsso-mocking). This section focuses on popup window handling
+> see [third-party.md](third-party.md#oauthsso-mocking). This section focuses on popup window
+> handling
 > mechanics for OAuth flows.
 
 ## Multiple Windows
@@ -282,7 +283,7 @@ test("cleanup tabs after test", async ({ context }) => {
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern            | Problem                        | Solution                                   |
-| ----------------------- | ------------------------------ | ------------------------------------------ |
+|-------------------------|--------------------------------|--------------------------------------------|
 | Not waiting for popup   | Race condition                 | Use `waitForEvent("popup")` before trigger |
 | Testing real OAuth      | Slow, flaky, needs credentials | Mock OAuth endpoints                       |
 | Assuming popup opens    | May be blocked                 | Handle both open and blocked cases         |

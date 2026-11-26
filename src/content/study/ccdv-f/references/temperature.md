@@ -14,7 +14,10 @@ aliases:
 - Sampling temperature
 updated: '2026-11-15'
 ---
-A setting that shapes the probability distribution the model samples from. A lower temperature concentrates probability on the most likely tokens and makes output more repeatable; a higher temperature spreads it out and makes output more varied.
+
+A setting that shapes the probability distribution the model samples from. A lower temperature
+concentrates probability on the most likely tokens and makes output more repeatable; a higher
+temperature spreads it out and makes output more varied.
 
 ## Connections
 

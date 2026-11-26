@@ -511,6 +511,7 @@ window.addEventListener("storage", (event) => {
 	if (event.key?.includes("practice-lab-v2")) void load();
 });
 let progressChannel: BroadcastChannel | undefined;
+
 function setupProgressChannel(): void {
 	if (typeof BroadcastChannel === "undefined" || progressChannel) return;
 	progressChannel = new BroadcastChannel("practice-lab-progress");
@@ -525,6 +526,7 @@ function setupProgressChannel(): void {
 		}
 	});
 }
+
 window.addEventListener("pagehide", () => {
 	progressChannel?.close();
 	progressChannel = undefined;

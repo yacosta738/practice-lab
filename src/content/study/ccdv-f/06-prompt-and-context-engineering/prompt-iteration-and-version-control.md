@@ -13,16 +13,22 @@ tags:
 - domain/prompt-context-engineering
 - type/concept
 ---
-> Prompt development should follow a reproducible diagnose → change one variable → evaluate → ship cycle.
 
-**Blueprint area:** [D6 - Prompt and Context Engineering MOC](../d6-prompt-and-context-engineering-moc/) (official domain weight 11.0%).
+> Prompt development should follow a reproducible diagnose → change one variable → evaluate → ship
+> cycle.
+
+**Blueprint
+area:** [D6 - Prompt and Context Engineering MOC](../d6-prompt-and-context-engineering-moc/)
+(official domain weight 11.0%).
 
 ## Engineering principles
 
-- Capture failure fixtures first and classify whether the issue is missing context, conflicting instructions, schema drift or tool behavior.
+- Capture failure fixtures first and classify whether the issue is missing context, conflicting
+  instructions, schema drift or tool behavior.
 - Version the prompt together with examples, model ID, tool schema and evaluation set.
 - Compare old/new on the same cases and promote only when criteria remain satisfied.
-- Keep a changelog explaining why each instruction exists, so cleanup does not reintroduce old failures.
+- Keep a changelog explaining why each instruction exists, so cleanup does not reintroduce old
+  failures.
 
 ## Failure modes
 
@@ -40,8 +46,10 @@ tags:
 
 ## Evidence and verification
 
-- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is **not** a transcript or hidden Skilljar lesson.
+- **Provenance:** author-written engineering synthesis aligned to exam guide objectives; this is
+  **not** a transcript or hidden Skilljar lesson.
 - **Primary references:**
-  - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
-  - [evals](https://platform.claude.com/docs/en/test-and-evaluate/develop-tests)
-- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime permissions can change after the source was read. See [Source Register](../source-register/).
+    - [guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
+    - [evals](https://platform.claude.com/docs/en/test-and-evaluate/develop-tests)
+- **Check currency:** model options, pricing, API flags, release-specific behavior and runtime
+  permissions can change after the source was read. See [Source Register](../source-register/).

@@ -1,38 +1,38 @@
 /* Study section — reuses design tokens from tokens.css */
 
 .studyMain {
-	max-width: 1080px;
 	margin: 0 auto;
+	max-width: 1080px;
 	padding: 0 24px 64px;
 }
 
 .studyPracticeCta {
-	margin-top: 32px;
-	padding: 18px 20px;
+	align-items: center;
+	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: var(--radius-lg);
-	background: var(--surface);
 	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 16px;
 	flex-wrap: wrap;
+	gap: 16px;
+	justify-content: space-between;
+	margin-top: 32px;
+	padding: 18px 20px;
 }
 
 .studyNav {
-	display: flex;
 	align-items: center;
-	gap: 8px;
+	display: flex;
 	flex-wrap: wrap;
+	gap: 8px;
 }
 
 .breadcrumb {
-	font-size: var(--fs-small);
 	color: var(--ink-secondary);
-	margin: 20px 0 4px;
 	display: flex;
-	gap: 8px;
 	flex-wrap: wrap;
+	font-size: var(--fs-small);
+	gap: 8px;
+	margin: 20px 0 4px;
 }
 
 .breadcrumb a {
@@ -47,11 +47,11 @@
 }
 
 .studyJump a {
-	font-size: var(--fs-small);
-	padding: 4px 10px;
 	border: 1px solid var(--border);
 	border-radius: var(--radius-full);
 	color: var(--ink-secondary);
+	font-size: var(--fs-small);
+	padding: 4px 10px;
 	text-decoration: none;
 }
 
@@ -71,32 +71,32 @@
 }
 
 .studyList {
-	list-style: none;
-	margin: 0;
-	padding: 0;
 	display: grid;
 	gap: 8px;
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+	list-style: none;
+	margin: 0;
+	padding: 0;
 }
 
 .studyNote {
-	display: flex;
 	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
-	padding: 10px 14px;
+	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
-	background: var(--surface);
 	color: var(--ink);
-	text-decoration: none;
+	display: flex;
 	font-size: 15px;
+	gap: 12px;
+	justify-content: space-between;
 	line-height: 1.35;
+	padding: 10px 14px;
+	text-decoration: none;
 }
 
 .studyNote:hover {
-	border-color: var(--brand);
 	background: var(--brand-soft);
+	border-color: var(--brand);
 }
 
 .studyNote:focus-visible {
@@ -109,33 +109,33 @@
 }
 
 .kindBadge {
+	border: 1px solid var(--border);
+	border-radius: var(--radius-full);
+	color: var(--ink-secondary);
 	font-family: var(--font-mono);
 	font-size: 10px;
 	letter-spacing: 0.04em;
-	text-transform: uppercase;
-	color: var(--ink-secondary);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-full);
 	padding: 2px 7px;
+	text-transform: uppercase;
 	white-space: nowrap;
 }
 
 .weightBadge {
+	border: 1px solid var(--brand);
+	border-radius: var(--radius-full);
+	color: var(--brand-text);
 	font-family: var(--font-mono);
 	font-size: 10px;
 	letter-spacing: 0.04em;
-	text-transform: uppercase;
-	color: var(--brand-text);
-	border: 1px solid var(--brand);
-	border-radius: var(--radius-full);
 	padding: 2px 7px;
+	text-transform: uppercase;
 	white-space: nowrap;
 }
 
 .studyNotePage {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr);
 	gap: 32px;
+	grid-template-columns: minmax(0, 1fr);
 	margin-top: 8px;
 }
 
@@ -150,20 +150,20 @@
 }
 
 .studyToc h2 {
-	font-size: 12px;
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
 	color: var(--ink-secondary);
+	font-size: 12px;
+	letter-spacing: 0.06em;
 	margin: 0 0 8px;
+	text-transform: uppercase;
 }
 
 .studyToc ul {
-	list-style: none;
-	margin: 0;
-	padding: 0 0 0 12px;
 	border-left: 1px solid var(--border);
 	display: grid;
 	gap: 6px;
+	list-style: none;
+	margin: 0;
+	padding: 0 0 0 12px;
 }
 
 .studyToc a {
@@ -177,47 +177,47 @@
 
 @media (min-width: 1000px) {
 	.studyToc {
-		position: sticky;
-		top: 24px;
 		align-self: start;
 		max-height: calc(100vh - 48px);
 		overflow: auto;
+		position: sticky;
+		top: 24px;
 	}
 }
 
 .studyMeta {
+	align-items: center;
+	color: var(--ink-secondary);
 	display: flex;
 	flex-wrap: wrap;
-	align-items: center;
+	font-size: var(--fs-small);
 	gap: 8px;
 	margin: 10px 0 0;
-	font-size: var(--fs-small);
-	color: var(--ink-secondary);
 }
 
 /* Prose — rendered markdown content */
 
 .studyProse {
-	max-width: 72ch;
 	color: var(--ink);
 	font-size: 16px;
 	line-height: 1.7;
+	max-width: 72ch;
 }
 
 .studyProse h2 {
-	margin: 32px 0 10px;
 	font-size: 22px;
 	line-height: 1.25;
+	margin: 32px 0 10px;
 }
 
 .studyProse h3 {
-	margin: 24px 0 8px;
 	font-size: 18px;
+	margin: 24px 0 8px;
 }
 
 .studyProse h4 {
-	margin: 20px 0 6px;
 	font-size: 16px;
+	margin: 20px 0 6px;
 }
 
 .studyProse p {
@@ -235,8 +235,8 @@
 
 .studyProse ul,
 .studyProse ol {
-	padding-left: 22px;
 	margin: 0 0 14px;
+	padding-left: 22px;
 }
 
 .studyProse li {
@@ -254,12 +254,12 @@
 }
 
 .studyProse blockquote {
+	background: var(--brand-soft);
+	border-left: 3px solid var(--brand);
+	border-radius: 0 var(--radius) var(--radius) 0;
+	color: var(--ink-secondary);
 	margin: 18px 0;
 	padding: 10px 16px;
-	border-left: 3px solid var(--brand);
-	background: var(--brand-soft);
-	color: var(--ink-secondary);
-	border-radius: 0 var(--radius) var(--radius) 0;
 }
 
 .studyProse blockquote p:last-child {
@@ -267,37 +267,37 @@
 }
 
 .studyProse code {
+	background: var(--raised);
+	border-radius: 4px;
 	font-family: var(--font-mono);
 	font-size: 0.88em;
-	background: var(--raised);
 	padding: 1px 5px;
-	border-radius: 4px;
 }
 
 .studyProse pre {
 	background: var(--raised);
-	padding: 14px 16px;
 	border-radius: var(--radius);
-	overflow-x: auto;
-	margin: 0 0 16px;
 	font-size: 13px;
 	line-height: 1.55;
+	margin: 0 0 16px;
+	overflow-x: auto;
+	padding: 14px 16px;
 }
 
 .studyProse pre code {
 	background: none;
-	padding: 0;
 	font-size: inherit;
+	padding: 0;
 }
 
 .studyProse table {
+	border-collapse: collapse;
 	display: block;
-	width: 100%;
+	font-size: 14px;
+	margin: 0 0 18px;
 	max-width: 100%;
 	overflow-x: auto;
-	border-collapse: collapse;
-	margin: 0 0 18px;
-	font-size: 14px;
+	width: 100%;
 }
 
 .studyProse th,
@@ -314,16 +314,16 @@
 }
 
 .studyProse img {
-	max-width: 100%;
-	height: auto;
 	border-radius: var(--radius);
+	height: auto;
+	max-width: 100%;
 }
 
 .studyProse details {
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
-	padding: 8px 12px;
 	margin: 0 0 12px;
+	padding: 8px 12px;
 }
 
 .studyProse summary {
@@ -347,13 +347,13 @@
 }
 
 .studyPager a {
-	display: block;
-	padding: 12px 14px;
+	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
-	text-decoration: none;
 	color: var(--ink);
-	background: var(--surface);
+	display: block;
+	padding: 12px 14px;
+	text-decoration: none;
 }
 
 .studyPager a:hover {
@@ -361,12 +361,12 @@
 }
 
 .studyPager span {
+	color: var(--ink-tertiary);
 	display: block;
 	font-size: 12px;
-	text-transform: uppercase;
 	letter-spacing: 0.06em;
-	color: var(--ink-tertiary);
 	margin-bottom: 4px;
+	text-transform: uppercase;
 }
 
 /* Intro section */

@@ -145,7 +145,7 @@ app.use((_req, res, next) => {
 ## Tools
 
 | Tool                                               | Purpose                    |
-| -------------------------------------------------- | -------------------------- |
+|----------------------------------------------------|----------------------------|
 | `npm audit`                                        | Dependency vulnerabilities |
 | [SecurityHeaders.com](https://securityheaders.com) | Header analysis            |
 | [W3C Validator](https://validator.w3.org)          | HTML validation            |

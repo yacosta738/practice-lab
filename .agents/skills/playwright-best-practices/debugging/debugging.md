@@ -135,7 +135,7 @@ test("manual trace", async ({ page, context }) => {
 If a test fails intermittently, it's likely flaky. Quick checks:
 
 | Behavior                               | Likely Cause                  | Next Step                                    |
-| -------------------------------------- | ----------------------------- | -------------------------------------------- |
+|----------------------------------------|-------------------------------|----------------------------------------------|
 | Fails sometimes, passes other times    | Flaky - timing/race condition | [flaky-tests.md](flaky-tests.md)             |
 | Fails only with multiple workers       | Flaky - parallelism/isolation | [flaky-tests.md](flaky-tests.md)             |
 | Fails only in CI                       | Environment difference        | [CI Debugging](#debugging-in-ci) below       |
@@ -458,7 +458,7 @@ test("with attachments", async ({ page }, testInfo) => {
 ### By Symptom
 
 | Symptom                                       | Common Causes                                                | Quick Fixes                                                         | Reference                                                                                  |
-| --------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+|-----------------------------------------------|--------------------------------------------------------------|---------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
 | **Element not found**                         | Wrong selector, element not visible, in iframe, timing issue | Check locator with Inspector, wait for visibility, use frameLocator | [locators.md](../core/locators.md), [assertions-waiting.md](../core/assertions-waiting.md) |
 | **Timeout errors**                            | Slow network, heavy page load, waiting for wrong condition   | Increase timeout, wait for specific response, check network tab     | [assertions-waiting.md](../core/assertions-waiting.md)                                     |
 | **Flaky tests**                               | Race conditions, shared state, timing dependencies           | See comprehensive flaky test guide                                  | [flaky-tests.md](flaky-tests.md)                                                           |
@@ -507,16 +507,16 @@ test("with attachments", async ({ page }, testInfo) => {
    ```
 
 4. **Check related areas**
-   - Network requests: Are API calls completing?
-     (see [Debugging Network Issues](#debugging-network-issues))
-   - Timing: Is auto-waiting working correctly?
-   - State: Is the test isolated? (see [flaky-tests.md](flaky-tests.md))
-   - Environment: Does it work locally but fail in CI? (see [Debugging in CI](#debugging-in-ci))
+    - Network requests: Are API calls completing?
+      (see [Debugging Network Issues](#debugging-network-issues))
+    - Timing: Is auto-waiting working correctly?
+    - State: Is the test isolated? (see [flaky-tests.md](flaky-tests.md))
+    - Environment: Does it work locally but fail in CI? (see [Debugging in CI](#debugging-in-ci))
 
 5. **Apply fix and verify**
-   - Fix the root cause (not just symptoms)
-   - Run multiple times to confirm stability: `--repeat-each=10`
-   - Check related tests aren't affected
+    - Fix the root cause (not just symptoms)
+    - Run multiple times to confirm stability: `--repeat-each=10`
+    - Check related tests aren't affected
 
 ## Related References
 

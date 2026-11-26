@@ -612,7 +612,7 @@ test("GET /api/items matches schema", async ({ request }) => {
 ## Decision Guide
 
 | Scenario                                         | Use API Tests               | Use E2E Tests                  | Why                                                                |
-| ------------------------------------------------ | --------------------------- | ------------------------------ | ------------------------------------------------------------------ |
+|--------------------------------------------------|-----------------------------|--------------------------------|--------------------------------------------------------------------|
 | Validate response status/body/headers            | Yes                         | No                             | No browser needed; 10-100x faster                                  |
 | Test business logic (calculations, rules)        | Yes                         | No                             | API tests isolate backend logic from UI                            |
 | Verify form submission creates correct data      | Seed via API, submit via UI | Yes                            | UI test validates the form; API check confirms persistence         |
@@ -629,7 +629,7 @@ test("GET /api/items matches schema", async ({ request }) => {
 ## Anti-Patterns
 
 | Don't Do This                                        | Problem                                                                                | Do This Instead                                                   |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+|------------------------------------------------------|----------------------------------------------------------------------------------------|-------------------------------------------------------------------|
 | Use E2E tests to validate pure API responses         | Slow, flaky, launches a browser for no reason                                          | Use `request` fixture — no browser, direct HTTP                   |
 | Ignore `response.status()`                           | A 500 with a fallback body can pass all body assertions                                | Always assert status first: `expect(response.status()).toBe(200)` |
 | Skip response header checks                          | Missing `Content-Type`, `Cache-Control`, CORS headers cause production bugs            | Assert critical headers                                           |

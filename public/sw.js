@@ -36,8 +36,9 @@ self.addEventListener("fetch", (event) => {
 		request.method !== "GET" ||
 		requestUrl.origin !== APP_SCOPE.origin ||
 		!requestUrl.pathname.startsWith(APP_SCOPE.pathname)
-	)
+	) {
 		return;
+	}
 
 	event.respondWith(
 		(async () => {
@@ -50,11 +51,15 @@ self.addEventListener("fetch", (event) => {
 				return response;
 			} catch {
 				const cachedResponse = await caches.match(request);
-				if (cachedResponse) return cachedResponse;
+				if (cachedResponse) {
+					return cachedResponse;
+				}
 
 				if (request.mode === "navigate") {
 					const offlinePage = await caches.match(OFFLINE_URL);
-					if (offlinePage) return offlinePage;
+					if (offlinePage) {
+						return offlinePage;
+					}
 				}
 
 				return Response.error();

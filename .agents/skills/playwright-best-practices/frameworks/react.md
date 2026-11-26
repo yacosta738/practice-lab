@@ -9,10 +9,11 @@
 5. [Related](#related)
 
 > **When to use**: Testing React apps built with Vite, Create React App, or custom bundlers. Covers
-> E2E testing, component testing, React Router navigation, form libraries, portals, error boundaries,
+> E2E testing, component testing, React Router navigation, form libraries, portals, error
+> boundaries,
 > and context/state verification.
 >
-**Prerequisites**: [configuration.md](../core/configuration.md), [locators.md](../core/locators.md)
+> **Prerequisites**: [configuration.md](../core/configuration.md), [locators.md](../core/locators.md)
 
 ## Patterns
 
@@ -470,7 +471,7 @@ export default defineConfig({
 ### CRA vs Vite Differences
 
 | Aspect           | Create React App             | Vite                           |
-| ---------------- | ---------------------------- | ------------------------------ |
+|------------------|------------------------------|--------------------------------|
 | Default port     | `3000`                       | `5173`                         |
 | Build output     | `build/`                     | `dist/`                        |
 | Serve production | `npx serve -s build -l 3000` | `npx vite preview --port 5173` |
@@ -520,7 +521,7 @@ test("no unmounted state warnings", async ({ page }) => {
 ## Anti-Patterns
 
 | Don't                                          | Problem                             | Do Instead                                                  |
-| ---------------------------------------------- | ----------------------------------- | ----------------------------------------------------------- |
+|------------------------------------------------|-------------------------------------|-------------------------------------------------------------|
 | `page.evaluate(() => store.getState())`        | Couples tests to implementation     | Assert on UI: `expect(badge).toHaveText('3')`               |
 | Import components in E2E tests                 | E2E runs in Node, not browser       | Use `@playwright/experimental-ct-react` for components      |
 | `page.waitForTimeout(500)` after state changes | Timing varies across machines       | `expect(locator).toHaveText('value')` auto-retries          |

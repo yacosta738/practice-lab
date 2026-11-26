@@ -11,7 +11,9 @@ tags:
 - type/moc
 domain: D3
 ---
-> **Official exam domain weight:** **3.1%** from the CCDV-F Exam Guide v1.0 (July 2026). The weights are approximate scored-item proportions, not a guarantee of exact questions.
+
+> **Official exam domain weight:** **3.1%** from the CCDV-F Exam Guide v1.0 (July 2026). The weights
+> are approximate scored-item proportions, not a guarantee of exact questions.
 
 ## Official sub-objectives
 
@@ -26,7 +28,8 @@ domain: D3
 
 ## Applied workshop
 
-- [Claude Code Operations Workshop](../claude-code-operations-workshop/) — verify settings scopes, same-name skill resolution, and event-specific hook behavior.
+- [Claude Code Operations Workshop](../claude-code-operations-workshop/) — verify settings scopes,
+  same-name skill resolution, and event-specific hook behavior.
 
 ## Study strategy
 
@@ -38,7 +41,10 @@ Use the concept notes, reproduce the failure examples, and complete an associate
 
 ## Sources
 
-- [Official exam guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view) — objective labels and weights
-- [Foundations prep course](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations) — public curriculum
-- [Course Access Coverage](../course-access-coverage/) — exactly which authenticated lesson screens are in the existing notes
+- [Official exam guide](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view) —
+  objective labels and weights
+- [Foundations prep course](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations) —
+  public curriculum
+- [Course Access Coverage](../course-access-coverage/) — exactly which authenticated lesson screens
+  are in the existing notes
 - [Source Register](../source-register/) — official documentation and provenance

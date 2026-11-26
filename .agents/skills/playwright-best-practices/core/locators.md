@@ -221,7 +221,7 @@ const exists = (await page.getByRole("button").count()) > 0;
 ## Common Issues & Solutions
 
 | Issue                   | Solution                                         |
-| ----------------------- | ------------------------------------------------ |
+|-------------------------|--------------------------------------------------|
 | Multiple elements match | Add filters or use `nth()`, `first()`, `last()`  |
 | Element not found       | Check visibility, wait for load, verify selector |
 | Stale element           | Locators are lazy; re-query if DOM changes       |
@@ -231,7 +231,7 @@ const exists = (await page.getByRole("button").count()) > 0;
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern                      | Problem                           | Solution                                          |
-| --------------------------------- | --------------------------------- | ------------------------------------------------- |
+|-----------------------------------|-----------------------------------|---------------------------------------------------|
 | `page.locator('.btn-primary')`    | Brittle, implementation-dependent | `page.getByRole('button', { name: 'Submit' })`    |
 | `page.locator('#dynamic-id-123')` | Breaks when IDs change            | Use stable attributes like role, text, or test-id |
 | Testing implementation details    | Breaks on refactoring             | Test user-visible behavior                        |
