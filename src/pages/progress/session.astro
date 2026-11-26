@@ -209,46 +209,46 @@ window.addEventListener("pagehide", () => repository.close(), { once: true });
 	padding: 12px;
 }
 
-.reviewLocked {
+.sessionReview :global(.reviewLocked) {
 	margin: 16px 0;
 	padding: 16px;
 }
 
-.reviewSummary,
-.frozenQuestion {
+.sessionReview :global(.reviewSummary),
+.sessionReview :global(.frozenQuestion) {
 	margin: 16px 0;
 	padding: 18px;
 }
 
-.reviewSummary h2,
-.frozenQuestion h2 {
+.sessionReview :global(.reviewSummary h2),
+.sessionReview :global(.frozenQuestion h2) {
 	font-size: 18px;
 	line-height: 1.5;
 }
 
-.reviewSummary dl {
+.sessionReview :global(.reviewSummary dl) {
 	display: grid;
 	gap: 12px;
 	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 	margin: 0;
 }
 
-.reviewSummary dl div {
+.sessionReview :global(.reviewSummary dl div) {
 	min-width: 0;
 }
 
-.reviewSummary dt {
+.sessionReview :global(.reviewSummary dt) {
 	color: var(--muted);
 	font-size: 12px;
 }
 
-.reviewSummary dd {
+.sessionReview :global(.reviewSummary dd) {
 	font-size: 13px;
 	margin: 3px 0 0;
 	overflow-wrap: anywhere;
 }
 
-.reviewQuestionMeta {
+.sessionReview :global(.reviewQuestionMeta) {
 	align-items: center;
 	color: var(--muted);
 	display: flex;
@@ -257,7 +257,7 @@ window.addEventListener("pagehide", () => repository.close(), { once: true });
 	justify-content: space-between;
 }
 
-.reviewOptionList {
+.sessionReview :global(.reviewOptionList) {
 	display: grid;
 	gap: 8px;
 	list-style: none;
@@ -265,7 +265,7 @@ window.addEventListener("pagehide", () => repository.close(), { once: true });
 	padding: 0;
 }
 
-.reviewOption {
+.sessionReview :global(.reviewOption) {
 	align-items: start;
 	background: var(--raised);
 	border: 1px solid var(--border);
@@ -276,33 +276,33 @@ window.addEventListener("pagehide", () => repository.close(), { once: true });
 	padding: 10px;
 }
 
-.reviewOptionLetter {
+.sessionReview :global(.reviewOptionLetter) {
 	font-family: var(--font-mono);
 }
 
-.reviewOption strong {
+.sessionReview :global(.reviewOption strong) {
 	color: var(--muted);
 	font-size: 11px;
 }
 
-.reviewCorrect {
+.sessionReview :global(.reviewCorrect) {
 	border-color: var(--success-border);
 }
 
-.reviewIncorrect {
+.sessionReview :global(.reviewIncorrect) {
 	border-color: var(--error-border);
 }
 
-.reviewSource {
+.sessionReview :global(.reviewSource) {
 	font-size: 13px;
 }
 
 @media (max-width: 600px) {
-	.reviewOption {
+	.sessionReview :global(.reviewOption) {
 		grid-template-columns: 24px minmax(0, 1fr);
 	}
 
-	.reviewOption strong {
+	.sessionReview :global(.reviewOption strong) {
 		grid-column: 2;
 	}
 }

@@ -49,11 +49,16 @@ const SCORING: ScoringProvenance = {
 
 let repository: ProgressRepository;
 
-function sessionInput(id: string, certificationId = "ccdv-f", startedAt = 100): CreateSessionInput {
+function sessionInput(
+	id: string,
+	certificationId = "ccdv-f",
+	startedAt = 100,
+	mode: CreateSessionInput["mode"] = "practice",
+): CreateSessionInput {
 	return {
 		id,
 		certificationId,
-		mode: "practice",
+		mode,
 		startedAt,
 		scoring: SCORING,
 		content: CONTENT,
@@ -134,13 +139,23 @@ describe("IndexedDB progress repository", () => {
 		]);
 		expect(Array.from(database.transaction("sessions").store.indexNames).sort()).toEqual([
 			"by-certification",
+			"by-certification-finished-at-id",
+			"by-certification-mode-started-at-id",
+			"by-certification-mode-status-finished-at-id",
+			"by-certification-mode-status-started-at-id",
+			"by-certification-started-at-id",
+			"by-certification-status-started-at-id",
 			"by-finished-at",
+			"by-mode-started-at-id",
+			"by-mode-status-started-at-id",
 			"by-started-at",
 			"by-started-at-id",
 			"by-status",
+			"by-status-started-at-id",
 		]);
 		expect(Array.from(database.transaction("questionAttempts").store.indexNames).sort()).toEqual([
 			"by-certification",
+			"by-certification-evaluated-at",
 			"by-domain",
 			"by-evaluated-at",
 			"by-session",
@@ -150,6 +165,7 @@ describe("IndexedDB progress repository", () => {
 		});
 		expect(await database.get("metadata", "migration:0-1")).toBeDefined();
 		expect(await database.get("metadata", "migration:1-2")).toBeDefined();
+		expect(await database.get("metadata", "migration:2-3")).toBeDefined();
 		expect(await database.get("metadata", "data-generation-token")).toMatchObject({
 			value: expect.stringMatching(/^[0-9a-f-]{36}$/i),
 		});
@@ -203,8 +219,14 @@ describe("IndexedDB progress repository", () => {
 		expect(upgraded.version).toBe(PROGRESS_DATABASE_VERSION);
 		expect(upgraded.transaction("sessions").store.indexNames).toContain("by-started-at-id");
 		expect(upgraded.transaction("questionAttempts").store.indexNames).toContain("by-session");
+		expect(upgraded.transaction("sessions").store.indexNames).toContain(
+			"by-certification-mode-status-started-at-id",
+		);
 		expect(await upgraded.get("metadata", "migration:1-2")).toMatchObject({
 			value: { fromVersion: 1, toVersion: 2 },
+		});
+		expect(await upgraded.get("metadata", "migration:2-3")).toMatchObject({
+			value: { fromVersion: 2, toVersion: 3 },
 		});
 		upgraded.close();
 	});
@@ -250,6 +272,7 @@ describe("IndexedDB progress repository", () => {
 		expect(page.entries.map(({ session }) => session.id)).toEqual([third.id, second.id]);
 		const completed = await repository.getSessionHistoryPage({
 			certificationId: "ccdv-f",
+			mode: "practice",
 			status: "completed",
 			from: 150,
 			page: 1,
@@ -257,6 +280,14 @@ describe("IndexedDB progress repository", () => {
 		});
 		expect(completed.total).toBe(1);
 		expect(completed.entries[0]?.session.id).toBe(second.id);
+		const emptyRange = await repository.getSessionHistoryPage({
+			certificationId: "ccdv-f",
+			from: 400,
+			through: 300,
+			page: 1,
+			pageSize: 10,
+		});
+		expect(emptyRange).toMatchObject({ entries: [], total: 0 });
 		await expect(repository.getSessionById(second.id)).resolves.toMatchObject({
 			session: { id: second.id },
 			attempts: [{ questionId: "question-stable-id" }],
@@ -586,6 +617,24 @@ describe("IndexedDB progress repository", () => {
 				legacyBaseline: { attempts: 4, correct: 2, lastWrong: true },
 			},
 		]);
+		const exam = await repository.createSession(
+			sessionInput("00000000-0000-4000-8000-000000000002", "ccdv-f", 400, "exam"),
+		);
+		await repository.finalizeSession(exam.id, exam.revision, "completed", 500);
+		const summaryData = await repository.getProgressSummaryData(["ccdv-f", "ccar-f"]);
+		expect(summaryData.questionProgress).toMatchObject([
+			{ questionId: "question-stable-id", attemptCount: 1, correctCount: 1 },
+		]);
+		expect(summaryData.recentAttempts).toEqual([first]);
+		expect(summaryData.completedMockExams).toBe(1);
+		expect(summaryData.hasSessions).toBe(true);
+		expect(summaryData.history.map(({ session }) => session.id)).toContain(exam.id);
+		expect(await repository.getProgressSummaryData(["ccar-f"])).toMatchObject({
+			history: [],
+			recentAttempts: [],
+			completedMockExams: 0,
+			hasSessions: false,
+		});
 
 		const rebuilt = await repository.rebuildQuestionProgress("ccdv-f");
 		expect(rebuilt).toHaveLength(1);

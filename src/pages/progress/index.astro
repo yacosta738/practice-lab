@@ -72,6 +72,13 @@ const clientData = JSON.stringify({ banks, certificationLabels }).replaceAll("<"
 			<p class="progressStatus" id="progress-status" role="status" aria-live="polite">
 				Loading saved progress…
 			</p>
+			<p
+				class="progressImportedNotice"
+				id="progress-imported-notice"
+				role="status"
+				aria-live="polite"
+				hidden
+			></p>
 			<p class="progressError" id="progress-error" role="alert" hidden></p>
 
 			<section class="progressFilters panel" aria-labelledby="history-filters-title">
@@ -312,6 +319,7 @@ function updateUrl(): void {
 function renderMetrics(
 	summary: ReturnType<typeof deriveProgressSummary>,
 	banks: ProgressBank[],
+	hasSessions: boolean,
 ): void {
 	const accuracy = percentage(summary.accuracy.correct, summary.accuracy.attempts);
 	const recent = percentage(summary.recentAccuracy.correct, summary.recentAccuracy.attempts);
@@ -322,6 +330,14 @@ function renderMetrics(
 		banks.length === data.banks.length
 			? "All certifications"
 			: (labels[banks[0]?.certificationId]?.subtitle ?? "Selected certification");
+	const importedNotice = byId<HTMLParagraphElement>("progress-imported-notice");
+	if (summary.legacy.attempts > 0 && !hasSessions) {
+		importedNotice.textContent =
+			"Imported progress totals have no dated session history. No session rows or dates were created from the import.";
+		importedNotice.hidden = false;
+	} else {
+		importedNotice.hidden = true;
+	}
 	byId("progress-metrics").innerHTML = `
 			<article class="progressMetric panel"><h3>Bank coverage</h3><strong>${coverage ?? 0}%</strong><p>${summary.coverage.evaluated} of ${summary.coverage.eligible} questions evaluated</p></article>
 			<article class="progressMetric panel"><h3>Overall accuracy</h3><strong>${accuracy === undefined ? "—" : `${accuracy}%`}</strong><p>${summary.accuracy.correct} correct of ${summary.accuracy.attempts} attempts</p></article>
@@ -406,8 +422,12 @@ function renderHistory(page: SessionHistoryPage): void {
 			const finishedAt = session.finishedAt;
 			const duration = formatDuration(session.startedAt, finishedAt);
 			const result = session.status === "in_progress" ? "—" : `${correct}/${questions}`;
-			const reviewUrl = `${base}progress/session/?session=${encodeURIComponent(session.id)}`;
-			return `<tr><td>${formatDate(session.startedAt)}</td><td>${escapeHtml(label?.subtitle ?? session.certificationId)}</td><td>${session.mode === "exam" ? "Mock exam" : session.mode === "weak" ? "Missed questions" : "Practice"}</td><td><span class="progressStatusTag">${statusLabel(session.status)}</span></td><td>${result}</td><td>${duration}</td><td><a href="${reviewUrl}" aria-label="Review saved ${session.mode} session from ${formatDate(session.startedAt)}">Review</a></td></tr>`;
+			const isActive = session.status === "in_progress";
+			const actionLabel = isActive ? "Resume" : "Review";
+			const actionUrl = isActive
+				? `${label?.href ?? `${base}certifications/${encodeURIComponent(session.certificationId)}/`}?mode=${session.mode === "exam" ? "assess" : "practice"}&resume=1`
+				: `${base}progress/session/?session=${encodeURIComponent(session.id)}`;
+			return `<tr><td>${formatDate(session.startedAt)}</td><td>${escapeHtml(label?.subtitle ?? session.certificationId)}</td><td>${session.mode === "exam" ? "Mock exam" : session.mode === "weak" ? "Missed questions" : "Practice"}</td><td><span class="progressStatusTag">${statusLabel(session.status)}</span></td><td>${result}</td><td>${duration}</td><td><a href="${actionUrl}" aria-label="${actionLabel} saved ${session.mode} session from ${formatDate(session.startedAt)}">${actionLabel}</a></td></tr>`;
 		})
 		.join("");
 }
@@ -418,18 +438,18 @@ async function load(): Promise<void> {
 	errorMessage.hidden = true;
 	try {
 		const selectedBanks = getSelectedBanks();
-		const [histories, progressRows, historyPage] = await Promise.all([
-			Promise.all(selectedBanks.map((bank) => useCases.getSessionHistory(bank.certificationId))),
-			Promise.all(
-				selectedBanks.map((bank) =>
-					useCases.getQuestionProgressForCertification(bank.certificationId),
-				),
-			),
+		const [summaryData, historyPage] = await Promise.all([
+			useCases.getProgressSummaryData(selectedBanks.map((bank) => bank.certificationId)),
 			useCases.getSessionHistoryPage(getHistoryQuery()),
 		]);
 		if (sequence !== loadSequence) return;
-		const summary = deriveProgressSummary(selectedBanks, histories.flat(), progressRows.flat());
-		renderMetrics(summary, selectedBanks);
+		const summary = deriveProgressSummary(
+			selectedBanks,
+			summaryData.history,
+			summaryData.questionProgress,
+			summaryData,
+		);
+		renderMetrics(summary, selectedBanks, summaryData.hasSessions);
 		renderDomainChart(summary);
 		renderExamTrend(summary);
 		renderHistory(historyPage);
@@ -486,9 +506,11 @@ window.addEventListener("offline", () => byId("progress-offline").removeAttribut
 window.addEventListener("storage", (event) => {
 	if (event.key?.includes("practice-lab-v2")) void load();
 });
-if (typeof BroadcastChannel !== "undefined") {
-	const channel = new BroadcastChannel("practice-lab-progress");
-	channel.addEventListener("message", (event: MessageEvent<unknown>) => {
+let progressChannel: BroadcastChannel | undefined;
+function setupProgressChannel(): void {
+	if (typeof BroadcastChannel === "undefined" || progressChannel) return;
+	progressChannel = new BroadcastChannel("practice-lab-progress");
+	progressChannel.addEventListener("message", (event: MessageEvent<unknown>) => {
 		const message = event.data as { type?: unknown; certificationId?: unknown } | null;
 		if (
 			message?.type === "progress-changed" &&
@@ -498,8 +520,17 @@ if (typeof BroadcastChannel !== "undefined") {
 			void load();
 		}
 	});
-	window.addEventListener("pagehide", () => channel.close(), { once: true });
 }
+window.addEventListener("pagehide", () => {
+	progressChannel?.close();
+	progressChannel = undefined;
+});
+window.addEventListener("pageshow", (event) => {
+	if (!event.persisted) return;
+	setupProgressChannel();
+	void load();
+});
+setupProgressChannel();
 if (!navigator.onLine) byId("progress-offline").removeAttribute("hidden");
 applyQueryToFilters();
 void load();
@@ -544,6 +575,7 @@ void load();
 
 .progressStatus,
 .progressOffline,
+.progressImportedNotice,
 .progressError {
 	border-radius: var(--radius-sm);
 	margin: 12px 0;
@@ -557,6 +589,12 @@ void load();
 
 .progressOffline {
 	background: var(--info-soft);
+	color: var(--ink);
+}
+
+.progressImportedNotice {
+	background: var(--info-soft);
+	border-left: 3px solid var(--brand-strong);
 	color: var(--ink);
 }
 
@@ -609,22 +647,22 @@ void load();
 	grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
 }
 
-.progressMetric {
+.progressPage :global(.progressMetric) {
 	min-height: 116px;
 	padding: 16px;
 }
 
-.progressMetric h3 {
+.progressPage :global(.progressMetric h3) {
 	color: var(--muted);
 	font-size: 13px;
 	margin: 0 0 9px;
 }
 
-.progressMetric strong {
+.progressPage :global(.progressMetric strong) {
 	font-size: 25px;
 }
 
-.progressMetric p {
+.progressPage :global(.progressMetric p) {
 	color: var(--muted);
 	font-size: 12px;
 	line-height: 1.5;
@@ -658,8 +696,8 @@ void load();
 	margin-bottom: 20px;
 }
 
-.progressBarList,
-.progressTrendGroup ol {
+.progressPage :global(.progressBarList),
+.progressPage :global(.progressTrendGroup ol) {
 	display: grid;
 	gap: 14px;
 	list-style: none;
@@ -667,7 +705,7 @@ void load();
 	padding: 0;
 }
 
-.progressBarHeading {
+.progressPage :global(.progressBarHeading) {
 	align-items: baseline;
 	display: flex;
 	font-size: 12px;
@@ -676,27 +714,27 @@ void load();
 	margin-bottom: 5px;
 }
 
-.progressBarHeading strong {
+.progressPage :global(.progressBarHeading strong) {
 	white-space: nowrap;
 }
 
-.progressBarList progress {
+.progressPage :global(.progressBarList progress) {
 	height: 10px;
 	width: 100%;
 }
 
-.progressTrendGroup + .progressTrendGroup {
+.progressPage :global(.progressTrendGroup + .progressTrendGroup) {
 	border-top: 1px solid var(--border);
 	margin-top: 16px;
 	padding-top: 14px;
 }
 
-.progressTrendGroup h3 {
+.progressPage :global(.progressTrendGroup h3) {
 	font-size: 12px;
 	margin: 0 0 10px;
 }
 
-.progressTrendGroup li {
+.progressPage :global(.progressTrendGroup li) {
 	align-items: center;
 	display: grid;
 	font-size: 12px;
@@ -704,7 +742,7 @@ void load();
 	grid-template-columns: minmax(80px, auto) minmax(40px, 1fr) 40px;
 }
 
-.progressTrendGroup meter {
+.progressPage :global(.progressTrendGroup meter) {
 	height: 12px;
 	width: 100%;
 }
@@ -721,7 +759,7 @@ void load();
 }
 
 .progressHistory th,
-.progressHistory td {
+.progressPage :global(.progressHistory td) {
 	border-bottom: 1px solid var(--border);
 	font-size: 13px;
 	padding: 11px 8px;
@@ -734,7 +772,7 @@ void load();
 	text-transform: uppercase;
 }
 
-.progressStatusTag {
+.progressPage :global(.progressStatusTag) {
 	background: var(--raised);
 	border-radius: var(--radius-full);
 	display: inline-block;
@@ -742,7 +780,7 @@ void load();
 	padding: 4px 8px;
 }
 
-.progressHistory .progressEmpty {
+.progressPage :global(.progressHistory .progressEmpty) {
 	color: var(--muted);
 	padding: 24px;
 	text-align: center;

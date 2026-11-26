@@ -9,6 +9,11 @@ test("shows an accessible empty progress dashboard and responsive visual evidenc
 	await page.setViewportSize({ width: 1440, height: 1000 });
 	await page.goto(`${BASE_PATH}/progress/`);
 	await expect(page.getByRole("heading", { level: 1, name: "My Progress" })).toBeVisible();
+	const metricCard = page.locator("#progress-metrics .progressMetric").first();
+	await expect(metricCard).toBeVisible();
+	await expect
+		.poll(() => metricCard.evaluate((element) => getComputedStyle(element).minHeight))
+		.toBe("116px");
 	await expect(
 		page.getByText("No saved sessions yet. Choose a certification and start a practice session."),
 	).toBeVisible();
@@ -76,6 +81,9 @@ test("does not fabricate frozen history from an older submitted local session", 
 	await expect(migrationPanel).toHaveCount(0);
 	await page.goto(`${BASE_PATH}/progress/`);
 	await expect(page.locator("#history-rows .progressEmpty")).toContainText("No saved sessions yet");
+	await expect(
+		page.getByRole("status").filter({ hasText: /no dated session history/i }),
+	).toBeVisible();
 });
 
 test("records practice history, filters it, and reviews frozen questions without exposing active exam answers", async ({
@@ -130,6 +138,14 @@ test("records practice history, filters it, and reviews frozen questions without
 		page.getByText("Saved review loaded. Its question snapshots are read-only."),
 	).toBeVisible();
 	await expect(page.locator(".frozenQuestion")).toHaveCount(10);
+	await expect
+		.poll(() =>
+			page
+				.locator(".reviewOption")
+				.first()
+				.evaluate((element) => getComputedStyle(element).display),
+		)
+		.toBe("grid");
 	await expect(page.getByText("Correct answer").first()).toBeVisible();
 	const reviewA11y = await new AxeBuilder({ page })
 		.withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
@@ -144,11 +160,8 @@ test("records practice history, filters it, and reviews frozen questions without
 	await page.goto(`${BASE_PATH}/progress/`);
 	const activeRow = page.locator("#history-rows tr").filter({ hasText: "In progress" });
 	await expect(activeRow).toHaveCount(1);
+	await expect(activeRow.locator("a")).toHaveText("Resume");
+	await expect(activeRow.locator("a")).toHaveAttribute("href", /mode=assess&resume=1/);
 	await activeRow.locator("a").click();
-	await expect(
-		page.getByText(
-			"This session is still in progress. Frozen answers and explanations are available after it is finished.",
-		),
-	).toBeVisible();
-	await expect(page.locator(".frozenQuestion")).toHaveCount(0);
+	await expect(page.locator("button.option").first()).toBeVisible();
 });

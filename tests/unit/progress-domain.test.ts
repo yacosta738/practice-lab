@@ -104,6 +104,60 @@ describe("progress domain rules", () => {
 		);
 	});
 
+	it("requires frozen snapshot answers to match the question answer IDs regardless of order", () => {
+		const question = CONTENT.questions[0];
+		if (!question) throw new Error("Expected a frozen question fixture.");
+		const snapshot = {
+			question: question.questionText,
+			domainName: question.domainName,
+			options: question.optionIds.map((id, index) => ({
+				id,
+				text: question.optionTexts[index] ?? "",
+			})),
+			correctOptionIds: ["option-b"],
+			explanation: question.explanation,
+			source: { label: question.sourceLabel, url: question.sourceUrl },
+		};
+		const input = {
+			id: "00000000-0000-4000-8000-000000000001",
+			certificationId: "ccdv-f",
+			mode: "practice" as const,
+			startedAt: 1,
+			scoring: SCORING,
+			content: {
+				...CONTENT,
+				questions: [{ ...question, snapshot }],
+			},
+		};
+
+		for (const correctOptionIds of [[], ["option-b"], ["option-a", "option-b"]]) {
+			expect(() =>
+				createInitialSession({
+					...input,
+					content: {
+						...CONTENT,
+						questions: [{ ...question, snapshot: { ...snapshot, correctOptionIds } }],
+					},
+				}),
+			).toThrow(ProgressValidationError);
+		}
+
+		const multiAnswerQuestion = {
+			...question,
+			correctOptionIds: ["option-a", "option-b"],
+			selectCount: 2,
+			snapshot: { ...snapshot, correctOptionIds: ["option-b", "option-a"] },
+		};
+		const valid = createInitialSession({
+			...input,
+			content: { ...CONTENT, questions: [multiAnswerQuestion] },
+		});
+		expect(valid.content.questions[0]?.snapshot?.correctOptionIds).toEqual([
+			"option-b",
+			"option-a",
+		]);
+	});
+
 	it("checks optimistic revisions and makes an identical checkpoint retry a no-op", () => {
 		const initial = session();
 		const checkpoint = {

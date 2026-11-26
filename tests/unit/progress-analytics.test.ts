@@ -185,4 +185,47 @@ describe("progress analytics", () => {
 		expect(summary.lastResult).toBeUndefined();
 		expect(summary.examTrend).toEqual([]);
 	});
+
+	it("derives dashboard totals from the incremental projection and keeps frozen result denominators", () => {
+		const session = makeSession("practice-latest", "ccdv-f", "practice", "completed", 500, [
+			"shared-question",
+		]);
+		const latestAttempt = makeAttempt(session.id, "ccdv-f", "shared-question", "correct", 510);
+		const questionProgress: QuestionProgress[] = [
+			{
+				certificationId: "ccdv-f",
+				questionId: "shared-question",
+				attemptCount: 2,
+				correctCount: 1,
+				legacyBaseline: null,
+			},
+			{
+				certificationId: "ccdv-f",
+				questionId: "question-b",
+				attemptCount: 1,
+				correctCount: 1,
+				legacyBaseline: { attempts: 4, correct: 2, lastWrong: true },
+			},
+		];
+		const summary = deriveProgressSummary(
+			BANKS,
+			[entry(session, [latestAttempt])],
+			questionProgress,
+			{
+				recentAttempts: [latestAttempt],
+				completedMockExams: 6,
+			},
+		);
+
+		expect(summary.accuracy).toEqual({ correct: 4, attempts: 7 });
+		expect(summary.recentAccuracy).toEqual({ correct: 1, attempts: 1 });
+		expect(summary.completedMockExams).toBe(6);
+		expect(summary.lastResult).toMatchObject({ correct: 1, questions: 1 });
+		expect(
+			summary.domains.find(({ certificationId }) => certificationId === "ccdv-f"),
+		).toMatchObject({
+			correct: 4,
+			attempts: 7,
+		});
+	});
 });

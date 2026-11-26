@@ -132,6 +132,61 @@ function upgradeSchema(
 			}),
 		);
 	}
+	if (oldVersion < 3) {
+		const sessions = transaction.objectStore("sessions");
+		sessions.createIndex("by-certification-started-at-id", ["certificationId", "startedAt", "id"]);
+		sessions.createIndex("by-mode-started-at-id", ["mode", "startedAt", "id"]);
+		sessions.createIndex("by-status-started-at-id", ["status", "startedAt", "id"]);
+		sessions.createIndex("by-mode-status-started-at-id", ["mode", "status", "startedAt", "id"]);
+		sessions.createIndex("by-certification-mode-started-at-id", [
+			"certificationId",
+			"mode",
+			"startedAt",
+			"id",
+		]);
+		sessions.createIndex("by-certification-status-started-at-id", [
+			"certificationId",
+			"status",
+			"startedAt",
+			"id",
+		]);
+		sessions.createIndex("by-certification-mode-status-started-at-id", [
+			"certificationId",
+			"mode",
+			"status",
+			"startedAt",
+			"id",
+		]);
+		sessions.createIndex("by-certification-finished-at-id", [
+			"certificationId",
+			"finishedAt",
+			"id",
+		]);
+		sessions.createIndex("by-certification-mode-status-finished-at-id", [
+			"certificationId",
+			"mode",
+			"status",
+			"finishedAt",
+			"id",
+		]);
+		transaction
+			.objectStore("questionAttempts")
+			.createIndex("by-certification-evaluated-at", ["certificationId", "evaluatedAt"]);
+
+		const metadata = transaction.objectStore("metadata");
+		writeUpgradeMetadata(
+			metadata.put({
+				key: "schema-version",
+				value: { version: PROGRESS_DATABASE_VERSION },
+			}),
+		);
+		writeUpgradeMetadata(
+			metadata.put({
+				key: "migration:2-3",
+				value: { fromVersion: 2, toVersion: 3, completedAt: Date.now() },
+			}),
+		);
+	}
 }
 
 function writeUpgradeMetadata(request: Promise<IDBValidKey>): void {

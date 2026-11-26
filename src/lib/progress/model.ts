@@ -218,6 +218,14 @@ export interface SessionHistoryEntry {
 	attempts: QuestionAttempt[];
 }
 
+export interface ProgressSummaryData {
+	history: SessionHistoryEntry[];
+	questionProgress: QuestionProgress[];
+	recentAttempts: QuestionAttempt[];
+	completedMockExams: number;
+	hasSessions: boolean;
+}
+
 export interface CertificationProgressSnapshot {
 	sessionHistory: SessionHistoryEntry[];
 	questionProgress: QuestionProgress[];
@@ -612,8 +620,16 @@ function validateContent(content: ContentProvenance): void {
 				question.snapshot.correctOptionIds,
 				`correct options for ${question.questionId}`,
 			);
-			if (question.snapshot.correctOptionIds.some((id) => !question.optionIds.includes(id))) {
-				throw new ProgressValidationError("A correct option must belong to its frozen question.");
+			if (
+				question.snapshot.correctOptionIds.some((id) => !question.optionIds.includes(id)) ||
+				!stringArraysEqual(
+					[...question.snapshot.correctOptionIds].sort(),
+					[...question.correctOptionIds].sort(),
+				)
+			) {
+				throw new ProgressValidationError(
+					"Frozen snapshot answers must match the question's correct option IDs.",
+				);
 			}
 		}
 	}

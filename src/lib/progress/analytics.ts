@@ -1,5 +1,6 @@
 import type {
 	ProgressSession,
+	ProgressSummaryData,
 	QuestionAttempt,
 	QuestionProgress,
 	SessionHistoryEntry,
@@ -66,6 +67,7 @@ export function deriveProgressSummary(
 	banks: readonly ProgressBank[],
 	history: readonly SessionHistoryEntry[],
 	questionProgress: readonly QuestionProgress[],
+	projection?: Pick<ProgressSummaryData, "recentAttempts" | "completedMockExams">,
 ): ProgressSummary {
 	const eligibleQuestions = new Map<string, ProgressBankQuestion>();
 	for (const bank of banks) {
@@ -74,11 +76,15 @@ export function deriveProgressSummary(
 		}
 	}
 
-	const attempts = history.flatMap(({ session, attempts: sessionAttempts }) =>
-		sessionAttempts
-			.filter((attempt) => attempt.certificationId === session.certificationId)
-			.map((attempt) => ({ session, attempt })),
-	);
+	const attemptsBySession = new Map<string, QuestionAttempt[]>();
+	const attempts: { session: ProgressSession; attempt: QuestionAttempt }[] = [];
+	for (const { session, attempts: sessionAttempts } of history) {
+		const matchingAttempts = sessionAttempts.filter(
+			(attempt) => attempt.certificationId === session.certificationId,
+		);
+		attemptsBySession.set(session.id, matchingAttempts);
+		for (const attempt of matchingAttempts) attempts.push({ session, attempt });
+	}
 	const legacyProgress = questionProgress.filter((progress) => progress.legacyBaseline !== null);
 	const legacy = legacyProgress.reduce(
 		(total, progress) => ({
@@ -89,47 +95,61 @@ export function deriveProgressSummary(
 	);
 	const evaluatedQuestions = new Set<string>();
 	const domains = new Map<string, DomainAccuracy>();
-	let correct = 0;
-	for (const { attempt } of attempts) {
-		correct += attempt.outcome === "correct" ? 1 : 0;
-		const question = eligibleQuestions.get(
-			questionKey(attempt.certificationId, attempt.questionId),
-		);
-		if (!question) continue;
-		evaluatedQuestions.add(questionKey(attempt.certificationId, attempt.questionId));
-		addDomainAttempt(domains, question, attempt.outcome === "correct");
-	}
-
-	for (const progress of legacyProgress) {
-		const key = questionKey(progress.certificationId, progress.questionId);
-		const question = eligibleQuestions.get(key);
-		if (!question || !progress.legacyBaseline?.attempts) continue;
-		evaluatedQuestions.add(key);
-		const existing = domains.get(domainKey(question));
-		if (existing) {
-			existing.attempts += progress.legacyBaseline.attempts;
-			existing.correct += progress.legacyBaseline.correct;
-		} else {
-			domains.set(domainKey(question), {
-				certificationId: question.certificationId,
-				certificationSubtitle: question.certificationSubtitle,
-				domainId: question.domainId,
-				domainName: question.domainName,
-				attempts: progress.legacyBaseline.attempts,
-				correct: progress.legacyBaseline.correct,
-			});
+	let projectedCorrect = 0;
+	let projectedAttempts = 0;
+	if (projection) {
+		for (const progress of questionProgress) {
+			const baseline = progress.legacyBaseline;
+			projectedCorrect += progress.correctCount + (baseline?.correct ?? 0);
+			projectedAttempts += progress.attemptCount + (baseline?.attempts ?? 0);
+			const question = eligibleQuestions.get(
+				questionKey(progress.certificationId, progress.questionId),
+			);
+			const questionAttempts = progress.attemptCount + (baseline?.attempts ?? 0);
+			if (!question || questionAttempts === 0) continue;
+			evaluatedQuestions.add(questionKey(progress.certificationId, progress.questionId));
+			addDomainAttempts(
+				domains,
+				question,
+				progress.correctCount + (baseline?.correct ?? 0),
+				questionAttempts,
+			);
+		}
+	} else {
+		for (const { attempt } of attempts) {
+			const question = eligibleQuestions.get(
+				questionKey(attempt.certificationId, attempt.questionId),
+			);
+			if (!question) continue;
+			evaluatedQuestions.add(questionKey(attempt.certificationId, attempt.questionId));
+			addDomainAttempt(domains, question, attempt.outcome === "correct");
+		}
+		for (const progress of legacyProgress) {
+			const key = questionKey(progress.certificationId, progress.questionId);
+			const question = eligibleQuestions.get(key);
+			if (!question || !progress.legacyBaseline?.attempts) continue;
+			evaluatedQuestions.add(key);
+			addDomainAttempts(
+				domains,
+				question,
+				progress.legacyBaseline.correct,
+				progress.legacyBaseline.attempts,
+			);
 		}
 	}
 
-	const recent = [...attempts].sort(compareAttemptNewestFirst).slice(0, RECENT_ATTEMPT_LIMIT);
-	const recentCorrect = recent.filter(({ attempt }) => attempt.outcome === "correct").length;
+	const recentAttempts = projection
+		? projection.recentAttempts
+		: attempts.map(({ attempt }) => attempt);
+	const recent = [...recentAttempts].sort(compareAttemptNewestFirst).slice(0, RECENT_ATTEMPT_LIMIT);
+	const recentCorrect = recent.filter((attempt) => attempt.outcome === "correct").length;
 	const sessions = history.map(({ session }) => session);
-	const completedMockExams = sessions.filter(
-		(session) => session.mode === "exam" && session.status === "completed",
-	).length;
+	const completedMockExams =
+		projection?.completedMockExams ??
+		sessions.filter((session) => session.mode === "exam" && session.status === "completed").length;
 	const results = sessions
 		.filter((session) => session.status !== "in_progress")
-		.map((session) => resultFor(session, attempts))
+		.map((session) => resultFor(session, attemptsBySession.get(session.id) ?? []))
 		.sort((a, b) => b.finishedAt - a.finishedAt || b.sessionId.localeCompare(a.sessionId));
 	const examTrend = sessions
 		.filter(
@@ -137,7 +157,7 @@ export function deriveProgressSummary(
 				session.mode === "exam" && (session.status === "completed" || session.status === "expired"),
 		)
 		.map((session) => {
-			const result = resultFor(session, attempts);
+			const result = resultFor(session, attemptsBySession.get(session.id) ?? []);
 			return {
 				sessionId: session.id,
 				certificationId: session.certificationId,
@@ -152,7 +172,12 @@ export function deriveProgressSummary(
 
 	return {
 		coverage: { evaluated: evaluatedQuestions.size, eligible: eligibleQuestions.size },
-		accuracy: { correct: correct + legacy.correct, attempts: attempts.length + legacy.attempts },
+		accuracy: {
+			correct: projection
+				? projectedCorrect
+				: attempts.filter(({ attempt }) => attempt.outcome === "correct").length + legacy.correct,
+			attempts: projection ? projectedAttempts : attempts.length + legacy.attempts,
+		},
 		recentAccuracy: { correct: recentCorrect, attempts: recent.length },
 		completedMockExams,
 		...(results[0] ? { lastResult: results[0] } : {}),
@@ -166,18 +191,14 @@ export function deriveProgressSummary(
 	};
 }
 
-function resultFor(
-	session: ProgressSession,
-	attempts: readonly { session: ProgressSession; attempt: QuestionAttempt }[],
-): SessionResult {
-	const sessionAttempts = attempts.filter(({ session: item }) => item.id === session.id);
+function resultFor(session: ProgressSession, attempts: readonly QuestionAttempt[]): SessionResult {
 	return {
 		sessionId: session.id,
 		certificationId: session.certificationId,
 		mode: session.mode,
 		status: session.status,
 		finishedAt: session.finishedAt ?? session.updatedAt,
-		correct: sessionAttempts.filter(({ attempt }) => attempt.outcome === "correct").length,
+		correct: attempts.filter((attempt) => attempt.outcome === "correct").length,
 		questions: session.content.questions.length,
 		bankRevision: session.content.bankRevision,
 	};
@@ -202,14 +223,31 @@ function addDomainAttempt(
 	domains.set(key, current);
 }
 
-function compareAttemptNewestFirst(
-	a: { session: ProgressSession; attempt: QuestionAttempt },
-	b: { session: ProgressSession; attempt: QuestionAttempt },
-): number {
+function addDomainAttempts(
+	domains: Map<string, DomainAccuracy>,
+	question: ProgressBankQuestion,
+	correct: number,
+	attempts: number,
+): void {
+	const key = domainKey(question);
+	const current = domains.get(key) ?? {
+		certificationId: question.certificationId,
+		certificationSubtitle: question.certificationSubtitle,
+		domainId: question.domainId,
+		domainName: question.domainName,
+		correct: 0,
+		attempts: 0,
+	};
+	current.correct += correct;
+	current.attempts += attempts;
+	domains.set(key, current);
+}
+
+function compareAttemptNewestFirst(a: QuestionAttempt, b: QuestionAttempt): number {
 	return (
-		b.attempt.evaluatedAt - a.attempt.evaluatedAt ||
-		b.attempt.sessionId.localeCompare(a.attempt.sessionId) ||
-		b.attempt.questionId.localeCompare(a.attempt.questionId)
+		b.evaluatedAt - a.evaluatedAt ||
+		b.sessionId.localeCompare(a.sessionId) ||
+		b.questionId.localeCompare(a.questionId)
 	);
 }
 
