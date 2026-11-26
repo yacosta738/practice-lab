@@ -54,6 +54,7 @@ test.describe("community feedback flow", () => {
 		await page.click('#pl-feedback-form button[type="submit"]');
 
 		await expect(page.locator("#pl-feedback-handoff")).toBeVisible();
+		await expect(page.locator("#pl-feedback-form")).toBeHidden();
 		const tallyHref = await page.locator("#pl-feedback-handoff-link").getAttribute("href");
 		expect(tallyHref).toContain("https://tally.so/r/GeleeQ");
 		expect(tallyHref).toContain("targetType=question");

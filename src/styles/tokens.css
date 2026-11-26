@@ -522,6 +522,10 @@ dialog::backdrop {
 	gap: 14px;
 }
 
+.pl-feedback-form[hidden] {
+	display: none;
+}
+
 .pl-feedback-field {
 	display: flex;
 	flex-direction: column;
