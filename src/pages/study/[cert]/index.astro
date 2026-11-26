@@ -1,5 +1,6 @@
 ---
 import { getCollection } from "astro:content";
+import { getCertificationList } from "../../../certifications";
 import StudyLayout from "../../../layouts/StudyLayout.astro";
 import { base } from "../../../lib/base";
 import { groupNotes, toNoteMeta } from "../../../lib/study-groups";
@@ -8,9 +9,22 @@ import { type StudyCert, studyCerts } from "../../../study/registry";
 export const prerender = true;
 
 export async function getStaticPaths() {
-	return studyCerts.map((cert) => ({
-		params: { cert: cert.slug },
-		props: { cert },
+	const studyCertifications = new Map(studyCerts.map((cert) => [cert.slug, cert]));
+	const certifications = await getCertificationList();
+	return certifications.map((certification) => ({
+		params: { cert: certification.slug },
+		props: {
+			cert:
+				studyCertifications.get(certification.slug) ??
+				({
+					slug: certification.slug,
+					title: certification.title,
+					subtitle: certification.subtitle,
+					description: certification.description,
+					certification,
+					quizPath: `certifications/${certification.slug}`,
+				} satisfies StudyCert),
+		},
 	}));
 }
 
@@ -19,6 +33,16 @@ const { cert }: { cert: StudyCert } = Astro.props;
 const allNotes = await getCollection("study");
 const notes = allNotes.filter((entry) => entry.id.startsWith(`${cert.slug}/`)).map(toNoteMeta);
 const sections = groupNotes(notes, cert.certification.domains);
+for (const [id, domain] of Object.entries(cert.certification.domains)) {
+	if (sections.some((section) => section.id === id)) continue;
+	sections.push({
+		id,
+		title: `${domain.id} ${domain.name}`,
+		domain: domain.id,
+		weight: domain.weight,
+		notes: [],
+	});
+}
 
 const totalNotes = notes.length;
 const totalSections = sections.length;
@@ -48,7 +72,7 @@ const sidebarDomains = Object.entries(cert.certification.domains).map(([id, d]) 
 	</nav>
 
 	<section class="hero">
-		<span class="eyebrow">{cert.subtitle} · Study notes</span>
+		<span class="eyebrow">{cert.subtitle} · {notes.length ? "Study notes" : "Study domains"}</span>
 		<h1>{cert.title}</h1>
 		<p class="lead">{cert.description}</p>
 		<div class="ctaRow">
@@ -90,16 +114,20 @@ const sidebarDomains = Object.entries(cert.certification.domains).map(([id, d]) 
 					{section.weight !== undefined ? ` · ${section.weight}% exam weight` : ""}
 				</span>
 			</div>
-			<ul class="studyList">
-				{section.notes.map((note) => (
-					<li>
-						<a class="studyNote" href={`${base}study/${cert.slug}/${note.slug}/`}>
-							<span class="studyNoteTitle">{note.title}</span>
-							{note.kind && <span class="kindBadge">{note.kind}</span>}
-						</a>
-					</li>
-				))}
-			</ul>
+			{section.notes.length ? (
+				<ul class="studyList">
+					{section.notes.map((note) => (
+						<li>
+							<a class="studyNote" href={`${base}study/${cert.slug}/${note.slug}/`}>
+								<span class="studyNoteTitle">{note.title}</span>
+								{note.kind && <span class="kindBadge">{note.kind}</span>}
+							</a>
+						</li>
+					))}
+				</ul>
+			) : (
+				<p class="muted">Study notes are not available for this domain yet.</p>
+			)}
 		</section>
 	))}
 

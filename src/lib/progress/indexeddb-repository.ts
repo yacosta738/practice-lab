@@ -975,12 +975,10 @@ class IndexedDbProgressRepository implements ProgressRepository {
 	}
 
 	getSessionHistoryPage(query: SessionHistoryQuery): Promise<SessionHistoryPage> {
-		const page = Number.isSafeInteger(query.page) && query.page > 0 ? query.page : 1;
+		let page = Number.isSafeInteger(query.page) && query.page > 0 ? query.page : 1;
 		const pageSize = Number.isSafeInteger(query.pageSize)
 			? Math.max(1, Math.min(100, query.pageSize))
 			: 20;
-		const rawOffset = (page - 1) * pageSize;
-		const offset = Number.isSafeInteger(rawOffset) ? rawOffset : Number.MAX_SAFE_INTEGER;
 		const indexFields: string[] = [];
 		const rangePrefix: IDBValidKey[] = [];
 		if (query.certificationId !== undefined) {
@@ -1001,7 +999,7 @@ class IndexedDbProgressRepository implements ProgressRepository {
 		const from = query.from ?? Number.MIN_SAFE_INTEGER;
 		const through = query.through ?? Number.MAX_SAFE_INTEGER;
 		if (!Number.isFinite(from) || !Number.isFinite(through) || from > through) {
-			return Promise.resolve({ entries: [], total: 0, page, pageSize });
+			return Promise.resolve({ entries: [], total: 0, page: 1, pageSize });
 		}
 		const range = IDBKeyRange.bound(
 			[...rangePrefix, from, ""],
@@ -1016,12 +1014,15 @@ class IndexedDbProgressRepository implements ProgressRepository {
 				const selected: ProgressSession[] = [];
 				const index = transaction.objectStore("sessions").index(indexName);
 				const total = await index.count(range);
-				if (offset >= total) return { entries: [], total, page, pageSize };
-				let cursor = await index.openCursor(range, "prev");
-				if (cursor && offset > 0) cursor = await cursor.advance(offset);
-				while (cursor && selected.length < pageSize) {
-					if (matchesHistoryQuery(cursor.value, query)) selected.push(cursor.value);
-					cursor = await cursor.continue();
+				page = total > 0 ? Math.min(page, Math.ceil(total / pageSize)) : 1;
+				const offset = (page - 1) * pageSize;
+				if (offset < total) {
+					let cursor = await index.openCursor(range, "prev");
+					if (cursor && offset > 0) cursor = await cursor.advance(offset);
+					while (cursor && selected.length < pageSize) {
+						if (matchesHistoryQuery(cursor.value, query)) selected.push(cursor.value);
+						cursor = await cursor.continue();
+					}
 				}
 
 				const attempts = transaction.objectStore("questionAttempts").index("by-session");
