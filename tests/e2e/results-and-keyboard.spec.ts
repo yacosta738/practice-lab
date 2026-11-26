@@ -28,6 +28,24 @@ test("quiz shortcuts pause while the submit dialog is open", async ({ page }) =>
 	expect((await getActiveSession())?.revision).toBe((before?.revision as number) + 1);
 });
 
+test("mock exam can be submitted from the answer sheet", async ({ page }) => {
+	await page.goto(`${BASE_PATH}/certifications/ccdv-f/?mode=assess#session`);
+	await page.getByRole("button", { name: "Start mock exam" }).click();
+	await expect(page.locator(".qhead")).toContainText(/Question 1 of \d+/);
+	const questionCount = await page.locator(".qchip").count();
+	await page.locator(`[data-action="jump"][data-value="${questionCount - 1}"]`).click();
+	await expect(page.locator(".qhead")).toContainText(
+		`Question ${questionCount} of ${questionCount}`,
+	);
+	await page.getByRole("button", { name: "Go to review" }).click();
+	await expect(page.getByRole("heading", { name: "Review your answer sheet." })).toBeVisible();
+	await page.getByRole("button", { name: "Submit and score" }).click();
+	const dialog = page.getByRole("dialog", { name: "Submit mock exam?" });
+	await expect(dialog).toBeVisible();
+	await dialog.getByRole("button", { name: "Submit and score" }).click();
+	await expect(page.getByRole("heading", { name: "Mock exam results" })).toBeVisible();
+});
+
 test("CCDV-F practice mode shows results page after finishing questions", async ({ page }) => {
 	test.setTimeout(180_000);
 

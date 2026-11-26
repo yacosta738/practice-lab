@@ -1263,6 +1263,16 @@ document.addEventListener("click", (event: MouseEvent) => {
 			const currentSession = session;
 			if (!currentSession || currentSession.submitted) return;
 
+			if (action === "finish") {
+				confirmAction(
+					"Submit mock exam?",
+					"Your answers will be scored and rationales will be revealed immediately.",
+					"Submit and score",
+					() => finish(false),
+				);
+				return;
+			}
+
 			const id = currentSession.ids[currentSession.currentIndex];
 			if (!id) return;
 			const q = getQuestion(id);
@@ -1327,14 +1337,6 @@ document.addEventListener("click", (event: MouseEvent) => {
 				return saveThen(
 					() => persist(),
 					() => question("flag"),
-				);
-			}
-			if (action === "finish") {
-				confirmAction(
-					"Submit mock exam?",
-					"Your answers will be scored and rationales will be revealed immediately.",
-					"Submit and score",
-					() => finish(false),
 				);
 			}
 		} catch (error) {
