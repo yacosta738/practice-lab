@@ -90,12 +90,14 @@ test("records practice history, filters it, and reviews frozen questions without
 	await expect(page.locator("button.option").first()).toBeVisible();
 
 	for (let index = 0; index < 10; index += 1) {
-		const hint = await page.locator(".question .hint").textContent();
-		const answerCount = Number(hint?.match(/Select exactly (\d+) answers/)?.[1] ?? 1);
-		for (let answer = 0; answer < answerCount; answer += 1) {
-			await page.locator("button.option").nth(answer).click();
+		const checkAnswer = page.getByRole("button", { name: "Check answer" });
+		const optionCount = await page.locator("button.option").count();
+		for (let answer = 0; answer < optionCount; answer += 1) {
+			if (await checkAnswer.isEnabled()) break;
+			await page.locator('button.option[aria-pressed="false"]').first().click();
 		}
-		await page.getByRole("button", { name: "Check answer" }).click();
+		await expect(checkAnswer).toBeEnabled();
+		await checkAnswer.click();
 		await expect(page.locator(".feedback")).toBeVisible();
 		if (index === 0) {
 			await expect(

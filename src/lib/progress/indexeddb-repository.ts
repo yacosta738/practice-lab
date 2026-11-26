@@ -35,11 +35,7 @@ import type {
 	SessionHistoryPage,
 	SessionHistoryQuery,
 } from "./repository-port";
-import type {
-	MetadataRecord,
-	ProgressDatabaseSchema,
-	ProgressStoreName,
-} from "./schema";
+import type { MetadataRecord, ProgressDatabaseSchema, ProgressStoreName } from "./schema";
 
 type StoreNames = ProgressStoreName[];
 
