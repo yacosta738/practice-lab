@@ -24,13 +24,11 @@ const {
 	domains = [],
 	disableAnalytics = false,
 } = Astro.props;
+
+const seoTitle = activeCertCode ? `${title} | Study ${activeCertCode}` : `${title} | Practice Lab`;
 ---
 
-<Layout
-	title={`${title} · Study · Practice Lab`}
-	description={description}
-	disableAnalytics={disableAnalytics}
->
+<Layout title={seoTitle} description={description} disableAnalytics={disableAnalytics}>
 	<AppShell
 		activeNav="study"
 		activeCertSlug={activeCertSlug}

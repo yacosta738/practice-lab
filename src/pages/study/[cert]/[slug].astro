@@ -70,8 +70,8 @@ const { Content, headings } = await render(entry);
 const toc = headings.filter((heading) => heading.depth === 2);
 
 const description = note.kind
-	? `${note.kind} note on ${note.title} for ${cert.title}.`
-	: `Study note: ${note.title} for ${cert.title}.`;
+	? `${note.kind} note on ${note.title} for ${cert.title}. Review exam-domain concepts, then practice related certification questions.`
+	: `Study note: ${note.title} for ${cert.title}. Review exam-domain concepts, then practice related certification questions.`;
 
 const sidebarDomains = Object.entries(cert.certification.domains).map(([id, d]) => ({
 	id,

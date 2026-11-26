@@ -23,7 +23,7 @@ const activeNav = Astro.url.searchParams.get("mode") === "assess" ? "assess" : "
 const breadcrumb = activeNav === "assess" ? "Assess · Mock exam" : "Practice · Questions";
 ---
 
-<Layout title={`${title} · Practice Lab`} description={description}>
+<Layout title={`${title} | ${subtitle}`} description={description}>
 	<AppShell
 		activeNav={activeNav}
 		activeCertSlug={slug}
@@ -41,7 +41,7 @@ const breadcrumb = activeNav === "assess" ? "Assess · Mock exam" : "Practice ·
 		closedby="any"
 		aria-labelledby="pl-confirm-title"
 	>
-		<h1 id="pl-confirm-title">Confirm action</h1>
+		<h2 id="pl-confirm-title">Confirm action</h2>
 		<p id="pl-confirm-message"></p>
 		<form method="dialog" class="pl-confirm-actions">
 			<button type="submit" value="cancel" class="ghost" autofocus>Cancel</button>

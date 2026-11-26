@@ -1,26 +1,37 @@
 ---
 import { getCollection } from "astro:content";
+import { getCertificationList } from "../../certifications";
 import StudyLayout from "../../layouts/StudyLayout.astro";
 import { base } from "../../lib/base";
 import { groupNotes, toNoteMeta } from "../../lib/study-groups";
 import { studyCerts } from "../../study/registry";
 
 const allNotes = await getCollection("study");
+const certifications = await getCertificationList();
+const studyCertBySlug = new Map(studyCerts.map((cert) => [cert.slug, cert]));
 
-const certData = studyCerts.map((cert) => {
-	const notes = allNotes.filter((entry) => entry.id.startsWith(`${cert.slug}/`)).map(toNoteMeta);
-	const sections = groupNotes(notes, cert.certification.domains);
+const certData = certifications.map((certification) => {
+	const studyCert = studyCertBySlug.get(certification.slug);
+	const notes = allNotes
+		.filter((entry) => entry.id.startsWith(`${certification.slug}/`))
+		.map(toNoteMeta);
+	const sections = groupNotes(notes, certification.domains);
 	return {
-		...cert,
+		slug: certification.slug,
+		title: certification.title,
+		subtitle: certification.subtitle,
+		description:
+			studyCert?.description ??
+			"Dedicated study notes are not available yet. Review exam-domain weightings and use the linked practice quiz to get started.",
 		notesCount: notes.length,
-		sectionsCount: sections.length,
+		sectionsCount: sections.length || Object.keys(certification.domains).length,
 	};
 });
 ---
 
 <StudyLayout
 	title="Study Library"
-	description="Personal study notes organised by certification and exam domain"
+	description="Browse personal certification study notes organized by exam domain, with guided lessons, curated resources, and related practice quizzes."
 >
 	<section class="section studyIntro">
 		<span class="eyebrow">Study library</span>
@@ -38,7 +49,9 @@ const certData = studyCerts.map((cert) => {
 					<span class="num">{cert.subtitle}</span>
 					<strong>{cert.title}</strong>
 					<p>{cert.description}</p>
-					<span class="certCta">Open the study library →</span>
+					<span class="certCta">
+						{cert.notesCount ? "Open the study library" : "Explore domains and practice"} →
+					</span>
 				</div>
 				<dl class="certFacts">
 					<div>
