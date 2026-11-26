@@ -71,14 +71,17 @@ async function seedTwoCertifications(page: Page) {
 			transaction.objectStore("studyProgress").put({
 				certificationId,
 				noteId: `${certificationId}/intro`,
-				completed: true,
+				status: "completed",
 				bookmarked: false,
 				updatedAt: 2,
 			});
 			transaction.objectStore("learningGoals").put({
 				certificationId,
 				dailyQuestionTarget: 5,
+				targetQuestionCount: null,
+				targetNoteCount: null,
 				targetDate: null,
+				targetDateTimezone: "floating-local",
 				updatedAt: 2,
 			});
 		}
@@ -102,7 +105,7 @@ async function addStudyProgress(page: Page, noteId: string) {
 		transaction.objectStore("studyProgress").put({
 			certificationId: "ccdv-f",
 			noteId: id,
-			completed: true,
+			status: "completed",
 			bookmarked: false,
 			updatedAt: Date.now(),
 		});

@@ -1,10 +1,15 @@
+import { createHash } from "node:crypto";
+
 /** Types and helpers for grouping study notes into certification sections. */
 
 export interface StudyNoteMeta {
 	slug: string;
 	id: string;
+	entryId: string;
+	aliases: string[];
 	title: string;
 	sectionId: string;
+	revision: string;
 	updated?: string;
 	kind?: string;
 }
@@ -19,8 +24,11 @@ export interface StudySection {
 
 export interface StudyEntry {
 	id: string;
+	body?: string;
 	data: {
 		title: string;
+		noteId?: string;
+		aliases?: string[];
 		updated?: string | Date;
 		type?: string;
 		tipo?: string;
@@ -34,7 +42,9 @@ export function noteSlug(id: string): string {
 }
 
 /** Fail route generation when two notes in one certification share a public slug. */
-export function assertUniqueNoteSlugs(notes: readonly StudyNoteMeta[]): void {
+export function assertUniqueNoteSlugs<T extends Pick<StudyNoteMeta, "slug" | "id">>(
+	notes: readonly T[],
+): void {
 	const idBySlug = new Map<string, string>();
 	for (const note of notes) {
 		const previousId = idBySlug.get(note.slug);
@@ -67,6 +77,10 @@ export function sectionIdForId(id: string): string {
 export function toNoteMeta(entry: StudyEntry): StudyNoteMeta {
 	const slug = noteSlug(entry.id);
 	const sectionId = sectionIdForId(entry.id);
+	const id = entry.data.noteId?.trim() || entry.id;
+	const aliases = [
+		...new Set([...(entry.data.aliases ?? []), ...(id === entry.id ? [] : [entry.id])]),
+	];
 	const rawUpdated = entry.data.updated;
 	const updated =
 		rawUpdated instanceof Date
@@ -77,12 +91,21 @@ export function toNoteMeta(entry: StudyEntry): StudyNoteMeta {
 
 	return {
 		slug,
-		id: entry.id,
+		id,
+		entryId: entry.id,
+		aliases,
 		title: entry.data.title,
 		sectionId,
+		revision: noteRevision(entry.data.title, entry.body ?? ""),
 		kind: entry.data.type ?? entry.data.tipo,
 		updated,
 	};
+}
+
+function noteRevision(title: string, body: string): string {
+	return `sha256-${createHash("sha256")
+		.update(JSON.stringify([title, body]))
+		.digest("hex")}`;
 }
 
 /** Map from folder segment to the canonical section id. */

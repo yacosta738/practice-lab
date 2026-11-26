@@ -44,8 +44,20 @@ for (const [id, domain] of Object.entries(cert.certification.domains)) {
 	});
 }
 
-const totalNotes = notes.length;
 const totalSections = sections.length;
+const eligibleNotes = sections.flatMap((section) => section.notes);
+const totalNotes = eligibleNotes.length;
+const studyClientData = JSON.stringify({
+	certificationId: cert.slug,
+	notes: eligibleNotes.map((note) => ({
+		certificationId: cert.slug,
+		noteId: note.id,
+		aliases: note.aliases,
+		revision: note.revision,
+		title: note.title,
+		href: `${base}study/${cert.slug}/${note.slug}/`,
+	})),
+}).replaceAll("<", "\\u003c");
 
 const sidebarDomains = Object.entries(cert.certification.domains).map(([id, d]) => ({
 	id,
@@ -62,6 +74,7 @@ const sidebarDomains = Object.entries(cert.certification.domains).map(([id, d]) 
 	activeCertCode={cert.subtitle}
 	breadcrumb="Study Library"
 	domains={sidebarDomains}
+	disableAnalytics={true}
 >
 	<nav class="breadcrumb" aria-label="Breadcrumb">
 		<a href={base}>Home</a>
@@ -100,6 +113,16 @@ const sidebarDomains = Object.entries(cert.certification.domains).map(([id, d]) 
 		</div>
 	</section>
 
+	<section class="studyProgressPanel" aria-labelledby="study-progress-title">
+		<div>
+			<h2 id="study-progress-title">Study progress</h2>
+			<p id="study-library-summary" class="muted" role="status" aria-live="polite">
+				Loading personal study progress…
+			</p>
+		</div>
+		<p id="study-library-error" class="studyProgressError" role="alert" hidden></p>
+	</section>
+
 	<nav class="studyJump" aria-label="Jump to section">
 		{sections.map((section) => <a href={`#${section.id}`}>{section.title}</a>)}
 	</nav>
@@ -117,11 +140,27 @@ const sidebarDomains = Object.entries(cert.certification.domains).map(([id, d]) 
 			{section.notes.length ? (
 				<ul class="studyList">
 					{section.notes.map((note) => (
-						<li>
+						<li data-study-note-row={note.id}>
 							<a class="studyNote" href={`${base}study/${cert.slug}/${note.slug}/`}>
 								<span class="studyNoteTitle">{note.title}</span>
 								{note.kind && <span class="kindBadge">{note.kind}</span>}
 							</a>
+							<div class="studyNoteProgress">
+								<span data-study-status>Not started</span>
+								<a data-study-resume hidden href={`${base}study/${cert.slug}/${note.slug}/`}>
+									Resume reading
+								</a>
+								<button
+									class="studyBookmarkButton"
+									type="button"
+									data-study-bookmark
+									aria-label={`Bookmark ${note.title}`}
+									aria-pressed="false"
+									disabled
+								>
+									Bookmark
+								</button>
+							</div>
 						</li>
 					))}
 				</ul>
@@ -133,3 +172,110 @@ const sidebarDomains = Object.entries(cert.certification.domains).map(([id, d]) 
 
 	<p class="alert section">Personal study notes. Not affiliated with or endorsed by Anthropic.</p>
 </StudyLayout>
+
+<script type="application/json" id="study-library-data" set:html={studyClientData}></script>
+
+<script>
+import type { StudyProgressRecord } from "../../../lib/progress/model";
+import type { StudyNoteReference } from "../../../lib/progress/study-domain";
+import {
+	getStudyStatus,
+	resolveStudyRecord,
+	summarizeStudyProgress,
+} from "../../../lib/progress/study-domain";
+import { StudyProgressService } from "../../../lib/progress/study-service";
+
+interface LibraryNote extends StudyNoteReference {
+	title: string;
+	href: string;
+}
+
+interface LibraryData {
+	certificationId: string;
+	notes: LibraryNote[];
+}
+
+const data = JSON.parse(
+	document.getElementById("study-library-data")?.textContent ?? "{}",
+) as LibraryData;
+const service = new StudyProgressService();
+const summary = document.getElementById("study-library-summary") as HTMLParagraphElement;
+const error = document.getElementById("study-library-error") as HTMLParagraphElement;
+let records: StudyProgressRecord[] = [];
+
+async function renderProgress(): Promise<void> {
+	records = await service.getProgress(data.certificationId);
+	const counts = summarizeStudyProgress(data.notes, records);
+	summary.textContent = `${counts.completed} of ${counts.eligible} notes completed · ${counts.inProgress} in progress · ${counts.bookmarked} bookmarks`;
+	for (const note of data.notes) {
+		const row = document.querySelector<HTMLElement>(
+			`[data-study-note-row="${CSS.escape(note.noteId)}"]`,
+		);
+		if (!row) continue;
+		const record = resolveStudyRecord(note, records);
+		const status = getStudyStatus(record, note.revision);
+		const statusElement = row.querySelector<HTMLElement>("[data-study-status]");
+		if (statusElement) {
+			statusElement.textContent =
+				status === "completed"
+					? "Completed"
+					: status === "in_progress"
+						? "In progress"
+						: "Not started";
+		}
+		const bookmark = row.querySelector<HTMLButtonElement>("[data-study-bookmark]");
+		if (bookmark) {
+			bookmark.disabled = false;
+			bookmark.setAttribute("aria-pressed", String(record?.bookmarked ?? false));
+			bookmark.setAttribute(
+				"aria-label",
+				record?.bookmarked ? `Remove ${note.title} bookmark` : `Bookmark ${note.title}`,
+			);
+			bookmark.textContent = record?.bookmarked ? "Bookmarked" : "Bookmark";
+		}
+		const resume = row.querySelector<HTMLAnchorElement>("[data-study-resume]");
+		if (resume && record?.readingPositionAnchor && record.contentRevision === note.revision) {
+			resume.href = `${note.href}#${encodeURIComponent(record.readingPositionAnchor)}`;
+			resume.hidden = false;
+		} else if (resume) {
+			resume.hidden = true;
+		}
+	}
+}
+
+async function start(): Promise<void> {
+	try {
+		await service.initialize(data.certificationId);
+		await renderProgress();
+		service.onChange((kind) => {
+			if (kind !== "practice") void renderProgress().catch(showError);
+		});
+	} catch (cause) {
+		showError(cause);
+	}
+}
+
+function showError(cause: unknown): void {
+	error.hidden = false;
+	error.textContent = `Personal progress could not be loaded or saved. The study notes remain available.${cause instanceof Error ? ` ${cause.message}` : ""}`;
+}
+
+document.addEventListener("click", (event) => {
+	const target =
+		event.target instanceof Element
+			? event.target.closest<HTMLButtonElement>("[data-study-bookmark]")
+			: null;
+	if (!target) return;
+	const row = target.closest<HTMLElement>("[data-study-note-row]");
+	const note = data.notes.find((item) => item.noteId === row?.dataset.studyNoteRow);
+	if (!note) return;
+	const record = resolveStudyRecord(note, records);
+	void service
+		.setBookmarked(note, !(record?.bookmarked ?? false))
+		.then(renderProgress)
+		.catch(showError);
+});
+
+window.addEventListener("pagehide", () => service.close(), { once: true });
+void start();
+</script>

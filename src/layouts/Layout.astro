@@ -7,9 +7,15 @@ interface Props {
 	title: string;
 	description?: string;
 	ogImage?: string;
+	disableAnalytics?: boolean;
 }
 
-const { title, description = "Practice quiz for certification preparation", ogImage } = Astro.props;
+const {
+	title,
+	description = "Practice quiz for certification preparation",
+	ogImage,
+	disableAnalytics = false,
+} = Astro.props;
 const isVercelDeployment = process.env.VERCEL === "1";
 
 // Build canonical URL preserving the served path (including trailing slash)
@@ -98,9 +104,12 @@ const isDefaultImage = !ogImage;
 		>
 
 		<!-- Referrer policy hint (server header is preferred) -->
-		<meta name="referrer" content="strict-origin-when-cross-origin">
-		{isVercelDeployment && <Analytics />}
-		<AhrefsAnalytics />
+		<meta
+			name="referrer"
+			content={disableAnalytics ? "no-referrer" : "strict-origin-when-cross-origin"}
+		>
+		{isVercelDeployment && !disableAnalytics && <Analytics />}
+		{!disableAnalytics && <AhrefsAnalytics />}
 	</head>
 	<body>
 		<a class="skip-link" href="#main-content">Skip to main content</a>

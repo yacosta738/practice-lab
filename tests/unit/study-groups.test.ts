@@ -144,6 +144,22 @@ describe("toNoteMeta", () => {
 
 		expect(meta.updated).toBeUndefined();
 	});
+
+	it("keeps a stable note ID and old path aliases across a route rename", () => {
+		const meta = toNoteMeta({
+			id: "ccdv-f/D1/new-route",
+			body: "Revised note body",
+			data: {
+				title: "Renamed note",
+				noteId: "ccdv-f/D1/old-route",
+				aliases: ["ccdv-f/legacy/route"],
+			},
+		});
+
+		expect(meta.id).toBe("ccdv-f/D1/old-route");
+		expect(meta.aliases).toEqual(["ccdv-f/legacy/route", "ccdv-f/D1/new-route"]);
+		expect(meta.revision).toMatch(/^sha256-[a-f0-9]{64}$/);
+	});
 });
 
 /* ------------------------------------------------------------------ */
@@ -160,7 +176,8 @@ function note(
 	title: string,
 	slug = title.toLowerCase().replace(/\s+/g, "-"),
 ): StudyNoteMeta {
-	return { slug, id: `ccdv-f/${sectionId}/${slug}`, title, sectionId };
+	const id = `ccdv-f/${sectionId}/${slug}`;
+	return { slug, id, entryId: id, aliases: [], title, sectionId, revision: "sha256-test" };
 }
 
 describe("groupNotes", () => {
@@ -223,8 +240,11 @@ describe("groupNotes", () => {
 			{
 				slug: "agent-loop",
 				id: "ccdv-f/01-agents-and-workflows/agent-loop",
+				entryId: "ccdv-f/01-agents-and-workflows/agent-loop",
+				aliases: [],
 				title: "Agent Loop",
 				sectionId: "D1",
+				revision: "sha256-test",
 			},
 		];
 		const sections = groupNotes(notes, domains);
@@ -237,9 +257,33 @@ describe("groupNotes", () => {
 
 	it("returns one section per valid note and drops invalid notes", () => {
 		const notes: StudyNoteMeta[] = [
-			{ slug: "a", id: "ccdv-f/01-agents-and-workflows/a", title: "A", sectionId: "D1" },
-			{ slug: "b", id: "ccdv-f/02-applications-and-integration/b", title: "B", sectionId: "D2" },
-			{ slug: "ghost", id: "ccdv-f/unknown/ghost", title: "Ghost", sectionId: "unknown" },
+			{
+				slug: "a",
+				id: "ccdv-f/01-agents-and-workflows/a",
+				entryId: "ccdv-f/01-agents-and-workflows/a",
+				aliases: [],
+				title: "A",
+				sectionId: "D1",
+				revision: "sha256-test",
+			},
+			{
+				slug: "b",
+				id: "ccdv-f/02-applications-and-integration/b",
+				entryId: "ccdv-f/02-applications-and-integration/b",
+				aliases: [],
+				title: "B",
+				sectionId: "D2",
+				revision: "sha256-test",
+			},
+			{
+				slug: "ghost",
+				id: "ccdv-f/unknown/ghost",
+				entryId: "ccdv-f/unknown/ghost",
+				aliases: [],
+				title: "Ghost",
+				sectionId: "unknown",
+				revision: "sha256-test",
+			},
 		];
 		const sections = groupNotes(notes, domains);
 

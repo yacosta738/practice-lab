@@ -1,10 +1,11 @@
 # Browser progress, migration, and recovery
 
-Practice Lab stores quiz sessions, evaluated attempts, and question statistics in the `practice-lab`
-IndexedDB database. The data remains local to the current browser profile and site origin. It is not
-uploaded or synchronized between the GitHub Pages and Vercel origins. The `practice-lab-theme`
-`localStorage` entry remains a presentation preference; quiz progress no longer reads or writes the
-legacy `<certification>-practice-lab-v2` key after its one-time import.
+Practice Lab stores quiz sessions, evaluated attempts, question statistics, study-note progress,
+bookmarks, and study goals in the `practice-lab` IndexedDB database. The data remains local to the
+current browser profile and site origin. It is not uploaded or synchronized between the GitHub Pages
+and Vercel origins. Study-note page paths and note-level behavior are excluded from analytics. The
+`practice-lab-theme` `localStorage` entry remains a presentation preference; quiz progress no longer
+reads or writes the legacy `<certification>-practice-lab-v2` key after its one-time import.
 
 ## Importing legacy progress
 
@@ -44,6 +45,32 @@ the conflict.
 The service worker cache is versioned so an activated update removes the previous app-shell cache.
 Already-open tabs can continue running old code; storage events, `BroadcastChannel`, and
 visibility-time revision checks detect conflicts where supported.
+
+## Study-note progress and goals
+
+Opening a note records it as **in progress**; visiting or scrolling never marks it complete. The
+reader must choose **Mark as complete**, and **Mark unread** reverses that state. Reading anchors are
+saved only when a heading changes after a short debounce and are offered as explicit resume links;
+the app does not force scroll or focus. Bookmarks and note states are scoped by certification.
+
+By default a note's stable ID is its content path. Before renaming a file, keep its existing `noteId`
+or set an explicit stable `noteId`; add prior IDs to `aliases` when changing the canonical ID. The
+route may change while progress follows the stable ID or an alias. Removed notes remain in archived
+history and in backups, but are excluded from the current eligible-note denominator. When note body
+or title content changes, a prior completion becomes in progress and its completion timestamp is
+retained; a saved reading anchor from the old revision is cleared rather than resumed at an
+unverified location.
+
+Exam targets are optional `YYYY-MM-DD` floating local-calendar dates, not UTC timestamps or a time
+zone-specific instant. Question and completed-note targets are also optional. Existing numeric target
+timestamps are preserved as legacy values during migration and backup; they are not converted into
+invented local dates. No notification permission or remote calendar integration is used.
+
+The full backup uses schema version 2 and includes note IDs, states, reading anchors, bookmarks, and
+goals; version 1 backups are normalized on restore. Stable IDs and aliases are part of the published
+note metadata, not copies of note content in the backup. Full data management resets remove study
+states and goals for the chosen scope. The separate quiz-only
+**Reset progress** action intentionally keeps study-note progress and goals.
 
 ## Reset and recovery limits
 
