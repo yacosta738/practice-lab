@@ -5,6 +5,7 @@ import AppShell from "../../components/AppShell.astro";
 import Layout from "../../layouts/Layout.astro";
 import { base } from "../../lib/base";
 import type { ProgressBank } from "../../lib/progress/analytics";
+import { computeQuestionRevision } from "../../lib/progress/legacy-migration";
 import { groupNotes, toNoteMeta } from "../../lib/study-groups";
 import "../../styles/tokens.css";
 import "../../styles/quiz.css";
@@ -16,12 +17,20 @@ const banks: ProgressBank[] = await Promise.all(
 		return {
 			certificationId: certification.slug,
 			certificationSubtitle: certification.subtitle,
+			...(certification.blueprintSource ? { blueprintSource: certification.blueprintSource } : {}),
 			questions: (bank?.questions ?? []).map((question) => ({
 				certificationId: certification.slug,
 				certificationSubtitle: certification.subtitle,
 				questionId: question.id,
 				domainId: question.domain,
 				domainName: certification.domains[question.domain]?.name ?? question.domain,
+				revision: computeQuestionRevision(question),
+				...(certification.domains[question.domain]?.weight !== undefined
+					? { domainWeight: certification.domains[question.domain].weight }
+					: {}),
+				...(certification.blueprintSource
+					? { blueprintSource: certification.blueprintSource }
+					: {}),
 			})),
 		};
 	}),
@@ -153,6 +162,17 @@ const clientData = JSON.stringify({ banks, certificationLabels, studyNotes }).re
 				<div class="progressMetricGrid" id="progress-metrics" aria-live="polite"></div>
 			</section>
 
+			<div class="progressVisualGrid">
+				<section class="panel progressVisual" aria-labelledby="mastery-title">
+					<h2 id="mastery-title">Mastery breakdown</h2>
+					<div id="mastery-breakdown" aria-live="polite"></div>
+				</section>
+				<section class="panel progressVisual" aria-labelledby="recommendations-title">
+					<h2 id="recommendations-title">Targeted review recommendations</h2>
+					<div id="review-recommendations" aria-live="polite"></div>
+				</section>
+			</div>
+
 			<section class="progressStudy panel" aria-labelledby="study-progress-title">
 				<div class="progressStudyHeader">
 					<div>
@@ -240,8 +260,34 @@ const clientData = JSON.stringify({ banks, certificationLabels, studyNotes }).re
 						answers divided by the session's frozen question count, including unanswered questions.
 					</li>
 					<li>
-						<strong>Domain accuracy</strong> is correct evaluations divided by evaluations in that
-						domain, including imported legacy totals where available.
+						<strong>Domain metrics</strong> report coverage, overall accuracy, recent accuracy
+						(within the latest 10 timestamped evaluations), and mastery counts separately with
+						sample sizes. Domains with fewer than 3 attempts are marked as insufficient evidence and
+						are not ranked as worst accuracy.
+					</li>
+					<li>
+						<strong>Mastery states (<code>mastery-v1</code>)</strong> are derived deterministically
+						from chronological recorded attempts: <strong>New</strong> (no evaluated evidence),
+						<strong>Learning</strong> (some evidence, a recent miss, a material question revision,
+						or undated legacy totals only), <strong>Proficient</strong> (at least 2 consecutive
+						correct evaluations across distinct sessions on the current revision), and
+						<strong>Mastered</strong>
+						(at least 3 consecutive correct evaluations across distinct sessions spanning at least
+						24 hours).
+					</li>
+					<li>
+						<strong>Demotion, revisions &amp; staleness</strong>: wrong or partial answers reset a
+						question to <strong>Learning</strong>. Material question revisions require
+						re-verification on the current revision while keeping historical session scores
+						unchanged. Proficient or mastered questions not verified within 14 days are flagged as
+						stale for review.
+					</li>
+					<li>
+						<strong>Recommendations &amp; weighting</strong>: recommendations prioritize recently
+						missed questions, updated questions, weak domains (below 75% accuracy with at least 3
+						attempts), stale knowledge, and unseen domains. Official exam blueprint weights are used
+						only where explicitly labeled; local practice evidence does not predict official exam
+						pass probability.
 					</li>
 					<li>
 						<strong>Exam trend</strong> includes completed and expired mock exams; unanswered
@@ -258,7 +304,7 @@ const clientData = JSON.stringify({ banks, certificationLabels, studyNotes }).re
 
 			<div class="progressVisualGrid">
 				<section class="panel progressVisual" aria-labelledby="domains-title">
-					<h2 id="domains-title">Accuracy by domain</h2>
+					<h2 id="domains-title">Domain coverage, accuracy &amp; mastery</h2>
 					<div id="domain-chart"></div>
 				</section>
 				<section class="panel progressVisual" aria-labelledby="trend-title">
@@ -422,32 +468,140 @@ function renderMetrics(
 	} else {
 		importedNotice.hidden = true;
 	}
+	const masteredPct = percentage(summary.mastery.mastered, summary.mastery.total);
 	byId("progress-metrics").innerHTML = `
 			<article class="progressMetric panel"><h3>Bank coverage</h3><strong>${coverage ?? 0}%</strong><p>${summary.coverage.evaluated} of ${summary.coverage.eligible} questions evaluated</p></article>
 			<article class="progressMetric panel"><h3>Overall accuracy</h3><strong>${accuracy === undefined ? "—" : `${accuracy}%`}</strong><p>${summary.accuracy.correct} correct of ${summary.accuracy.attempts} attempts</p></article>
 			<article class="progressMetric panel"><h3>Recent accuracy</h3><strong>${recent === undefined ? "—" : `${recent}%`}</strong><p>${summary.recentAccuracy.correct} correct of ${summary.recentAccuracy.attempts} recent attempts</p></article>
 			<article class="progressMetric panel"><h3>Completed mock exams</h3><strong>${summary.completedMockExams}</strong><p>Completed exam sessions</p></article>
 			<article class="progressMetric panel"><h3>Last result</h3><strong>${lastResult ? `${lastResult.correct}/${lastResult.questions}` : "—"}</strong><p>${lastResult ? `${escapeHtml(labels[lastResult.certificationId]?.subtitle ?? lastResult.certificationId)} · ${formatDate(lastResult.finishedAt)}` : "No finished sessions yet"}</p></article>
+			<article class="progressMetric panel"><h3>Durable mastery</h3><strong>${masteredPct ?? 0}%</strong><p>${summary.mastery.mastered} mastered · ${summary.mastery.proficient} proficient of ${summary.mastery.total}</p></article>
 		`;
+}
+
+function renderMasteryBreakdown(summary: ReturnType<typeof deriveProgressSummary>): void {
+	const container = byId<HTMLDivElement>("mastery-breakdown");
+	const m = summary.mastery;
+	if (m.total === 0) {
+		container.innerHTML = '<p class="muted">No eligible questions in the selected bank.</p>';
+		return;
+	}
+	const notes: string[] = [];
+	if (m.stale > 0) {
+		notes.push(
+			`${m.stale} proficient or mastered ${m.stale === 1 ? "question is" : "questions are"} due for a 14-day refresh.`,
+		);
+	}
+	if (m.revisionChanged > 0) {
+		notes.push(
+			`${m.revisionChanged} ${m.revisionChanged === 1 ? "question was" : "questions were"} materially revised since your last attempt.`,
+		);
+	}
+	if (m.legacyOnly > 0) {
+		notes.push(
+			`${m.legacyOnly} ${m.legacyOnly === 1 ? "question has" : "questions have"} undated legacy totals only (counted as Learning, not Proficient or Mastered).`,
+		);
+	}
+	const rows = [
+		{
+			label: "Mastered",
+			count: m.mastered,
+			detail: `≥ ${summary.policy.masteredMinSessions} distinct sessions, ≥ 24h spacing`,
+		},
+		{
+			label: "Proficient",
+			count: m.proficient,
+			detail: `≥ ${summary.policy.proficientMinSessions} distinct sessions on current revision`,
+		},
+		{
+			label: "Learning",
+			count: m.learning,
+			detail: "Evaluated, missed, revised, or legacy-only evidence",
+		},
+		{
+			label: "New",
+			count: m.new,
+			detail: "No evaluated evidence yet",
+		},
+	];
+	container.innerHTML = `
+		<p class="small muted progressPolicyCaption">Policy <code>${escapeHtml(summary.policy.version)}</code> · Local practice evidence only (not an exam-pass prediction).</p>
+		<ul class="progressMasteryList">
+			${rows
+				.map((row) => {
+					const pct = percentage(row.count, m.total) ?? 0;
+					return `<li><div class="progressBarHeading"><span><strong>${row.label}</strong> · ${escapeHtml(row.detail)}</span><strong>${row.count}/${m.total} (${pct}%)</strong></div><progress max="${Math.max(1, m.total)}" value="${row.count}" aria-label="${row.label}: ${row.count} of ${m.total} questions (${pct}%)"></progress></li>`;
+				})
+				.join("")}
+		</ul>
+		${notes.length ? `<ul class="progressMasteryNotes">${notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("")}</ul>` : ""}
+	`;
+}
+
+function categoryLabel(
+	category: ReturnType<typeof deriveProgressSummary>["recommendations"][number]["category"],
+): string {
+	return {
+		"recently-missed": "Recently missed",
+		"revision-changed": "Updated question",
+		"weak-domain": "Weak domain",
+		"stale-knowledge": "Stale knowledge",
+		"unseen-questions": "Unseen questions",
+	}[category];
+}
+
+function renderRecommendations(summary: ReturnType<typeof deriveProgressSummary>): void {
+	const container = byId<HTMLDivElement>("review-recommendations");
+	if (!summary.recommendations.length) {
+		container.innerHTML =
+			'<p class="muted">No targeted review items right now. All eligible questions have current mastery evidence.</p>';
+		return;
+	}
+	container.innerHTML = `<ol class="progressRecommendationList">${summary.recommendations
+		.map((rec) => {
+			const studyLink = rec.studyHref
+				? `<a href="${escapeHtml(rec.studyHref)}">${escapeHtml(rec.studyLabel ?? "Study notes")}</a>`
+				: "";
+			return `<li class="progressRecommendationItem"><div class="progressRecommendationHead"><span class="progressStatusTag">${escapeHtml(categoryLabel(rec.category))}</span><span class="small muted">Sample: ${rec.sampleSize}</span></div><h3>${escapeHtml(rec.title)}</h3><p class="small muted">${escapeHtml(rec.reason)}</p><div class="progressDomainLinks"><a href="${escapeHtml(rec.practiceHref)}">${escapeHtml(rec.practiceLabel)}</a>${studyLink}</div></li>`;
+		})
+		.join("")}</ol>`;
 }
 
 function renderDomainChart(summary: ReturnType<typeof deriveProgressSummary>): void {
 	const container = byId<HTMLDivElement>("domain-chart");
 	if (!summary.domains.length) {
 		container.innerHTML =
-			'<p class="muted">Domain accuracy will appear after your first evaluated answer.</p>';
+			'<p class="muted">Domain coverage, accuracy, and mastery will appear after your first evaluated answer.</p>';
 		return;
 	}
-	container.innerHTML = `<ul class="progressBarList">${summary.domains
+	const visibleDomains =
+		certificationFilter.value === "all" ? summary.domains : summary.domainBreakdown;
+	container.innerHTML = `<ul class="progressBarList">${visibleDomains
 		.map((domain) => {
-			const rate = percentage(domain.correct, domain.attempts) ?? 0;
+			const correct = "accuracy" in domain ? domain.accuracy.correct : domain.correct;
+			const attempts = "accuracy" in domain ? domain.accuracy.attempts : domain.attempts;
+			const rate = percentage(correct, attempts) ?? 0;
 			const certification = escapeHtml(domain.certificationSubtitle);
 			const certificationId = encodeURIComponent(domain.certificationId);
 			const domainId = encodeURIComponent(domain.domainId);
 			const name = escapeHtml(domain.domainName);
 			const studyUrl = `${base}study/${certificationId}/#${domainId}`;
 			const practiceUrl = `${base}certifications/${certificationId}/?mode=practice&domain=${domainId}#session`;
-			return `<li><div class="progressBarHeading"><span>${certification} · ${escapeHtml(domain.domainId)} ${name}</span><strong>${formatAccuracy(domain.correct, domain.attempts)}</strong></div><div class="progressDomainLinks"><a href="${escapeHtml(studyUrl)}" aria-label="Study section for ${certification} ${escapeHtml(domain.domainId)}">Study section</a><a href="${escapeHtml(practiceUrl)}" aria-label="Practice domain for ${certification} ${escapeHtml(domain.domainId)}">Practice domain</a></div><progress max="100" value="${rate}" aria-label="${certification}, ${escapeHtml(domain.domainId)} ${name}: ${rate}% accuracy"></progress></li>`;
+			const weightLabel =
+				domain.examWeight !== undefined && domain.blueprintSource === "official"
+					? ` · Official exam weight ${domain.examWeight}%`
+					: domain.examWeight !== undefined && domain.blueprintSource === "derived"
+						? ` · Bank share ${domain.examWeight}%`
+						: "";
+			const recentText =
+				domain.recentAccuracy.attempts > 0
+					? `Recent: ${formatAccuracy(domain.recentAccuracy.correct, domain.recentAccuracy.attempts)}`
+					: "Recent: none in last 10";
+			const evidenceTag = domain.hasSufficientEvidence
+				? ""
+				: ` · Insufficient evidence (< ${summary.policy.weakDomainMinAttempts} attempts)`;
+			const detailLine = `Coverage: ${domain.coverage.evaluated}/${domain.coverage.eligible} · ${recentText} · Mastery: ${domain.mastery.mastered} mastered, ${domain.mastery.proficient} proficient, ${domain.mastery.learning} learning, ${domain.mastery.new} new${evidenceTag}`;
+			return `<li><div class="progressBarHeading"><span>${certification} · ${escapeHtml(domain.domainId)} ${name}${escapeHtml(weightLabel)}</span><strong>${formatAccuracy(correct, attempts)}</strong></div><p class="small muted progressDomainMeta">${escapeHtml(detailLine)}</p><div class="progressDomainLinks"><a href="${escapeHtml(studyUrl)}" aria-label="Study section for ${certification} ${escapeHtml(domain.domainId)}">Study section</a><a href="${escapeHtml(practiceUrl)}" aria-label="Practice domain for ${certification} ${escapeHtml(domain.domainId)}">Practice domain</a></div><progress max="100" value="${rate}" aria-label="${certification}, ${escapeHtml(domain.domainId)} ${name}: ${attempts ? `${rate}% accuracy` : "no attempts yet"}"></progress></li>`;
 		})
 		.join("")}</ul>`;
 }
@@ -536,8 +690,11 @@ async function load(): Promise<void> {
 			summaryData.history,
 			summaryData.questionProgress,
 			summaryData,
+			{ basePath: base },
 		);
 		renderMetrics(summary, selectedBanks, summaryData.hasSessions);
+		renderMasteryBreakdown(summary);
+		renderRecommendations(summary);
 		renderDomainChart(summary);
 		renderExamTrend(summary);
 		renderHistory(historyPage);
@@ -1218,6 +1375,64 @@ void loadStudyProgress();
 	display: flex;
 	gap: 12px;
 	margin: 6px 0;
+}
+
+.progressPage :global(.progressDomainMeta) {
+	line-height: 1.45;
+	margin: 4px 0;
+}
+
+.progressPage :global(.progressPolicyCaption) {
+	margin: 0 0 12px;
+}
+
+.progressPage :global(.progressMasteryList),
+.progressPage :global(.progressRecommendationList) {
+	display: grid;
+	gap: 12px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.progressPage :global(.progressMasteryList progress) {
+	height: 10px;
+	width: 100%;
+}
+
+.progressPage :global(.progressMasteryNotes) {
+	color: var(--muted);
+	display: grid;
+	font-size: 12px;
+	gap: 6px;
+	line-height: 1.45;
+	margin: 12px 0 0;
+	padding-left: 18px;
+}
+
+.progressPage :global(.progressRecommendationItem) {
+	background: var(--raised);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 12px;
+}
+
+.progressPage :global(.progressRecommendationHead) {
+	align-items: center;
+	display: flex;
+	gap: 8px;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+
+.progressPage :global(.progressRecommendationItem h3) {
+	font-size: 14px;
+	margin: 0 0 4px;
+}
+
+.progressPage :global(.progressRecommendationItem p) {
+	line-height: 1.45;
+	margin: 0 0 6px;
 }
 
 .progressPage :global(.progressTrendGroup + .progressTrendGroup) {
