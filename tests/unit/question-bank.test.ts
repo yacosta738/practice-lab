@@ -8,6 +8,8 @@ import { questions as ccarpQuestions } from "../../src/certifications/ccar-p/que
 // Load config modules to validate domains
 import { config as ccdvConfig } from "../../src/certifications/ccdv-f/config";
 import { questions as ccdvQuestions } from "../../src/certifications/ccdv-f/questions";
+import { config as ccdvpConfig } from "../../src/certifications/ccdv-p/config";
+import { questions as ccdvpQuestions } from "../../src/certifications/ccdv-p/questions";
 
 interface CertBank {
 	slug: string;
@@ -17,6 +19,7 @@ interface CertBank {
 
 const banks: CertBank[] = [
 	{ slug: "ccdv-f", config: ccdvConfig, questions: ccdvQuestions },
+	{ slug: "ccdv-p", config: ccdvpConfig, questions: ccdvpQuestions },
 	{ slug: "ccao-f", config: ccaoConfig, questions: ccaoQuestions },
 	{ slug: "ccar-p", config: ccarpConfig, questions: ccarpQuestions },
 	{ slug: "ccar-f", config: ccarfConfig, questions: ccarfQuestions },
@@ -153,6 +156,219 @@ function validateBank(bank: CertBank) {
 for (const bank of banks) {
 	validateBank(bank);
 }
+
+describe("CCDV-P practice bank", () => {
+	it("matches its derived domain counts and reviewed multi-answer IDs", () => {
+		const domainCounts = Object.fromEntries(
+			Object.keys(ccdvpConfig.domains).map((domainId) => [
+				domainId,
+				ccdvpQuestions.filter((question) => question.domain === domainId).length,
+			]),
+		);
+		const multiAnswerIds = ccdvpQuestions
+			.filter((question) => question.selectCount === 2)
+			.map((question) => question.id);
+		const questionIds = ccdvpQuestions.map((question) => question.id);
+
+		expect(domainCounts).toEqual(ccdvpConfig.examBlueprint);
+		expect(multiAnswerIds).toEqual(["PDF-1.3", "PDF-3.4", "PDF-4.3", "PDF-6.2", "PDF-7.3"]);
+		expect(questionIds).toHaveLength(70);
+		expect(questionIds).toContain("PDF-3.5");
+		expect(ccdvpConfig.totalQuestions).toBe(70);
+	});
+
+	it("names Voyage before applying its provider-specific embedding input modes", () => {
+		const question = ccdvpQuestions.find((candidate) => candidate.id === "PDF-3.5");
+		expect(question?.question).toMatch(/Voyage.*text embeddings API/i);
+		const correctOption = question?.options[question.correctAnswers[0]] ?? "";
+		expect(correctOption).toMatch(/input_type.*query/i);
+		expect(question?.explanation).toMatch(
+			/provider-specific rather than a universal embedding rule/i,
+		);
+	});
+
+	it("keeps official weights separate from the derived mock blueprint", () => {
+		expect(
+			Object.fromEntries(
+				Object.entries(ccdvpConfig.domains).map(([domainId, domain]) => [domainId, domain.weight]),
+			),
+		).toEqual({ D1: 17, D2: 20, D3: 12, D4: 10, D5: 12, D6: 8, D7: 11, D8: 10 });
+		expect(ccdvpConfig.blueprintSource).toBe("derived");
+	});
+
+	it("links its attribution to the CC BY-NC 4.0 license", () => {
+		expect(ccdvpQuestions[0].source.label).toContain("Matthew Purcell");
+		expect(ccdvpQuestions[0].source.label).toContain("Full Practice Exam Question Set");
+		expect(ccdvpQuestions[0].source.label).toContain("CC BY-NC 4.0");
+		expect(ccdvpQuestions[0].source.label).toMatch(/adapt/i);
+		expect(ccdvpQuestions[0].source.url).toBe(
+			"https://www.linkedin.com/posts/purcellmatthew_ccdv-p-claude-certified-developer-professional-activity-7530737595782438912-kSDX",
+		);
+	});
+
+	it("does not trust uploader-selected sensitivity labels to protect uploads", () => {
+		const question = ccdvpQuestions.find((candidate) => candidate.id === "PDF-7.1");
+		expect(question).toBeDefined();
+		const correctOption = question?.options[question.correctAnswers[0]] ?? "";
+		expect(correctOption).toMatch(/in-house service by default/i);
+		expect(correctOption).toMatch(/publisher-controlled.*classification/i);
+		expect(correctOption).toMatch(/non-confidential/i);
+	});
+});
+
+const acceptedTestAppIds = [
+	"claude-generated-002",
+	"claude-generated-005",
+	"claude-generated-009",
+	"claude-generated-010",
+	"claude-generated-011",
+	"claude-generated-013",
+	"claude-generated-014",
+	"claude-generated-024",
+	"claude-generated-025",
+	"claude-generated-026",
+	"claude-generated-027",
+	"claude-generated-029",
+	"claude-generated-030",
+	"claude-generated-032",
+	"claude-generated-033",
+	"claude-generated-034",
+	"claude-generated-035",
+	"claude-generated-037",
+	"claude-generated-038",
+	"claude-generated-041",
+	"claude-generated-042",
+	"claude-generated-044",
+	"claude-generated-045",
+	"claude-generated-046",
+	"claude-generated-048",
+	"claude-generated-052",
+	"claude-generated-058",
+	"claude-generated-060",
+	"claude-generated-061",
+	"claude-generated-062",
+	"claude-generated-063",
+	"claude-generated-067",
+	"claude-generated-069",
+	"claude-generated-071",
+	"claude-generated-072",
+	"claude-generated-073",
+	"claude-generated-080",
+	"claude-generated-081",
+	"claude-generated-082",
+	"claude-generated-083",
+	"claude-generated-085",
+	"claude-generated-087",
+	"claude-generated-090",
+	"claude-generated-094",
+	"claude-generated-095",
+	"claude-generated-097",
+	"claude-generated-098",
+	"claude-generated-099",
+	"claude-generated-100",
+];
+
+const acceptedTestAppDomains: Record<string, string> = {
+	"claude-generated-002": "D1",
+	"claude-generated-005": "D1",
+	"claude-generated-009": "D1",
+	"claude-generated-010": "D1",
+	"claude-generated-011": "D1",
+	"claude-generated-013": "D1",
+	"claude-generated-014": "D2",
+	"claude-generated-024": "D2",
+	"claude-generated-025": "D2",
+	"claude-generated-026": "D2",
+	"claude-generated-027": "D2",
+	"claude-generated-029": "D2",
+	"claude-generated-030": "D2",
+	"claude-generated-032": "D2",
+	"claude-generated-033": "D2",
+	"claude-generated-034": "D2",
+	"claude-generated-035": "D2",
+	"claude-generated-037": "D3",
+	"claude-generated-038": "D3",
+	"claude-generated-041": "D3",
+	"claude-generated-042": "D3",
+	"claude-generated-044": "D3",
+	"claude-generated-045": "D5",
+	"claude-generated-046": "D3",
+	"claude-generated-048": "D4",
+	"claude-generated-052": "D4",
+	"claude-generated-058": "D4",
+	"claude-generated-060": "D6",
+	"claude-generated-061": "D4",
+	"claude-generated-062": "D4",
+	"claude-generated-063": "D4",
+	"claude-generated-067": "D5",
+	"claude-generated-069": "D5",
+	"claude-generated-071": "D5",
+	"claude-generated-072": "D5",
+	"claude-generated-073": "D5",
+	"claude-generated-080": "D6",
+	"claude-generated-081": "D6",
+	"claude-generated-082": "D6",
+	"claude-generated-083": "D6",
+	"claude-generated-085": "D6",
+	"claude-generated-087": "D6",
+	"claude-generated-090": "D6",
+	"claude-generated-094": "D7",
+	"claude-generated-095": "D7",
+	"claude-generated-097": "D7",
+	"claude-generated-098": "D7",
+	"claude-generated-099": "D7",
+	"claude-generated-100": "D7",
+};
+
+describe("CCAO-F TestApp-generated additions", () => {
+	it("contains only the reviewed generated additions and maps each to its domain", () => {
+		const generatedQuestions = ccaoQuestions.filter((question) =>
+			question.id.startsWith("claude-generated-"),
+		);
+		expect(generatedQuestions.map((question) => question.id).sort()).toEqual(acceptedTestAppIds);
+		for (const [id, domain] of Object.entries(acceptedTestAppDomains)) {
+			expect(generatedQuestions.find((question) => question.id === id)?.domain).toBe(domain);
+		}
+	});
+
+	it("preserves TestApp-author attribution and source separation", () => {
+		const generatedQuestions = ccaoQuestions.filter((question) =>
+			question.id.startsWith("claude-generated-"),
+		);
+		for (const question of generatedQuestions) {
+			expect(question.source.label).toContain("TestApp author");
+			expect(question.source.label).toContain("reuse permission confirmed by maintainer");
+			expect(question.source.label).toContain("not official exam questions");
+			expect(question.source.label).not.toContain("SkillCertPro");
+			expect(question.source.url).toBe(
+				"https://drive.google.com/file/d/1v0ZBWPXIIMSE9u48_WdZ7hg7mFCuFufh/view",
+			);
+		}
+	});
+
+	it("matches the current official Associate blueprint while labeling the local mock as derived", () => {
+		const weights = Object.fromEntries(
+			Object.entries(ccaoConfig.domains).map(([domainId, domain]) => [domainId, domain.weight]),
+		);
+		expect(weights).toEqual({ D1: 14, D2: 21, D3: 12, D4: 16, D5: 12, D6: 15, D7: 10 });
+		expect(ccaoConfig.blueprintSource).toBe("derived");
+		expect(ccaoConfig.totalQuestions).toBe(50);
+		expect(ccaoConfig.examMinutes).toBe(100);
+		expect(ccaoConfig.passingScore).toBe(720);
+		expect(ccaoConfig.examGuideNote).toContain("60 items in 120 minutes");
+		expect(ccaoConfig.examGuideNote).toContain("50 questions in 100 minutes");
+	});
+
+	it("uses organization-provisioned Skills for shared writing standards", () => {
+		const question = ccaoQuestions.find((candidate) => candidate.id === "claude-generated-072");
+		expect(question?.domain).toBe("D5");
+		expect(question?.question).toMatch(/Team plan/i);
+		const correctOption = question?.options[question.correctAnswers[0]] ?? "";
+		expect(correctOption).toMatch(/owner/i);
+		expect(correctOption).toMatch(/organization-wide Skill/i);
+		expect(question?.explanation).toMatch(/code execution are enabled/i);
+	});
+});
 
 // Cross-certification checks
 describe("cross-certification", () => {

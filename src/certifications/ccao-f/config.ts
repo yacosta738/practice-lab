@@ -1,5 +1,4 @@
-// CCAO-F certification configuration — generated from Cert Pro Quest
-// Source: Cert Pro Quest — practice bank by Matthew Purcell (not official exam content)
+// CCAO-F certification configuration
 
 import type { CertificationConfig } from "../../lib/quiz-types";
 
@@ -15,11 +14,11 @@ export const config: CertificationConfig = {
 		brandSoft: "rgba(74, 144, 217, 0.08)",
 	},
 	domains: {
-		D1: { id: "D1", name: "Prompting and Task Execution", weight: 13.3 },
-		D2: { id: "D2", name: "Output Evaluation and Validation", weight: 21.7 },
-		D3: { id: "D3", name: "Product and Model Selection", weight: 11.7 },
-		D4: { id: "D4", name: "Workflow Integration and Solution Design", weight: 16.7 },
-		D5: { id: "D5", name: "Configuration and Knowledge Management", weight: 11.7 },
+		D1: { id: "D1", name: "Prompting and Task Execution", weight: 14 },
+		D2: { id: "D2", name: "Output Evaluation and Validation", weight: 21 },
+		D3: { id: "D3", name: "Product and Model Selection", weight: 12 },
+		D4: { id: "D4", name: "Workflow Integration and Solution Design", weight: 16 },
+		D5: { id: "D5", name: "Configuration and Knowledge Management", weight: 12 },
 		D6: { id: "D6", name: "Governance, Risk, and Responsible Use", weight: 15 },
 		D7: { id: "D7", name: "Troubleshooting and Optimization", weight: 10 },
 	},
@@ -34,5 +33,8 @@ export const config: CertificationConfig = {
 	},
 	totalQuestions: 50,
 	examMinutes: 100,
+	passingScore: 720,
 	blueprintSource: "derived",
+	examGuideNote:
+		"The official exam has 60 items in 120 minutes and a passing scaled score of 720/1000. This Practice Lab mock has 50 questions in 100 minutes; its domain counts are derived, and its raw percentage does not predict the official scaled result.",
 };

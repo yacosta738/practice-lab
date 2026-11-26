@@ -5,6 +5,7 @@ const BASE_PATH = "/practice-lab";
 // Test each certification page loads correctly
 const CERTIFICATIONS = [
 	{ slug: "ccdv-f", heading: /Know the platform/i },
+	{ slug: "ccdv-p", heading: /Know the platform/i },
 	{ slug: "ccao-f", heading: /Know the platform/i },
 	{ slug: "ccar-p", heading: /Know the platform/i },
 	{ slug: "ccar-f", heading: /Know the platform/i },
