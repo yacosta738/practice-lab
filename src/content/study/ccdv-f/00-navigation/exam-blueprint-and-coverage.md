@@ -137,3 +137,17 @@ supplement rather than replace the linked study notes. Source excerpts, retrieva
 limits are recorded in the [Source Register](../source-register/). The official mock remains 53
 questions and its blueprint is unchanged; added items are practice material, not official exam
 questions or pass predictions.
+
+### Cross-certification source review (2026-11-26)
+
+The CCDV-P and CCAO-F source topics were compared with this 25-competency matrix and the existing
+CCDV-F notes. Foundations-level coverage already exists for orchestration, context engineering,
+tool execution, streaming/recovery, structured outputs, prompt caching, human approval, security,
+MCP, evaluation, debugging, Claude Code, reliability, and observability. The reviewed sources did
+not establish a new CCDV-F objective gap, so no CCDV-F questions or existing question IDs were
+changed.
+
+Query rewriting, reranking, knowledge-index versioning, and provider-specific embedding modes remain
+in the Professional-level study library. They were not promoted to Foundations content because the
+current 25-objective matrix does not identify them as missing Foundations requirements. The source
+decisions and limitations for this review are recorded in `docs/certification-content-review.md`.
