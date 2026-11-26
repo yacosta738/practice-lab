@@ -707,8 +707,16 @@ export class BrowserProgressService {
 		for (const listener of this.stateListeners) listener(message);
 	}
 
-	private onStorageChange = (event: StorageEvent): void => {
+	private onStorageChange = async (event: StorageEvent): Promise<void> => {
 		if (event.key !== this.storageKey || event.newValue === this.originalLegacyValue) return;
+		try {
+			const importSuppressed = await this.useCases.getMetadata(
+				suppressedLegacyImportKey(this.options.certificationId),
+			);
+			if (importSuppressed === true) return;
+		} catch {
+			// If suppression cannot be verified, preserve the legacy reconciliation safeguard.
+		}
 		this.legacyWriteDetected = true;
 		this.notifyInvalidation(
 			"A legacy tab changed saved progress. Reload and download a new backup to reconcile it.",

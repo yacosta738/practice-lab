@@ -2,6 +2,10 @@ import type { IDBPTransaction } from "idb";
 import { openProgressDatabase, type ProgressDatabase } from "./database";
 import { ProgressConflictError, ProgressError, toProgressStorageError } from "./errors";
 import {
+	countLearningRecordsForRestoreExport,
+	MAX_LEARNING_BACKUP_RECORDS,
+} from "./learning-backup";
+import {
 	applyAttemptToProgress,
 	checkpointSession as applySessionCheckpoint,
 	finalizeSession as applySessionFinalization,
@@ -269,20 +273,24 @@ class IndexedDbProgressRepository implements ProgressRepository {
 						"The legacy migration marker is invalid; recover from the backup.",
 					);
 				}
+				const importSuppression = await metadata.get(
+					`legacy-import-suppressed:${input.certificationId}`,
+				);
+				if (importSuppression?.value === true) {
+					throw new ProgressConflictError("Legacy progress import is suppressed after a reset.");
+				}
 
 				const generationToken = globalThis.crypto.randomUUID();
-				if (input.rawValue !== null) {
-					const backup: LegacyProgressBackup = {
-						format: "practice-lab-progress-backup",
-						version: 1,
-						certificationId: input.certificationId,
-						legacyStorageKey: input.legacyStorageKey,
-						capturedAt: input.migratedAt,
-						rawValue: input.rawValue,
-						warnings: [...input.warnings],
-					};
-					await metadata.put({ key: `legacy-backup:${input.certificationId}`, value: backup });
-				}
+				const backup: LegacyProgressBackup = {
+					format: "practice-lab-progress-backup",
+					version: 1,
+					certificationId: input.certificationId,
+					legacyStorageKey: input.legacyStorageKey,
+					capturedAt: input.migratedAt,
+					rawValue: input.rawValue,
+					warnings: [...input.warnings],
+				};
+				await metadata.put({ key: `legacy-backup:${input.certificationId}`, value: backup });
 
 				const progressStore = transaction.objectStore("questionProgress");
 				for (const { questionId, baseline } of input.baselines) {
@@ -543,6 +551,12 @@ class IndexedDbProgressRepository implements ProgressRepository {
 					throw new ProgressConflictError("The certification list for this restore is invalid.");
 				}
 				assertKnownCertifications(data, knownIds);
+				if (
+					countLearningRecordsForRestoreExport(data, certificationIds.length) >
+					MAX_LEARNING_BACKUP_RECORDS
+				) {
+					throw new ProgressConflictError("The learning backup has too many records to restore.");
+				}
 
 				for (const storeName of [
 					"sessions",
@@ -1093,6 +1107,10 @@ function buildLearningDataSnapshot([
 	const legacyProvenance = metadata
 		.filter(({ key }) => isLegacyProvenanceKey(key))
 		.map(({ key, value }) => ({ key, value }));
+	const generationState = metadata
+		.filter(({ key }) => key.startsWith("data-generation-token:"))
+		.map(({ key, value }) => ({ key, value }))
+		.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 	const lastBackupValue = metadata.find(
 		({ key }) => key === "data-management:last-backup-at",
 	)?.value;
@@ -1109,7 +1127,7 @@ function buildLearningDataSnapshot([
 		...(typeof lastBackupValue === "number" && Number.isFinite(lastBackupValue)
 			? { lastBackupAt: lastBackupValue }
 			: {}),
-		fingerprint: stableStringify(payload),
+		fingerprint: stableStringify({ payload, generationState }),
 	};
 }
 
@@ -1197,7 +1215,7 @@ function stableStringify(value: unknown): string {
 	if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
 	if (value !== null && typeof value === "object") {
 		return `{${Object.entries(value)
-			.sort(([a], [b]) => a.localeCompare(b))
+			.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
 			.map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`)
 			.join(",")}}`;
 	}

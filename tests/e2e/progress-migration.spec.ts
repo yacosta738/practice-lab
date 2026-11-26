@@ -191,3 +191,30 @@ test("archives writes from an old tab without merging or losing the migrated bas
 		.not.toBe(originalRawValue);
 	await legacyTab.close();
 });
+
+test("ignores legacy storage events after another tab resets the certification", async ({
+	page,
+	context,
+}) => {
+	await page.goto(CERTIFICATION);
+	await expect(page.getByRole("button", { name: "Practice mode" })).toBeVisible();
+
+	const managementTab = await context.newPage();
+	await managementTab.goto("/practice-lab/data-management/");
+	await expect(managementTab.getByRole("status")).toContainText("ready");
+	await managementTab.locator("#reset-certification").selectOption("ccdv-f");
+	await managementTab.getByRole("button", { name: "Reset selected certification" }).click();
+	const resetDialog = managementTab.getByRole("dialog", { name: "Confirm reset" });
+	await resetDialog.getByRole("button", { name: "Reset learning data" }).click();
+	await expect(managementTab.getByRole("status")).toContainText("Learning data was reset");
+
+	await managementTab.evaluate(
+		(key) => localStorage.setItem(key, "write from an older tab"),
+		LEGACY_KEY,
+	);
+	await expect(
+		page.getByRole("alert").filter({ hasText: "Legacy progress changed in an older tab." }),
+	).toHaveCount(0);
+	await expect(page.getByRole("button", { name: "Practice mode" })).toBeEnabled();
+	await managementTab.close();
+});
