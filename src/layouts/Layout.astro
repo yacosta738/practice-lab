@@ -2,6 +2,7 @@
 import Analytics from "@vercel/analytics/astro";
 import AhrefsAnalytics from "../components/Analytics.astro";
 import { base } from "../lib/base";
+import { limitMetaDescription, limitSeoTitle } from "../lib/seo";
 
 interface Props {
 	title: string;
@@ -10,16 +11,15 @@ interface Props {
 	disableAnalytics?: boolean;
 }
 
-const {
-	title,
-	description = "Practice quiz for certification preparation",
-	ogImage,
-	disableAnalytics = false,
-} = Astro.props;
+const defaultDescription =
+	"Prepare for professional certification exams with interactive quizzes, timed assessments, and domain-based study resources. Practice in your browser and track readiness over time.";
+const { title, description = defaultDescription, ogImage, disableAnalytics = false } = Astro.props;
 const isVercelDeployment = process.env.VERCEL === "1";
+const seoTitle = limitSeoTitle(title);
+const seoDescription = limitMetaDescription(description);
 
-// Build canonical URL preserving the served path (including trailing slash)
-const canonicalUrl = `${Astro.url.protocol}//${Astro.url.host}${Astro.url.pathname}`;
+// Astro.url.pathname already includes the deployment base path.
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site).href;
 
 // Default OG image resolved against the site origin so og:image and twitter:image
 // always carry an absolute URL as required by the Open Graph protocol.
@@ -33,7 +33,7 @@ const isDefaultImage = !ogImage;
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<meta name="description" content={description}>
+		<meta name="description" content={seoDescription}>
 		<meta
 			name="ahrefs-site-verification"
 			content="f0878cbe1b451452cc668e612e8330b4023f39c1218d86066ac42c2005970243"
@@ -72,13 +72,13 @@ const isDefaultImage = !ogImage;
 			rel="stylesheet"
 			href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
 		>
-		<title>{title}</title>
+		<title>{seoTitle}</title>
 
 		<!-- Open Graph -->
-		<meta property="og:url" content={Astro.url}>
+		<meta property="og:url" content={canonicalUrl}>
 		<meta property="og:site_name" content="Practice Lab">
-		<meta property="og:title" content={title}>
-		<meta property="og:description" content={description}>
+		<meta property="og:title" content={seoTitle}>
+		<meta property="og:description" content={seoDescription}>
 		<meta property="og:image" content={ogImageUrl}>
 		{isDefaultImage && (
 			<>
@@ -88,19 +88,19 @@ const isDefaultImage = !ogImage;
 		)}
 		<meta
 			property="og:image:alt"
-			content={isDefaultImage ? "Practice Lab — Prepare with confidence" : title}
+			content={isDefaultImage ? "Practice Lab — Prepare with confidence" : seoTitle}
 		>
 		<meta property="og:type" content="website">
 		<meta property="og:locale" content="en_US">
 
 		<!-- Twitter/X Card -->
 		<meta name="twitter:card" content="summary_large_image">
-		<meta name="twitter:title" content={title}>
-		<meta name="twitter:description" content={description}>
+		<meta name="twitter:title" content={seoTitle}>
+		<meta name="twitter:description" content={seoDescription}>
 		<meta name="twitter:image" content={ogImageUrl}>
 		<meta
 			name="twitter:image:alt"
-			content={isDefaultImage ? "Practice Lab — Prepare with confidence" : title}
+			content={isDefaultImage ? "Practice Lab — Prepare with confidence" : seoTitle}
 		>
 
 		<!-- Referrer policy hint (server header is preferred) -->

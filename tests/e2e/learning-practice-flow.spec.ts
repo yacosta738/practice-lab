@@ -130,9 +130,7 @@ test("starting a different session requires confirmation and preserves canceled 
 
 test("homepage accurately describes local progress storage", async ({ page }) => {
 	await page.goto(`${BASE_PATH}/`);
-	await expect
-		.soft(page)
-		.toHaveTitle("Practice Lab | Certification Practice Quizzes & Study Notes");
+	await expect.soft(page).toHaveTitle("Practice Lab | Certification Quizzes & Study Notes");
 	await expect
 		.soft(page.locator('meta[property="og:site_name"]'))
 		.toHaveAttribute("content", "Practice Lab");
