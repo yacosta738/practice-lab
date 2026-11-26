@@ -13,7 +13,7 @@ import { createExternalLinksPlugin } from "./src/hast/external-links.mjs";
 // - GitHub Pages: subpath ("/practice-lab")
 // Note: `import.meta.env` is not available in astro.config.mjs. Use `process.env` instead.
 const isVercel = process.env.VERCEL === "1";
-const site = isVercel ? "https://certificate-nine-phi.vercel.app" : "https://yacosta738.github.io";
+const site = isVercel ? "https://practice-lab.profiletailors.com" : "https://yacosta738.github.io";
 
 // On Vercel, use server output with the Vercel adapter for SSR.
 // Locally (and for GitHub Pages), use static output so that `astro preview` works

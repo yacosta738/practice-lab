@@ -46,6 +46,9 @@ for (const [id, domain] of Object.entries(cert.certification.domains)) {
 
 const totalNotes = notes.length;
 const totalSections = sections.length;
+const description = totalNotes
+	? `Study ${cert.subtitle} with ${totalNotes} domain-organized notes across ${totalSections} sections. Review key concepts, use curated resources, and practice related certification questions.`
+	: `Explore ${cert.subtitle} exam domains, review their weightings, and use the certification practice quiz to assess your knowledge today.`;
 
 const sidebarDomains = Object.entries(cert.certification.domains).map(([id, d]) => ({
 	id,
@@ -57,7 +60,7 @@ const sidebarDomains = Object.entries(cert.certification.domains).map(([id, d]) 
 
 <StudyLayout
 	title={cert.title}
-	description={`${cert.description} Personal study notes organised by exam domain.`}
+	description={description}
 	activeCertSlug={cert.slug}
 	activeCertCode={cert.subtitle}
 	breadcrumb="Study Library"

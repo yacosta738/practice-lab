@@ -7,7 +7,7 @@ export const config: CertificationConfig = {
 	title: "Claude Developer Foundations",
 	subtitle: "CCDV-F",
 	description:
-		"Practice questions covering all 8 domains of the Anthropic Claude Certified Developer – Foundations exam.",
+		"Practice all 8 Claude Developer Foundations exam domains with source-linked questions, detailed explanations, and timed mock exams.",
 	theme: {
 		brand: "#e76f51",
 		brand2: "#d45a3d",

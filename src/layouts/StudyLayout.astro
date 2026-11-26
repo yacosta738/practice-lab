@@ -22,9 +22,11 @@ const {
 	breadcrumb = title,
 	domains = [],
 } = Astro.props;
+
+const seoTitle = activeCertCode ? `${title} | Study ${activeCertCode}` : `${title} | Practice Lab`;
 ---
 
-<Layout title={`${title} · Study · Practice Lab`} description={description}>
+<Layout title={seoTitle} description={description}>
 	<AppShell
 		activeNav="study"
 		activeCertSlug={activeCertSlug}
