@@ -18,6 +18,17 @@ test("active mock exams enter Focus Mode, retain the deadline, and keep the mobi
 	await expect(page.locator(".pl-sidebar")).toBeHidden();
 	await expect(page.locator(".pl-bottom-nav")).toBeHidden();
 	await expect(page.locator(".pl-search-trigger")).toBeHidden();
+	const mobileProgressLink = page.locator('.pl-bottom-nav a[href="/practice-lab/progress/"]');
+	await expect(mobileProgressLink).toBeHidden();
+	await page.setViewportSize({ width: 1280, height: 900 });
+	const desktopProgressLink = page.locator('.pl-sidebar a[href="/practice-lab/progress/"]');
+	await expect(desktopProgressLink).toBeHidden();
+	await page.setViewportSize({ width: 390, height: 844 });
+
+	const clock = page.locator("#clock");
+	await expect(clock).toBeVisible();
+	const initialClock = await clock.textContent();
+	await expect.poll(() => clock.textContent()).not.toBe(initialClock);
 
 	const initialProgress = await readCertificationProgress(page, "ccdv-f");
 	const activeSession = initialProgress.sessions.find((item) => item.status === "in_progress");
@@ -97,6 +108,32 @@ test("active mock exams enter Focus Mode, retain the deadline, and keep the mobi
 	await expect(page.locator(".pl-shell")).toHaveAttribute("data-exam-focus", "false");
 	await page.getByRole("button", { name: /Resume mock exam/ }).click();
 	await expect(page.locator(".pl-shell")).toHaveAttribute("data-exam-focus", "true");
+	const scoringProgress = await readCertificationProgress(page, "ccdv-f");
+	const sessionToScore = scoringProgress.sessions.find((item) => item.status === "in_progress");
+	if (!sessionToScore) throw new Error("Expected the active exam before scoring.");
+	const scoringQuestions = (
+		sessionToScore.content as {
+			questions: { questionId: string; correctOptionIds: string[] }[];
+		}
+	).questions;
+	const checkpoint = sessionToScore.checkpoint as {
+		selectedOptionIdsByQuestion: Record<string, string[]>;
+	};
+	const expectedCorrect = scoringQuestions.filter(({ questionId, correctOptionIds }) => {
+		const selectedOptionIds = checkpoint.selectedOptionIdsByQuestion[questionId] ?? [];
+		return (
+			selectedOptionIds.length === correctOptionIds.length &&
+			selectedOptionIds.every((id) => correctOptionIds.includes(id))
+		);
+	}).length;
+	await page.locator('.examBar [data-action="finish"]').click();
+	const submitDialog = page.getByRole("dialog", { name: "Submit mock exam?" });
+	await expect(submitDialog).toBeVisible();
+	await submitDialog.getByRole("button", { name: "Submit and score" }).click();
+	await expect(page.locator(".results")).toBeVisible();
+	await expect(
+		page.getByText(`${expectedCorrect} / ${scoringQuestions.length} correct`),
+	).toBeVisible();
 });
 
 test("mobile question navigator exposes combined states and supports keyboard navigation", async ({

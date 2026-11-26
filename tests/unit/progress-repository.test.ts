@@ -288,6 +288,21 @@ describe("IndexedDB progress repository", () => {
 			pageSize: 10,
 		});
 		expect(emptyRange).toMatchObject({ entries: [], total: 0 });
+		await expect(
+			repository.getSessionHistoryPage({ page: Number.MAX_SAFE_INTEGER, pageSize: 2 }),
+		).resolves.toMatchObject({
+			entries: [{ session: { id: first.id } }],
+			total: 3,
+			page: 2,
+			pageSize: 2,
+		});
+		await expect(
+			repository.getSessionHistoryPage({
+				certificationId: "unknown-certification",
+				page: Number.MAX_SAFE_INTEGER,
+				pageSize: 2,
+			}),
+		).resolves.toMatchObject({ entries: [], total: 0, page: 1 });
 		await expect(repository.getSessionById(second.id)).resolves.toMatchObject({
 			session: { id: second.id },
 			attempts: [{ questionId: "question-stable-id" }],
@@ -297,11 +312,12 @@ describe("IndexedDB progress repository", () => {
 
 	it("closes its connection when a newer schema version requests an upgrade", async () => {
 		await repository.createSession(sessionInput("00000000-0000-4000-8000-000000000001"));
-		const upgraded = await openDB<ProgressDatabaseSchema>(PROGRESS_DATABASE_NAME, 3, {
+		const newerVersion = PROGRESS_DATABASE_VERSION + 1;
+		const upgraded = await openDB<ProgressDatabaseSchema>(PROGRESS_DATABASE_NAME, newerVersion, {
 			upgrade() {},
 		});
 
-		expect(upgraded.version).toBe(3);
+		expect(upgraded.version).toBe(newerVersion);
 		upgraded.close();
 	});
 

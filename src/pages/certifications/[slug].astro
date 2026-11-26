@@ -880,6 +880,7 @@ document.addEventListener("click", (event) => {
 				selectedIndexes.every((index) => correctAnswers.includes(index));
 			return [
 				{
+					sessionId: sessionToFinish.progress.id,
 					questionId: id,
 					selectedOptionIds,
 					outcome: correct ? "correct" : "incorrect",

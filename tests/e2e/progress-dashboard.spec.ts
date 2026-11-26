@@ -52,6 +52,55 @@ test("does not load every session and attempt to refresh dashboard aggregates", 
 		.toEqual([]);
 });
 
+test("links seeded domain accuracy to certification-specific study and practice routes", async ({
+	page,
+}) => {
+	const seededDomains: Array<{ certificationId: string; subtitle: string; domainId: string }> = [];
+	for (const certification of [
+		{ certificationId: "ccdv-f", subtitle: "CCDV-F" },
+		{ certificationId: "ccao-f", subtitle: "CCAO-F" },
+	]) {
+		await page.goto(`${BASE_PATH}/certifications/${certification.certificationId}/`);
+		await page.getByRole("button", { name: "Practice mode" }).click();
+		const domainLabel = await page.locator(".question .badge").textContent();
+		const domainId = domainLabel?.split(" · ")[0];
+		expect(domainId).toBeTruthy();
+		const hint = await page.locator(".hint").first().textContent();
+		const answerCount = Number(hint?.match(/Select exactly (\d+) answers/i)?.[1] ?? 1);
+		for (let answer = 0; answer < answerCount; answer += 1) {
+			await page.locator("button.option").nth(answer).click();
+		}
+		await page.getByRole("button", { name: "Check answer" }).click();
+		await expect(page.locator(".feedback")).toBeVisible();
+		seededDomains.push({ ...certification, domainId: domainId as string });
+	}
+
+	await page.goto(`${BASE_PATH}/progress/`);
+	await expect(page.getByText("Saved progress is up to date.")).toBeVisible();
+	for (const { certificationId, subtitle, domainId } of seededDomains) {
+		const domain = page
+			.locator("#domain-chart li")
+			.filter({ hasText: `${subtitle} · ${domainId}` });
+		await expect(domain).toHaveCount(1);
+		const studyHref = `${BASE_PATH}/study/${certificationId}/#${domainId}`;
+		await expect(
+			domain.getByRole("link", { name: `Study ${subtitle} ${domainId}` }),
+		).toHaveAttribute("href", studyHref);
+		const studyTab = await page.context().newPage();
+		await studyTab.goto(studyHref);
+		await expect(studyTab.locator(`#${domainId}`)).toBeVisible();
+		await studyTab.close();
+
+		const practiceHref = `${BASE_PATH}/certifications/${certificationId}/?mode=practice&domain=${encodeURIComponent(domainId)}#session`;
+		const practiceLink = domain.getByRole("link", { name: `Practice ${subtitle} ${domainId}` });
+		await expect(practiceLink).toHaveAttribute("href", practiceHref);
+		const practiceTab = await page.context().newPage();
+		await practiceTab.goto(practiceHref);
+		await expect(practiceTab.locator("#domain")).toHaveValue(domainId);
+		await practiceTab.close();
+	}
+});
+
 test("shows an accessible empty progress dashboard and responsive visual evidence", async ({
 	page,
 }, testInfo) => {
