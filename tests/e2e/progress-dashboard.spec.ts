@@ -123,6 +123,15 @@ test("shows an accessible empty progress dashboard and responsive visual evidenc
 		page.getByText("No saved sessions yet. Choose a certification and start a practice session."),
 	).toBeVisible();
 	await expect(page.getByText("How these metrics are calculated")).toBeVisible();
+	await expect(page.getByRole("heading", { level: 2, name: "Mastery breakdown" })).toBeVisible();
+	await expect(
+		page.getByRole("heading", { level: 2, name: "Targeted review recommendations" }),
+	).toBeVisible();
+	await expect(page.locator("#mastery-breakdown")).toContainText("mastery-v1");
+	await expect(page.locator("#mastery-breakdown")).toContainText("not an exam-pass prediction");
+	await expect(page.locator("#review-recommendations li").first()).toContainText(
+		"Unseen questions",
+	);
 	await expect(page.getByRole("link", { name: "My Progress" })).toHaveAttribute(
 		"aria-current",
 		"page",

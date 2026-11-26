@@ -337,6 +337,16 @@ function readOptions(
 	};
 }
 
+export function computeQuestionRevision(question: Question): string {
+	return fingerprint({
+		questionText: question.question,
+		options: question.options,
+		correctAnswers: [...question.correctAnswers].sort((a, b) => a - b),
+		selectCount: question.selectCount ?? question.correctAnswers.length,
+		...(question.contentVersion ? { contentVersion: question.contentVersion } : {}),
+	});
+}
+
 function createQuestionProvenance(
 	question: Question,
 	config: CertificationConfig,
@@ -355,7 +365,7 @@ function createQuestionProvenance(
 	const hash = fingerprint(content);
 	return {
 		questionId: question.id,
-		revision: hash,
+		revision: computeQuestionRevision(question),
 		contentHash: hash,
 		domainId: question.domain,
 		optionIds,

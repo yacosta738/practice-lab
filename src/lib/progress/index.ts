@@ -24,6 +24,28 @@ export {
 	MAX_LEARNING_BACKUP_SIZE,
 	parseLearningBackup,
 } from "./learning-backup";
+export {
+	addAssessmentToMasteryCounts,
+	applyAttemptToMasteryEvidence,
+	assessQuestionMastery,
+	compareAttemptsChronologically,
+	createEmptyMasteryCounts,
+	type DomainMasterySnapshot,
+	deriveMasteryEvidenceFromAttempts,
+	generateReviewRecommendations,
+	MASTERY_POLICY,
+	MASTERY_POLICY_VERSION,
+	type MasteryCounts,
+	type MasteryDemotionReason,
+	type MasteryEvidenceSource,
+	type MasteryQuestionRef,
+	type MasteryState,
+	masteryEvidenceEquals,
+	type QuestionMasteryAssessment,
+	type QuestionMasteryEvidence,
+	type RecommendationCategory,
+	type ReviewRecommendation,
+} from "./mastery";
 export type {
 	CertificationProgressRestoreSnapshot,
 	CheckpointSessionInput,

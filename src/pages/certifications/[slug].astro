@@ -638,8 +638,8 @@ document.addEventListener("click", (event: MouseEvent) => {
 				<h1>Know the platform.<br>Ship with confidence.</h1>
 			<p class="lead">${qs.length} source-linked practice questions across the ${Object.keys(cfg.domains).length} domains${cfg.examGuideNote ? ` mapped to ${esc(cfg.examGuideNote)} for the <strong>${esc(cfg.title)}</strong> certification` : ` for the <strong>${esc(cfg.title)}</strong> certification`}. Learn by doing, then test your readiness.</p>
 				<div class="readinessBar">
-					<div class="readinessMeta"><span>Study readiness · ${mastered} of ${qs.length} mastered</span><strong class="mono">${readinessPct}%</strong></div>
-					<progress class="progress" value="${mastered}" max="${qs.length}" aria-label="Certification readiness"></progress>
+					<div class="readinessMeta"><span>Last attempt correct · ${mastered} of ${qs.length} questions</span><strong class="mono">${readinessPct}%</strong></div>
+					<progress class="progress" value="${mastered}" max="${qs.length}" aria-label="Questions with last attempt correct"></progress>
 				</div>
 				<div class="ctaRow">
 					${
