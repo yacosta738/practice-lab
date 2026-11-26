@@ -12,15 +12,21 @@ internet connection to load.
 
 | Certification | Description                               | Bank | Domains | Mock exam |
 | ------------- | ----------------------------------------- | ---- | ------- | --------- |
-| **CCDV-F**    | Claude Developer Foundations              | 184  | 8       | 53        |
-| **CCAO-F**    | Claude Certified Associate — Foundations  | 60   | 7       | 50        |
+| **CCDV-F**    | Claude Developer Foundations              | 199  | 8       | 53        |
+| **CCDV-P**    | Claude Certified Developer — Professional | 70   | 8       | 70        |
+| **CCAO-F**    | Claude Certified Associate — Foundations  | 109  | 7       | 50        |
 | **CCAR-P**    | Claude Certified Architect — Professional | 58   | 7       | 50        |
 | **CCAR-F**    | Claude Certified Architect — Foundations  | 60   | 5       | 50        |
+
+Mock exam counts and durations are Practice Lab settings, not live exam blueprints. CCDV-P's live
+exam has 70 items (60 scored and 10 unscored) in 120 minutes; the Practice Lab mock scores all 70
+questions. CCAO-F's live exam has 60 items in 120 minutes, while the Practice Lab mock uses 50
+questions in 100 minutes. A raw mock percentage does not predict the CCDV-P scaled score.
 
 ## Features
 
 - **Practice mode** — study question by question with explanations and sources.
-- **Exam mode** — timed mock exam with 53 questions distributed by domain.
+- **Exam mode** — timed mock exam with certification-specific question counts and durations.
 - **Weaknesses mode** — focus on the questions you got wrong.
 - **Progress tracking** — statistics, resumable sessions, and results persist in browser `IndexedDB`
   on this origin.
@@ -31,10 +37,19 @@ internet connection to load.
 
 ## Content Sources and Attribution
 
-The imported practice questions for CCAO-F, CCAR-P, CCAR-F, and 53 items in CCDV-F come
-from [Cert Pro Quest](https://cert-pro-quest.lovable.app/) by Matthew Purcell. These are
-community-created practice questions and are not official exam content. See the [`NOTICE`](NOTICE)
-file for full attribution details.
+Some CCAO-F, CCAR-P, and CCAR-F practice questions and 53 of the 199 CCDV-F questions come from
+[Cert Pro Quest](https://cert-pro-quest.lovable.app/) by Matthew Purcell. They are community-created
+practice questions, not official exam content.
+
+The CCAO-F bank also includes 49 adapted questions from the TestApp author's separate
+Claude-generated practice set. The maintainer confirmed reuse permission; the author's name was not
+provided. No SkillCertPro questions or cheat-sheet text are included.
+
+The CCDV-P bank includes 70 adapted questions from Matthew Purcell's _Claude Certified Developer —
+Professional: Full Practice Exam Question Set_, licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
+They are published here for noncommercial personal study and are not official exam items. The
+application's MIT license does not apply to third-party content. See [`NOTICE`](NOTICE) for
+attribution, modifications, and licensing boundaries.
 
 ## Stack
 
@@ -68,6 +83,8 @@ migration, rollback, stale-tab reconciliation, reset, and restore behavior, see 
 │   │   ├── ccdv-f/
 │   │   │   ├── config.ts    # Exam blueprint, domains, theme
 │   │   │   └── questions.ts # Question bank
+│   │   ├── ccdv-p/
+│   │   ├── ccao-f/
 │   │   └── index.ts         # Certification registry
 │   ├── components/          # Astro components
 │   ├── layouts/             # Reusable layouts
@@ -80,8 +97,12 @@ migration, rollback, stale-tab reconciliation, reset, and restore behavior, see 
 
 ### Regenerating the imported banks
 
-The question banks for CCAO-F, CCAR-P, CCAR-F, and the CPQ additions for CCDV-F are generated from a
-snapshot of Cert Pro Quest. To regenerate them:
+The imported Cert Pro Quest banks are generated from a source snapshot. The generator overwrites the
+files it owns and does not merge later hand-maintained content. The 49 TestApp-generated CCAO-F
+questions and the corrected CCAO-F guide metadata are not in that snapshot. Do not regenerate the
+CCAO-F bank until the workflow preserves those additions.
+
+To regenerate the Cert Pro Quest snapshot outputs:
 
 1. Update the snapshot: `node scripts/scrape-cert-pro-quest.mjs`
 2. Regenerate banks: `node scripts/generate-cpq-banks.mjs`
@@ -102,8 +123,8 @@ No manual registration is required; both files are loaded at build time via `imp
 
 ## Study Notes
 
-Study notes live in `src/content/study/<slug>/` as Markdown files. They are generated from an
-Obsidian vault by running:
+Study notes live in `src/content/study/<slug>/` as Markdown files. The CCDV-F library is synced from
+an Obsidian vault by running:
 
 ```
 pnpm sync:study
@@ -115,8 +136,10 @@ Foundations, and the vault root notes, converts wikilinks to relative links, str
 injects a title when missing, converts Obsidian callouts, and copies the exam guide PDF to
 `public/study/ccdv-f/`.
 
-The `src/content/study` directory is excluded from Biome formatting because it mirrors an external
-source. The study routes are `/study/`, `/study/<cert>/`, and `/study/<cert>/<slug>/`.
+CCAO-F and CCDV-P use maintained, modular Markdown notes with source registers; `pnpm sync:study`
+does not populate those libraries. The `src/content/study` directory is excluded from Biome
+formatting because it mirrors an external source. The study routes are `/study/`, `/study/<cert>/`,
+and `/study/<cert>/<slug>/`.
 
 ### Search indexing policy
 

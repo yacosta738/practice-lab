@@ -1,7 +1,12 @@
-// CCAO-F question bank — generated from Cert Pro Quest snapshot
-// Source: Cert Pro Quest — practice bank by Matthew Purcell (not official exam content)
+// CCAO-F question bank — source attribution is recorded per entry.
 
 import type { Question } from "../../lib/quiz-types";
+
+const testAppSource = {
+	label:
+		"Adapted from TestApp author (name not provided; reuse permission confirmed by maintainer), Claude-generated CCAO-F practice set; not official exam questions",
+	url: "https://drive.google.com/file/d/1v0ZBWPXIIMSE9u48_WdZ7hg7mFCuFufh/view",
+};
 
 export const questions: Question[] = [
 	{
@@ -1267,5 +1272,897 @@ export const questions: Question[] = [
 		whyNot:
 			"A and B destroy attribution — when everything changes, nothing is learned; D abandons diagnosis for tool-hopping.",
 		selectCount: 2,
+	},
+	{
+		id: "claude-generated-002",
+		domain: "D1",
+		question:
+			"An analyst needs to identify liquidity risks discussed in a long annual report. Which prompt structure best supports a grounded answer?",
+		options: [
+			"Ask for a full summary first, then search the summary for liquidity risks.",
+			"Ask the question before providing the report so Claude knows what to find.",
+			"Provide the report first, then ask the focused question and request the relevant passages as evidence.",
+			"Split the report into chapters and ask the same question in separate chats.",
+		],
+		correctAnswers: [2],
+		explanation:
+			"For a long source, place the source before the focused question and ask for supporting passages. The reviewer can then check the answer against the document rather than relying on a broad summary.",
+		source: testAppSource,
+		whyNot:
+			"A summary can omit the exact risk; B puts the question before a lengthy source; D fragments evidence that may span sections.",
+	},
+	{
+		id: "claude-generated-005",
+		domain: "D1",
+		question:
+			"A support team wants Claude's drafts to match approved customer replies, but descriptions such as “warm and professional” produce uneven results. What should the team try?",
+		options: [
+			"Add more tone adjectives and a longer list of words to avoid.",
+			"Ask Claude to infer the support voice from the company's public marketing pages.",
+			"Provide a few approved replies, clearly labelled as examples of the target voice.",
+			"Stop using Claude for drafts because writing style cannot be shown through examples.",
+		],
+		correctAnswers: [2],
+		explanation:
+			"A small set of labelled examples demonstrates tone, structure, and vocabulary more directly than broad adjectives. The examples should be approved for this use.",
+		source: testAppSource,
+		whyNot:
+			"A expands the kind of description that already failed; B may reflect marketing rather than support; D ignores a practical way to show the required style.",
+	},
+	{
+		id: "claude-generated-009",
+		domain: "D1",
+		question:
+			"A prompt contains instructions, a customer's email, and a returns policy. Claude sometimes treats the customer's statements as company policy. Which change best separates the content?",
+		options: [
+			"Reorder the three blocks but leave their boundaries unlabeled.",
+			"Wrap each block in a clear labelled delimiter and refer to those labels in the instructions.",
+			"Replace the full policy with a short summary written from memory.",
+			"Add a reminder that customer messages are not policy without marking where each begins and ends.",
+		],
+		correctAnswers: [1],
+		explanation:
+			"Clear labels or tags distinguish trusted policy from customer-provided content and let the prompt refer to each source explicitly.",
+		source: testAppSource,
+		whyNot:
+			"A leaves boundaries implicit; C may omit policy conditions; D states the distinction but still makes the content harder to identify reliably.",
+	},
+	{
+		id: "claude-generated-010",
+		domain: "D1",
+		question:
+			"A project lead knows the desired outcome but is unsure what details Claude needs before drafting a plan. What is the best first request?",
+		options: [
+			"Ask for a complete plan immediately and correct the missing details later.",
+			"Upload every departmental file so Claude can decide what might matter.",
+			"State the goal and ask Claude to identify the clarifying questions it needs answered before drafting.",
+			"Ask for a generic template and leave all planning decisions to the project lead.",
+		],
+		correctAnswers: [2],
+		explanation:
+			"A short discovery step helps surface missing constraints and context before Claude produces a detailed plan. It reduces guesswork and avoids adding irrelevant material.",
+		source: testAppSource,
+		whyNot:
+			"A starts with avoidable assumptions; B can add noise and unnecessary data; D provides a shell but does not help identify the information needed for this project.",
+	},
+	{
+		id: "claude-generated-011",
+		domain: "D1",
+		question:
+			"A sales director needs to find which region had the highest growth in an 18-month CSV. Which approach is most reliable?",
+		options: [
+			"Upload the complete file, ask the specific growth question, and request the calculation method for checking.",
+			"Enter the totals she remembers and ask Claude to estimate each region's growth.",
+			"Provide the first few rows and ask Claude to extrapolate the trend across all 18 months.",
+			"Ask which region usually grows fastest in the industry and use that as the likely result.",
+		],
+		correctAnswers: [0],
+		explanation:
+			"The complete dataset and a specific question let Claude analyze the relevant period. A visible method or calculation makes the result easier to validate against the file.",
+		source: testAppSource,
+		whyNot:
+			"B relies on memory; C cannot represent the entire period; D substitutes a general pattern for the director's actual data.",
+	},
+	{
+		id: "claude-generated-013",
+		domain: "D1",
+		question:
+			"A team is comparing three suppliers on cost, delivery time, support, and risk. Which TWO prompting techniques best support a defensible recommendation?",
+		options: [
+			"Request a one-line answer so the recommendation is decisive.",
+			"State the decision criteria and the weight of each criterion.",
+			"Run the same prompt in several chats and choose the supplier named most often.",
+			"Ask for a criterion-by-criterion comparison with evidence and any uncertainty before the recommendation.",
+			"Ask Claude to role-play as the procurement director and make the decision.",
+		],
+		correctAnswers: [1, 3],
+		explanation:
+			"Explicit criteria and weights define how suppliers should be compared. Evidence and stated uncertainty make gaps visible and let the team review the recommendation.",
+		source: testAppSource,
+		whyNot:
+			"A hides the basis for the decision; C treats repeated model outputs as votes; E adds a role but does not establish evidence or decision criteria.",
+		selectCount: 2,
+	},
+	{
+		id: "claude-generated-014",
+		domain: "D2",
+		question:
+			"A team needs to compare vendors and import the results into a spreadsheet or downstream system. Which request best reduces manual reformatting and import errors?",
+		options: [
+			"Ask for a complete comparison table and let Claude choose the fields.",
+			"Request a CSV or table with a fixed schema, such as vendor, monthly price and currency, users included, and SSO status.",
+			"Request a narrative comparison and have an analyst extract the fields afterward.",
+			"Ask for a separate bulleted summary for each vendor.",
+		],
+		correctAnswers: [1],
+		explanation:
+			"When another tool will consume the result, define the fields and formats up front. Structured rows preserve individual records and reduce hand-editing before import.",
+		source: testAppSource,
+		whyNot:
+			"A may produce inconsistent columns; C and D require manual conversion and can lose or misplace values.",
+	},
+	{
+		id: "claude-generated-024",
+		domain: "D2",
+		question:
+			"Claude changes a revenue figure after a user says it looks wrong. What should the reviewer conclude?",
+		options: [
+			"The revised figure is more reliable because Claude reconsidered it.",
+			"The original figure is more reliable because the change shows Claude was agreeing with the user.",
+			"Neither figure is verified; compare the claim with the source data.",
+			"Accept whichever figure has the more convincing explanation.",
+		],
+		correctAnswers: [2],
+		explanation:
+			"A response changing after pushback does not establish which value is correct. The underlying data, not the model's agreement or explanation, is the evidence to check.",
+		source: testAppSource,
+		whyNot:
+			"A and B infer accuracy from the model's behavior; D relies on persuasive wording rather than independent evidence.",
+	},
+	{
+		id: "claude-generated-025",
+		domain: "D2",
+		question:
+			"A report says revenue rose 8% after one-off items were excluded, while reported revenue fell 3%. Claude summarizes this as “revenue rose 8%.” What is the main problem?",
+		options: [
+			"The summary omits a qualifier that changes the meaning; check the claim against the source wording.",
+			"The figure was fabricated; generate another summary to see whether it changes.",
+			"The arithmetic is wrong; recalculate the reported revenue growth.",
+			"There is no issue because the 8% figure appears in the report.",
+		],
+		correctAnswers: [0],
+		explanation:
+			"A number can be quoted accurately and still mislead if the condition that gives it meaning is removed. Review key figures with their qualifiers against the source.",
+		source: testAppSource,
+		whyNot:
+			"B mistakes omission for fabrication; C does not address the missing condition; D overlooks that the unqualified statement reverses the report's overall result.",
+	},
+	{
+		id: "claude-generated-026",
+		domain: "D2",
+		question:
+			"A Claude-assisted leadership report contains about 80 factual claims and is due in an hour. Which verification plan best manages the remaining time?",
+		options: [
+			"Check the first fifteen claims, then assume the rest are similarly reliable.",
+			"List every claim with its source and review the report only in document order.",
+			"Verify only claims Claude marks as low-confidence.",
+			"Prioritize high-impact claims for full verification, then sample lower-risk claims using their sources.",
+		],
+		correctAnswers: [3],
+		explanation:
+			"Risk-based verification uses limited time where an error would matter most. A claim-and-source list can speed the review, while lower-impact material can receive proportionate spot checks.",
+		source: testAppSource,
+		whyNot:
+			"A's first claims may not be representative; B can miss urgent risks later in the report; C relies on confidence that is not a substitute for checking evidence.",
+	},
+	{
+		id: "claude-generated-027",
+		domain: "D2",
+		question:
+			"An employee needs answers only from an uploaded supplier contract. Which instruction best limits unsupported claims and makes answers checkable?",
+		options: [
+			"Use the contract together with Claude's general knowledge of similar agreements.",
+			"Support each answer with a relevant contract excerpt and say when the contract does not address the question.",
+			"Answer only when confidence is at least 90%, otherwise estimate the most likely term.",
+			"Keep answers short and avoid speculation, without requiring evidence from the contract.",
+		],
+		correctAnswers: [1],
+		explanation:
+			"Grounding each response in the supplied contract makes it easier to verify, and an explicit “not found” response avoids filling gaps with assumptions.",
+		source: testAppSource,
+		whyNot:
+			"A permits unsupported outside information; C uses uncalibrated confidence and still invites guessing; D lacks a way to confirm that an answer is grounded in the contract.",
+	},
+	{
+		id: "claude-generated-029",
+		domain: "D2",
+		question:
+			"Claude drafts a spreadsheet formula for a three-tier sales commission. What is the strongest validation before it is used for payroll?",
+		options: [
+			"Ask an experienced colleague whether the formula looks reasonable.",
+			"Ask Claude to explain its formula and compare the explanation with the policy.",
+			"Test the formula with cases that have known results, including values at each tier boundary.",
+			"Run it on last month's data and check whether the total payout is close to the prior total.",
+		],
+		correctAnswers: [2],
+		explanation:
+			"Known expected results test the formula directly. Boundary cases are especially useful for finding mistakes in tier conditions.",
+		source: testAppSource,
+		whyNot:
+			"A and B are reviews rather than execution tests; D can hide individual errors that offset each other in the total.",
+	},
+	{
+		id: "claude-generated-030",
+		domain: "D2",
+		question:
+			"A Claude translation of a product safety notice is ready for publication in German. What check is essential before release?",
+		options: [
+			"Translate it back to English with Claude and compare the two English versions.",
+			"Compare the result with a translation from a second AI system.",
+			"Ask Claude to proofread its own translation and accept its corrections.",
+			"Have a qualified German-speaking reviewer check accuracy and safety terminology.",
+		],
+		correctAnswers: [3],
+		explanation:
+			"Safety information has high consequences, and a qualified reviewer can assess meaning and nuance in the target language before publication.",
+		source: testAppSource,
+		whyNot:
+			"A and B can repeat or conceal translation errors; C is not an independent review and may miss the same issue.",
+	},
+	{
+		id: "claude-generated-032",
+		domain: "D2",
+		question:
+			"A Claude draft of a client proposal has a strong structure. What should the account lead verify before sending it?",
+		options: [
+			"Ask Claude to make the proposal more persuasive for the client's industry.",
+			"Check client names, prices, dates, scope, and commitments against approved business records.",
+			"Ask a colleague to proofread grammar and formatting.",
+			"Ask Claude to compare the proposal with a checklist of common winning proposals.",
+		],
+		correctAnswers: [1],
+		explanation:
+			"A client-facing proposal can create commercial commitments. Verify its specific facts and terms against authoritative records before it is sent.",
+		source: testAppSource,
+		whyNot:
+			"A and D can improve presentation but do not validate the deal details; C catches language issues, not incorrect prices or commitments.",
+	},
+	{
+		id: "claude-generated-033",
+		domain: "D2",
+		question:
+			"A manager requested a status summary with sections for risks, costs, and timeline, under 300 words, using supplied facts. What is the fastest useful quality check?",
+		options: [
+			"Read it once and judge whether it sounds clear and professional.",
+			"Ask Claude to score the summary and revise it if the score is low.",
+			"Compare its style and length with last month's summary.",
+			"Check the three required sections, word limit, and factual claims against the source.",
+		],
+		correctAnswers: [3],
+		explanation:
+			"The request supplies objective acceptance criteria. Checking structure, length, and source facts gives a focused review tied to what the manager asked for.",
+		source: testAppSource,
+		whyNot:
+			"A is subjective; B delegates quality judgment without criteria; C uses a prior document rather than the current requirements.",
+	},
+	{
+		id: "claude-generated-034",
+		domain: "D2",
+		question:
+			"Claude gives a competitor's current CEO and product price. How should an analyst handle these time-sensitive claims?",
+		options: [
+			"Confirm them against current, credible sources before relying on them.",
+			"Accept them if Claude states them without uncertainty.",
+			"Use them for internal decisions, but check them only if they appear in an external document.",
+			"Ask in a new chat and accept the facts if Claude repeats them.",
+		],
+		correctAnswers: [0],
+		explanation:
+			"Leadership names and prices can change. Check them against current sources even when the answer sounds certain or is used only internally.",
+		source: testAppSource,
+		whyNot:
+			"B confuses confidence with evidence; C allows stale facts to influence internal decisions; D repeats the same source of uncertainty.",
+	},
+	{
+		id: "claude-generated-035",
+		domain: "D2",
+		question:
+			"A team reruns a prompt that classifies customer complaints, and roughly one in ten results changes category. What is the best improvement?",
+		options: [
+			"Run it again and use the most common label for each complaint.",
+			"Switch models and assume the new model will make every classification repeatable.",
+			"Define categories with examples, specify the output format, and review ambiguous cases.",
+			"Accept the differences because the majority of classifications are unchanged.",
+		],
+		correctAnswers: [2],
+		explanation:
+			"Clear definitions and examples reduce ambiguity. A consistent output format and targeted review of borderline cases improve reliability without assuming identical model responses.",
+		source: testAppSource,
+		whyNot:
+			"A masks rather than resolves ambiguity; B cannot guarantee identical outputs; D leaves the inconsistent cases unexplained.",
+	},
+	{
+		id: "claude-generated-037",
+		domain: "D3",
+		question:
+			"A strategy lead needs a cited market investigation combining public web sources with company documents available through an approved Drive connector. Which Claude capability best fits?",
+		options: [
+			"Research, with web search and the approved connector available for the task.",
+			"A Project containing only the company documents.",
+			"A standard chat with extended thinking, but no search or connector.",
+			"A standard chat using one public web search at a time.",
+		],
+		correctAnswers: [0],
+		explanation:
+			"Research is designed for multi-step investigation across available web and connected sources, with citations that support review.",
+		source: testAppSource,
+		whyNot:
+			"A Project can organize internal references but does not perform the requested web investigation; thinking alone adds no sources; a single search is less suited to a multi-source investigation.",
+	},
+	{
+		id: "claude-generated-038",
+		domain: "D3",
+		question:
+			"A coordinator wants an interactive budget tracker and a short summary that she can revise and share. Which feature is designed for this kind of deliverable?",
+		options: [
+			"A Project, used as a repository for reference documents.",
+			"An Artifact, which presents an editable standalone document or interactive tool.",
+			"A Skill that stores the finished tracker as a reusable procedure.",
+			"Research mode, which investigates questions using sources.",
+		],
+		correctAnswers: [1],
+		explanation:
+			"Artifacts are intended for substantial standalone outputs such as documents and interactive tools that can be iterated on and shared.",
+		source: testAppSource,
+		whyNot:
+			"A holds reference context rather than the deliverable; C packages reusable instructions; D is for research, not for creating this artifact.",
+	},
+	{
+		id: "claude-generated-041",
+		domain: "D3",
+		question:
+			"A department needs a general-purpose default model for routine drafting, summarizing, and analysis, balancing capability with response speed. Which model tier is usually the starting point?",
+		options: [
+			"Haiku, because speed should take priority for every everyday task.",
+			"Sonnet, which is positioned as a balance of capability and speed for common work.",
+			"Opus, because the most capable tier is always the most suitable default.",
+			"Opus for drafting and Haiku for analysis, regardless of task demands.",
+		],
+		correctAnswers: [1],
+		explanation:
+			"A balanced tier is a practical default for varied everyday tasks; faster or more capable tiers can be selected when a task's needs justify them.",
+		source: testAppSource,
+		whyNot:
+			"A overweights speed; C assumes maximum capability is always needed; D prescribes a fixed pairing without considering the task.",
+	},
+	{
+		id: "claude-generated-042",
+		domain: "D3",
+		question:
+			"When should a user enable extended or adaptive thinking, when that feature is available for the selected model?",
+		options: [
+			"For a complex task that benefits from deeper reasoning, when the extra time is acceptable.",
+			"For every request, because more thinking always guarantees a more accurate answer.",
+			"For a very long document, because thinking expands the model's context capacity.",
+			"For a question about recent events, because thinking retrieves current sources.",
+		],
+		correctAnswers: [0],
+		explanation:
+			"Extended or adaptive thinking is model-dependent and can help with complex reasoning, but it does not expand the context window or retrieve current information. Use search or connected sources when freshness is required.",
+		source: testAppSource,
+		whyNot:
+			"B assumes a universal accuracy gain; C confuses reasoning with context capacity; D confuses reasoning with access to current sources.",
+	},
+	{
+		id: "claude-generated-044",
+		domain: "D3",
+		question:
+			"A user needs to answer questions across dozens of large product manuals that cannot fit in one chat. Which approach best organizes the reference material?",
+		options: [
+			"Paste a few manuals into each chat and rely on memory for the rest.",
+			"Curate the relevant manuals in Project knowledge and let Claude retrieve material supported by the product and plan.",
+			"Summarize every manual once and discard the original files.",
+			"Use public web search to locate internal manuals that are not published online.",
+		],
+		correctAnswers: [1],
+		explanation:
+			"Project knowledge provides a reusable place for reference documents and can help retrieve relevant material. Keep source files authoritative and confirm applicable product limits.",
+		source: testAppSource,
+		whyNot:
+			"A makes context repetitive and incomplete; C can lose details needed to answer questions; D cannot find private files that are not publicly available.",
+	},
+	{
+		id: "claude-generated-045",
+		domain: "D5",
+		question:
+			"A user wants concise replies in British English and wants Claude to know her procurement role across chats, not only inside one Project. What should she configure?",
+		options: [
+			"Repeat the preferences in every Project she uses.",
+			"Create a separate Project for each conversation.",
+			"Set stable preferences in account-wide Instructions for Claude; memory may supplement them but is not required.",
+			"Add the preferences at the start of each chat and rely on them across future chats.",
+		],
+		correctAnswers: [2],
+		explanation:
+			"Account-wide Instructions for Claude are the explicit place for stable preferences that should apply across conversations. Memory can supplement context, but the instructions do not depend on it.",
+		source: testAppSource,
+		whyNot:
+			"A is limited to chats within each Project; B does not set a cross-chat preference; D requires repeating instructions and does not configure future conversations.",
+	},
+	{
+		id: "claude-generated-046",
+		domain: "D3",
+		question:
+			"A user has a one-off question that she does not want saved in chat history or used for memory. Which feature is intended for that use?",
+		options: [
+			"An incognito chat, while still following organizational data policies.",
+			"Pausing memory, which also removes the conversation from chat history.",
+			"A new Project, which prevents its chats from being stored.",
+			"Deleting a regular chat afterward, which means it was never in chat history.",
+		],
+		correctAnswers: [0],
+		explanation:
+			"Incognito chats are intended not to appear in chat history or memory. That does not change policy requirements for the information entered.",
+		source: testAppSource,
+		whyNot:
+			"B affects memory but not necessarily chat history; C does not make Project chats unstored; D removes a chat only after it has existed in history.",
+	},
+	{
+		id: "claude-generated-048",
+		domain: "D4",
+		question:
+			"A department head says, “We need to start using AI.” What should the solution designer do first?",
+		options: [
+			"Give everyone access and wait to see which uses appear.",
+			"Understand tasks, pain points, volumes, constraints, and measures of success.",
+			"Choose the most capable plan and model before discussing the work.",
+			"Write a team-specific policy before identifying any use case.",
+		],
+		correctAnswers: [1],
+		explanation:
+			"Requirements analysis identifies the problem to solve and the constraints that shape a useful and safe solution before tools are selected.",
+		source: testAppSource,
+		whyNot:
+			"A begins without goals or measures; C chooses technology before the need is understood; D may matter later but does not identify suitable use cases.",
+	},
+	{
+		id: "claude-generated-052",
+		domain: "D4",
+		question:
+			"Claude extracts supplier, amount, and due date from invoices. Where should a human checkpoint sit in the payment workflow?",
+		options: [
+			"After payment, by sampling a small number of invoices each month.",
+			"Before any processing, by manually checking every field in every invoice.",
+			"Before payment approval, with required review for high-value, unclear, or mismatched records.",
+			"Only after a supplier reports a payment problem.",
+		],
+		correctAnswers: [2],
+		explanation:
+			"Review belongs before a consequential and hard-to-reverse action. Risk-based escalation focuses people on exceptions while preserving efficiency for routine cases.",
+		source: testAppSource,
+		whyNot:
+			"A and D detect errors only after harm may occur; B may add unnecessary review to routine low-risk cases rather than using proportionate controls.",
+	},
+	{
+		id: "claude-generated-058",
+		domain: "D4",
+		question:
+			"One month into a pilot, few employees use Claude for their daily work. Which intervention is most likely to address the adoption gap?",
+		options: [
+			"Provide role-specific training on real tasks and support peer champions who share useful examples.",
+			"Require daily usage and report logins to managers.",
+			"Extend the pilot without changing its support or use cases.",
+			"Send a general newsletter about the benefits of generative AI.",
+		],
+		correctAnswers: [0],
+		explanation:
+			"Practical examples tied to people's roles show where the tool helps. Peer support can make learning relevant and address questions in the team's actual workflow.",
+		source: testAppSource,
+		whyNot:
+			"B measures activity rather than value; C assumes time alone will remove barriers; D is broad and does not show how the tool applies to specific work.",
+	},
+	{
+		id: "claude-generated-060",
+		domain: "D6",
+		question:
+			"During requirements gathering, a support team says customer data must remain in the EU. How should the designer treat this constraint?",
+		options: [
+			"Record it as a preference and revisit it after the pilot.",
+			"Treat it only as a functional requirement for the assistant's response.",
+			"Validate the data-residency constraint with privacy, legal, or compliance owners before designing the workflow.",
+			"Leave it for implementation because it is a technical detail, not a workflow constraint.",
+		],
+		correctAnswers: [2],
+		explanation:
+			"Data residency is a privacy and compliance constraint that can determine which tools, plans, and data flows are permitted. Validate it before workflow design proceeds.",
+		source: testAppSource,
+		whyNot:
+			"A and D defer a constraint that can invalidate the design; B treats a data-handling requirement as an output feature and misses its compliance impact.",
+	},
+	{
+		id: "claude-generated-061",
+		domain: "D4",
+		question:
+			"Employees are concerned that a Claude pilot may change their roles. Which communication approach best supports responsible adoption?",
+		options: [
+			"Promise that no roles or responsibilities will change.",
+			"Present only the financial case for adopting AI.",
+			"Focus on tool training without discussing the employees' concerns.",
+			"Be candid about likely changes, show concrete examples, and involve employees in workflow design.",
+		],
+		correctAnswers: [3],
+		explanation:
+			"Honest communication, practical examples, and participation build trust and help teams identify how the tool can support their work.",
+		source: testAppSource,
+		whyNot:
+			"A makes a promise the team may not be able to keep; B ignores employee concerns; C teaches features but does not address the effect on work.",
+	},
+	{
+		id: "claude-generated-062",
+		domain: "D4",
+		question:
+			"Before adding Claude to a client-facing workflow, which TWO questions should the design team resolve?",
+		options: [
+			"Which interface theme and brand colors should be used?",
+			"Whether the team can reduce staffing after launch.",
+			"Who reviews outputs and how errors are detected before they reach clients.",
+			"What data Claude will access and whether that use is permitted by policy and contract.",
+			"How many example prompts each employee should save.",
+		],
+		correctAnswers: [2, 3],
+		explanation:
+			"A client-facing workflow needs a defined review and error-handling path, plus confirmation that its data use is permitted. These controls belong in design, not after launch.",
+		source: testAppSource,
+		whyNot:
+			"A and E are secondary presentation or training details; B is not a workflow safeguard and does not establish a safe operating model.",
+		selectCount: 2,
+	},
+	{
+		id: "claude-generated-063",
+		domain: "D4",
+		question:
+			"A payroll workflow requires identical, auditable tax calculations every month. Where should the calculation run?",
+		options: [
+			"In the validated payroll system, with Claude used for explanations or summaries around the calculation.",
+			"In Claude, with a payroll clerk checking the final totals.",
+			"In Claude three times, using the result that appears most often.",
+			"In a Project containing the tax rules and rates.",
+		],
+		correctAnswers: [0],
+		explanation:
+			"Exact, repeatable, auditable calculations belong in validated systems. Claude can support communication around the result without becoming the calculation authority.",
+		source: testAppSource,
+		whyNot:
+			"B still relies on nondeterministic calculation for payroll; C uses agreement between runs instead of validation; D stores reference material but does not make the calculation deterministic.",
+	},
+	{
+		id: "claude-generated-067",
+		domain: "D5",
+		question:
+			"A manager wants colleagues to use a shared Project and chat in it, but not change its instructions or knowledge. Which permission should the manager choose?",
+		options: [
+			"Give everyone edit access and ask them not to change anything.",
+			"Share it with the whole organization, regardless of who needs it.",
+			"Use the view-level permission that allows use without editing the Project.",
+			"Give each colleague a separate copy that can drift from the managed version.",
+		],
+		correctAnswers: [2],
+		explanation:
+			"A view-level role supports use while reserving changes to instructions and knowledge for authorized editors. Apply the narrowest permission that meets the team's need.",
+		source: testAppSource,
+		whyNot:
+			"A grants more control than intended; B widens access without a need; D creates copies that can become inconsistent with the managed Project.",
+	},
+	{
+		id: "claude-generated-069",
+		domain: "D5",
+		question:
+			"A team is considering connectors to email, calendar, and chat data. Which TWO practices should guide setup?",
+		options: [
+			"Enable every connector so employees can discover useful features.",
+			"Enable only the connectors required for the approved use case.",
+			"Connect the whole team through one shared account.",
+			"Confirm each connector is approved by the administrator and allowed by data policy.",
+			"Let each employee connect any service they personally use.",
+		],
+		correctAnswers: [1, 3],
+		explanation:
+			"Least privilege limits access to what the workflow needs, and administrative approval confirms the connector fits the organization's data controls.",
+		source: testAppSource,
+		whyNot:
+			"A and E expand access without a defined need or approval; C weakens individual identity and access controls.",
+		selectCount: 2,
+	},
+	{
+		id: "claude-generated-071",
+		domain: "D5",
+		question:
+			"A consultant serves two competing clients and must keep their work separate. Which setup best reduces unintended context sharing?",
+		options: [
+			"Use a separate Project for each client and disable “Use account memory” for a Project where required; still follow access controls and confidentiality policy.",
+			"Keep both clients in one Project and instruct Claude not to mix their information.",
+			"Use separate chats in one Project, where both clients share the same Project context.",
+			"Use only incognito chats, regardless of whether approved client material must be available.",
+		],
+		correctAnswers: [0],
+		explanation:
+			"Separate Projects and disabling account memory where required help isolate context. They do not replace organizational access controls, contractual duties, or confidentiality policy.",
+		source: testAppSource,
+		whyNot:
+			"B relies on an instruction instead of separation; C retains shared Project context; D removes useful continuity without deciding whether the data may be processed.",
+	},
+	{
+		id: "claude-generated-072",
+		domain: "D5",
+		question:
+			"A communications department on a Claude Team plan has an approved writing style. It wants every member to apply the shared guidance on demand across chats. Which configuration fits best?",
+		options: [
+			"Ask each member to set the style in their personal Instructions for Claude.",
+			"Upload the style guide separately to every Project the team uses.",
+			"Ask Claude to infer the shared style from each member's memory.",
+			"Have an organization owner provision an organization-wide Skill with the approved style guide and examples.",
+		],
+		correctAnswers: [3],
+		explanation:
+			"If Skills and code execution are enabled in organization policy, Team plan owners can provision Skills for all users. A shared Skill can package approved style guidance and examples, which members can apply when the relevant task comes up.",
+		source: testAppSource,
+		whyNot:
+			"A creates separate per-user settings; B requires duplicate Project configuration and applies only within those Projects; C relies on individual memory instead of an approved, centrally managed style.",
+	},
+	{
+		id: "claude-generated-073",
+		domain: "D5",
+		question:
+			"Each quarter, an analyst collects figures, applies formatting rules, and produces the same report template. How can she make this multi-step task reusable?",
+		options: [
+			"Paste the full procedure into a new chat at the start of every quarter.",
+			"Package the procedure, template, and supporting files in a Skill that can be used for the task.",
+			"Keep one chat open throughout the year and expect it to retain every detail.",
+			"Rely on memory to reconstruct the procedure from last quarter's conversation.",
+		],
+		correctAnswers: [1],
+		explanation:
+			"A Skill can package repeatable instructions and resources so the analyst does not need to rebuild the workflow each quarter.",
+		source: testAppSource,
+		whyNot:
+			"A remains manual; C accumulates unrelated context and can lose useful details; D uses memory for a procedure and template it is not designed to preserve reliably.",
+	},
+	{
+		id: "claude-generated-080",
+		domain: "D6",
+		question:
+			"A partner shared a confidential roadmap under an NDA. An employee wants Claude to summarize it for internal colleagues. What must happen first?",
+		options: [
+			"Upload it to any company-approved Claude workspace because the workspace is approved.",
+			"Remove the partner's name and logo, then upload it.",
+			"Tell Claude to keep the roadmap confidential.",
+			"Check the NDA and company policy to confirm processing is permitted; consult legal if unclear.",
+		],
+		correctAnswers: [3],
+		explanation:
+			"Third-party confidential data is subject to contractual terms as well as company policy. Confirm that both permit the intended processing before sharing the document.",
+		source: testAppSource,
+		whyNot:
+			"A does not override the NDA; B does not remove the confidentiality obligation; C cannot change the contractual or policy rules.",
+	},
+	{
+		id: "claude-generated-081",
+		domain: "D6",
+		question:
+			"An analyst is selecting fields from EU customer records for a purchasing analysis. Which GDPR principle most directly limits the fields included?",
+		options: [
+			"Accuracy: keep personal data correct and current.",
+			"Data minimisation: include only personal data needed for the stated purpose.",
+			"Storage limitation: delete data when it is no longer needed.",
+			"Integrity and confidentiality: protect data from unauthorized access.",
+		],
+		correctAnswers: [1],
+		explanation:
+			"Data minimisation concerns which personal data is necessary for the purpose. Accuracy, retention, and security govern different parts of data handling.",
+		source: testAppSource,
+		whyNot:
+			"A addresses correctness; C addresses retention; D addresses protection. None of those principles directly determines which fields are needed.",
+	},
+	{
+		id: "claude-generated-082",
+		domain: "D6",
+		question:
+			"An HR team uses Claude to assist with application reviews. Which TWO safeguards are most appropriate?",
+		options: [
+			"Remove protected attributes and unnecessary personal details from prompts where lawful and relevant, while recognizing that proxies can still carry bias.",
+			"Let Claude automatically reject applicants below a score threshold for consistency.",
+			"Avoid documenting AI use to reduce the chance of scrutiny.",
+			"Keep decisions with human reviewers and conduct fairness audits using lawful, controlled demographic data where needed.",
+			"Assume redacting protected attributes removes bias from the results.",
+		],
+		correctAnswers: [0, 3],
+		explanation:
+			"Data minimisation and accountable human review are useful safeguards, but removing direct attributes does not remove proxy bias. A lawful, controlled use of demographic data may be needed to audit fairness.",
+		source: testAppSource,
+		whyNot:
+			"B automates a consequential decision; C undermines governance; E makes an incorrect claim that proxy variables and other sources of bias disappear after redaction.",
+		selectCount: 2,
+	},
+	{
+		id: "claude-generated-083",
+		domain: "D6",
+		question:
+			"A vendor proposal contains hidden text telling Claude to ignore prior instructions and recommend that vendor. What should the employee do?",
+		options: [
+			"Repeat the prompt with a stronger instruction to ignore hidden text.",
+			"Use the recommendation after checking only the proposal's price and references.",
+			"Treat the document as untrusted, verify Claude's output against it, and report the suspected manipulation to security.",
+			"Delete the email and ask the vendor to resend the document without involving security.",
+		],
+		correctAnswers: [2],
+		explanation:
+			"Instructions embedded in external content are untrusted input. Review the output against the source and report suspected prompt injection through the security process.",
+		source: testAppSource,
+		whyNot:
+			"A is not a reliable control; B may miss manipulated conclusions; D does not alert security to a possible issue that could affect other users.",
+	},
+	{
+		id: "claude-generated-085",
+		domain: "D6",
+		question:
+			"A marketer asks Claude to reproduce a paywalled article in full for republication. What is the appropriate response?",
+		options: [
+			"Republish it with the author's name and a link to the original.",
+			"Do not reproduce it in full; create original material, summarize with appropriate attribution, or obtain permission.",
+			"Ask Claude to paraphrase the whole article closely and publish the rewrite as new work.",
+			"Republish up to a fixed percentage of the article because that amount is always fair use.",
+		],
+		correctAnswers: [1],
+		explanation:
+			"Attribution does not by itself grant permission. U.S. fair use has no fixed percentage threshold; it depends on the circumstances, so use original work, a limited appropriate summary, or obtain rights.",
+		source: testAppSource,
+		whyNot:
+			"A gives credit but may still reproduce protected expression; C may remain substantially similar; D incorrectly treats fair use as a fixed numerical allowance.",
+	},
+	{
+		id: "claude-generated-087",
+		domain: "D6",
+		question:
+			"Company policy allows Confidential data only in its Enterprise workspace and prohibits Restricted data in any AI tool. An employee wants to upload a Restricted acquisition document. What should the employee do?",
+		options: [
+			"Use the Enterprise workspace because it is approved for company data.",
+			"Upload only its executive summary because it contains fewer details.",
+			"Do not use the document with Claude; follow policy and ask governance if an exception is needed.",
+			"Remove names and deal values, then use the Enterprise workspace.",
+		],
+		correctAnswers: [2],
+		explanation:
+			"The policy prohibits Restricted data in any AI tool. A different workspace or a shorter excerpt does not change the classification or permission.",
+		source: testAppSource,
+		whyNot:
+			"A applies the Confidential-data rule to Restricted data; B still shares restricted content; D does not change the classification or authorize processing.",
+	},
+	{
+		id: "claude-generated-090",
+		domain: "D6",
+		question:
+			"After a month of successful customer-facing use, a team stops reviewing Claude's outputs. What risk has increased, and what should the team do?",
+		options: [
+			"Automation bias; maintain risk-proportionate review and periodic audits.",
+			"Model drift; switch to a new model every month without testing.",
+			"Data leakage; move the whole workflow to incognito chats.",
+			"No meaningful risk; a month of good results establishes reliability.",
+		],
+		correctAnswers: [0],
+		explanation:
+			"Good past performance can lead people to over-rely on automated output. Ongoing review and audits help detect errors that still occur.",
+		source: testAppSource,
+		whyNot:
+			"B and C address different risks; D assumes that previous accuracy guarantees future results and removes the remaining safeguard.",
+	},
+	{
+		id: "claude-generated-094",
+		domain: "D7",
+		question:
+			"Stakeholders say weekly summaries are too long and difficult to scan. Which prompt or configuration change is most useful?",
+		options: [
+			"Add “be concise” to each request and leave the requirement otherwise undefined.",
+			"Set checkable rules such as a word limit, fixed headings, and an approved example, then review the next output.",
+			"Switch to a smaller model because it will always produce shorter summaries.",
+			"Send the same summary every two weeks instead of addressing its format.",
+		],
+		correctAnswers: [1],
+		explanation:
+			"Translate feedback into concrete constraints that can be applied consistently and checked in future outputs.",
+		source: testAppSource,
+		whyNot:
+			"A remains vague; C changes model choice without encoding the requirement; D changes timing but not readability.",
+	},
+	{
+		id: "claude-generated-095",
+		domain: "D7",
+		question:
+			"Claude gives a generic response to a report URL hosted on a private intranet. What should the user check first?",
+		options: [
+			"Check whether an approved connector can access the report; if not, use an approved way to provide its contents. Public web search alone cannot reach a private intranet.",
+			"Shorten the URL so Claude can process the intranet page.",
+			"Turn on public web search, which grants access to the company's private network.",
+			"Ask for a summary of only the first section, even if Claude could not access the page.",
+		],
+		correctAnswers: [0],
+		explanation:
+			"First confirm that Claude can retrieve the content through an approved connector. Use public web search only when the needed content is public; web search does not grant private-network access.",
+		source: testAppSource,
+		whyNot:
+			"B does not change network access; C incorrectly treats public search as an intranet connection; D asks for analysis of material Claude has not received.",
+	},
+	{
+		id: "claude-generated-097",
+		domain: "D7",
+		question:
+			"Claude's totals from an uploaded spreadsheet disagree with the finance system. What is the best troubleshooting step?",
+		options: [
+			"Upload the file again and compare the totals from two separate chats.",
+			"Abandon the analysis and manually redo every calculation without checking how the file was read.",
+			"Ask Claude to double-check the totals without requesting the underlying method.",
+			"Ask how the data was interpreted and request the calculations, then compare them with the source and correct any structural issues.",
+		],
+		correctAnswers: [3],
+		explanation:
+			"Inspecting headers, merged cells, subtotals, and calculations can reveal how the mismatch occurred. Validate the corrected result against the source data.",
+		source: testAppSource,
+		whyNot:
+			"A repeats the task without diagnosing it; B skips useful investigation; C can repeat the same error without exposing the data interpretation.",
+	},
+	{
+		id: "claude-generated-098",
+		domain: "D7",
+		question:
+			"A customer-email triage prompt works in English but fails on multilingual messages. Which TWO steps best improve it?",
+		options: [
+			"Require customers to submit all messages in English.",
+			"Add explicit instructions and representative multilingual examples.",
+			"Discard the existing prompt and start over without analyzing the failures.",
+			"Use the failed messages as test cases for the revised prompt.",
+			"Add emphasis words without changing the instructions or tests.",
+		],
+		correctAnswers: [1, 3],
+		explanation:
+			"Examples address the missing input patterns, and regression cases show whether the changes fix the observed failures without breaking existing behavior.",
+		source: testAppSource,
+		whyNot:
+			"A shifts the burden to customers; C discards useful working behavior; E adds emphasis but does not address multilingual cases or verify a fix.",
+		selectCount: 2,
+	},
+	{
+		id: "claude-generated-099",
+		domain: "D7",
+		question:
+			"Claude invents plausible details when answering questions about an internal expenses policy. What is the most direct fix?",
+		options: [
+			"Use a more capable model because it should already know the company's policy.",
+			"Provide the authoritative policy in Project knowledge and instruct Claude to answer from it or say when the answer is not found.",
+			"Ask employees to write more precise questions without providing the policy.",
+			"Tell Claude to add a caveat to every answer, even when the policy is available.",
+		],
+		correctAnswers: [1],
+		explanation:
+			"Without the authoritative policy, Claude may fill gaps with plausible but unsupported details. Supplying the source and requiring a not-found response grounds answers in the policy.",
+		source: testAppSource,
+		whyNot:
+			"A assumes general model knowledge contains internal policy; C does not supply missing evidence; D adds caveats but does not correct the unsupported source.",
+	},
+	{
+		id: "claude-generated-100",
+		domain: "D7",
+		question:
+			"A team reaches its Claude usage limits early after repeatedly adding the same large reference PDFs and keeping chats on many topics. Which change may help reduce unnecessary context costs?",
+		options: [
+			"Upgrade everyone's plan before checking whether the workflow can be made more efficient.",
+			"Put every task into one very long chat so no one needs to organize the work.",
+			"Use Project knowledge for recurring reference material and keep separate chats focused, then monitor actual usage.",
+			"Compress the PDFs into an archive but upload it again for every task.",
+		],
+		correctAnswers: [2],
+		explanation:
+			"Reusing project-level references and focused chats can reduce repeated uploads and unnecessary context. Usage varies by plan, model, content, and product behavior, so savings are not guaranteed and should be measured.",
+		source: testAppSource,
+		whyNot:
+			"A may add cost before workflow review; B combines unrelated context; D still repeats uploads and compression does not necessarily reduce the work Claude processes.",
 	},
 ];

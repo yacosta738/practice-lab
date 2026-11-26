@@ -4,27 +4,61 @@ NOTICE
 Third-Party Content Attribution
 -------------------------------
 
-The question banks for the following certifications include practice questions
-imported from Cert Pro Quest (https://cert-pro-quest.lovable.app/), a practice
-bank created by Matthew Purcell:
+Cert Pro Quest
+--------------
+
+Some question-bank content for the following certifications comes from Cert Pro
+Quest (https://cert-pro-quest.lovable.app/), a practice bank created by Matthew
+Purcell:
 
 - CCAO-F (Claude Certified Associate — Foundations)
 - CCAR-P (Claude Certified Architect — Professional)
 - CCAR-F (Claude Certified Architect — Foundations)
-- CCDV-F (Claude Developer Foundations) — 53 of the 175 items
+- CCDV-F (Claude Developer Foundations) — 53 of 199 items
 
-Those imported items are community-created practice questions. They are NOT
-official Anthropic exam content, are not endorsed by Anthropic, and no official
-exam content is reproduced here.
+Those items are community-created practice questions. They are not official
+Anthropic exam content, and Anthropic does not endorse them. They were imported
+for personal study with attribution preserved on each item.
 
-The practice questions were imported for personal study use, with attribution
-preserved on every imported item. Each imported question carries a source label
-and URL pointing back to Cert Pro Quest.
+TestApp-Generated CCAO-F Questions
+----------------------------------
+
+The CCAO-F bank contains 49 adapted questions from the TestApp author's separate
+Claude-generated practice set:
+
+- Source set: https://drive.google.com/file/d/1v0ZBWPXIIMSE9u48_WdZ7hg7mFCuFufh/view
+- Reuse permission: confirmed by the maintainer; the author's name was not
+  supplied.
+- Editorial status: technically reviewed and adapted; the questions are not
+  official Anthropic exam items.
+
+This permission applies only to the identified TestApp-generated material. It
+does not grant permission to reuse SkillCertPro questions or cheat-sheet text.
+No SkillCertPro material is included in the repository; 680 such candidates
+remain unpublished while redistribution rights are unverified.
+
+CCDV-P Practice Questions
+-------------------------
+
+The CCDV-P bank contains 70 adapted questions from Matthew Purcell's *Claude
+Certified Developer – Professional: Full Practice Exam Question Set*, published
+2026-11-24:
+
+- [Matthew Purcell's source post](https://www.linkedin.com/posts/purcellmatthew_ccdv-p-claude-certified-developer-professional-activity-7530737595782438912-kSDX)
+- [Creative Commons Attribution-NonCommercial 4.0 International](https://creativecommons.org/licenses/by-nc/4.0/)
+- Editorial status: all items were reviewed; wording and explanations were
+  adapted, and technical corrections were made. These are community practice
+  questions, not official Anthropic exam items.
+
+The CC BY-NC 4.0 license applies to these adapted CCDV-P questions. This content
+is published for noncommercial personal study only. Reassess the license before
+any commercial use or if the project's use changes.
 
 License Scope
 -------------
 
 The MIT license included in this repository covers the application's own code
-only. It does not grant rights over the imported practice content, which remains
-the work of its author (Matthew Purcell). No license is claimed or implied for
-the imported content beyond what the source itself states.
+only. It does not grant rights over third-party practice content. The Cert Pro
+Quest items retain their source terms, the CCAO-F TestApp additions are included
+under the maintainer-confirmed reuse permission above, and the CCDV-P items are
+subject to CC BY-NC 4.0. No rights are claimed for content that is not included.

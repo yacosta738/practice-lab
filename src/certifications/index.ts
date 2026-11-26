@@ -9,8 +9,8 @@ interface CertificationEntry {
 
 const certifications: Record<string, CertificationEntry> = {};
 
-// Deterministic order: ccdv-f, ccao-f, ccar-p, ccar-f
-const slugOrder = ["ccdv-f", "ccao-f", "ccar-p", "ccar-f"];
+// Deterministic order: ccdv-f, ccdv-p, ccao-f, ccar-p, ccar-f
+const slugOrder = ["ccdv-f", "ccdv-p", "ccao-f", "ccar-p", "ccar-f"];
 
 // Auto-discover config and questions modules
 const configModules = import.meta.glob("../certifications/*/config.ts", { eager: true });

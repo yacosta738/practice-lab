@@ -1,4 +1,6 @@
+import { config as ccaoFConfig } from "../certifications/ccao-f/config";
 import { config as ccdvFConfig } from "../certifications/ccdv-f/config";
+import { config as ccdvPConfig } from "../certifications/ccdv-p/config";
 import type { CertificationConfig } from "../lib/quiz-types";
 
 export interface StudyCert {
@@ -33,6 +35,32 @@ export const studyCerts: StudyCert[] = [
 		examDecisionGuide: {
 			label: "Exam decision guide",
 			path: "study/ccdv-f/exam-decision-guide",
+		},
+	},
+	{
+		slug: "ccdv-p",
+		title: ccdvPConfig.title,
+		subtitle: ccdvPConfig.subtitle,
+		description:
+			"Original study notes for the Claude Certified Developer Professional exam, organized by official domain.",
+		certification: ccdvPConfig,
+		quizPath: "certifications/ccdv-p",
+		learningResources: {
+			label: "Source register",
+			path: "study/ccdv-p/source-register",
+		},
+	},
+	{
+		slug: "ccao-f",
+		title: ccaoFConfig.title,
+		subtitle: ccaoFConfig.subtitle,
+		description:
+			"Original study notes for the Claude Certified Associate Foundations exam, organized by official domain.",
+		certification: ccaoFConfig,
+		quizPath: "certifications/ccao-f",
+		learningResources: {
+			label: "Source register",
+			path: "study/ccao-f/source-register",
 		},
 	},
 ];

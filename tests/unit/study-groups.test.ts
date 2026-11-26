@@ -94,6 +94,26 @@ describe("sectionIdForId", () => {
 	it("returns empty string for an unknown folder segment", () => {
 		expect(sectionIdForId("ccdv-f/unknown-folder/some-note")).toBe("");
 	});
+
+	it.each([
+		["ccdv-p", "01-agent-architecture-and-orchestration", "D1"],
+		["ccdv-p", "02-production-integration-and-grounding", "D2"],
+		["ccdv-p", "03-observability-and-production-monitoring", "D3"],
+		["ccdv-p", "04-debugging-and-incident-response", "D4"],
+		["ccdv-p", "05-evaluation-engineering-and-quality-assurance", "D5"],
+		["ccdv-p", "06-cost-and-latency-optimization", "D6"],
+		["ccdv-p", "07-runtime-guardrails-and-production-security", "D7"],
+		["ccdv-p", "08-agent-fleet-operations", "D8"],
+		["ccao-f", "11-prompting-and-task-execution", "D1"],
+		["ccao-f", "12-output-evaluation-and-validation", "D2"],
+		["ccao-f", "13-product-and-model-selection", "D3"],
+		["ccao-f", "14-workflow-integration-and-solution-design", "D4"],
+		["ccao-f", "15-configuration-and-knowledge-management", "D5"],
+		["ccao-f", "16-governance-risk-and-responsible-use", "D6"],
+		["ccao-f", "17-troubleshooting-and-optimization", "D7"],
+	])("maps %s folder %s to %s", (cert, folder, domain) => {
+		expect(sectionIdForId(`${cert}/${folder}/note`)).toBe(domain);
+	});
 });
 
 /* ------------------------------------------------------------------ */
