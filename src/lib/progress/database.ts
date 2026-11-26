@@ -1,5 +1,7 @@
 import { type IDBPDatabase, type IDBPTransaction, openDB } from "idb";
 import { ProgressStorageError, toProgressStorageError } from "./errors";
+import { projectQuestionAttempts } from "./model";
+import { REVIEW_SCHEDULER_POLICY_VERSION } from "./review-scheduler";
 import {
 	PROGRESS_DATABASE_NAME,
 	PROGRESS_DATABASE_VERSION,
@@ -203,6 +205,79 @@ function upgradeSchema(
 			}),
 		);
 	}
+	if (oldVersion < 5) {
+		ensureReviewStores(db, transaction);
+		if (oldVersion > 0) {
+			migrateReviewSchedules(transaction);
+		}
+
+		const metadata = transaction.objectStore("metadata");
+		writeUpgradeMetadata(
+			metadata.put({
+				key: "review-scheduler:policy-version",
+				value: REVIEW_SCHEDULER_POLICY_VERSION,
+			}),
+		);
+		writeUpgradeMetadata(
+			metadata.put({
+				key: "schema-version",
+				value: { version: PROGRESS_DATABASE_VERSION },
+			}),
+		);
+		writeUpgradeMetadata(
+			metadata.put({
+				key: "migration:4-5",
+				value: {
+					fromVersion: 4,
+					toVersion: 5,
+					schedulerPolicyVersion: REVIEW_SCHEDULER_POLICY_VERSION,
+					completedAt: Date.now(),
+				},
+			}),
+		);
+	}
+}
+
+function ensureReviewStores(
+	db: ProgressDatabase,
+	transaction: IDBPTransaction<ProgressDatabaseSchema, ProgressStoreName[], "versionchange">,
+): void {
+	if (!db.objectStoreNames.contains("questionAttempts")) {
+		const attempts = db.createObjectStore("questionAttempts", {
+			keyPath: ["sessionId", "questionId"],
+		});
+		attempts.createIndex("by-certification", "certificationId");
+		attempts.createIndex("by-domain", "domainId");
+		attempts.createIndex("by-evaluated-at", "evaluatedAt");
+		attempts.createIndex("by-session", "sessionId");
+		attempts.createIndex("by-certification-evaluated-at", ["certificationId", "evaluatedAt"]);
+	}
+	if (!db.objectStoreNames.contains("questionProgress")) {
+		const questionProgress = db.createObjectStore("questionProgress", {
+			keyPath: ["certificationId", "questionId"],
+		});
+		questionProgress.createIndex("by-certification", "certificationId");
+	}
+	if (!db.objectStoreNames.contains("metadata")) {
+		db.createObjectStore("metadata", { keyPath: "key" });
+	}
+	const questionProgress = transaction.objectStore("questionProgress");
+	if (!questionProgress.indexNames.contains("by-certification")) {
+		questionProgress.createIndex("by-certification", "certificationId");
+	}
+}
+
+function migrateReviewSchedules(
+	transaction: IDBPTransaction<ProgressDatabaseSchema, ProgressStoreName[], "versionchange">,
+): void {
+	const attemptStore = transaction.objectStore("questionAttempts");
+	const progressStore = transaction.objectStore("questionProgress");
+	void (async () => {
+		const [attempts, existing] = await Promise.all([attemptStore.getAll(), progressStore.getAll()]);
+		if (attempts.length === 0) return;
+		const rebuilt = projectQuestionAttempts(attempts, existing);
+		await Promise.all(rebuilt.map((record) => progressStore.put(record)));
+	})().catch(() => transaction.abort());
 }
 
 function ensureStudyStores(

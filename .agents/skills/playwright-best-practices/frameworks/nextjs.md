@@ -18,6 +18,7 @@
 > **When to use**: Testing Next.js applications with App Router, Pages Router, API routes,
 > middleware, SSR, dynamic routes, and server components.
 >
+>
 > **Prerequisites**: [configuration.md](../core/configuration.md), [locators.md](../core/locators.md)
 
 ## Setup

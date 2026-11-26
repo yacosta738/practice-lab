@@ -105,7 +105,7 @@ function renderReview(entry: SessionHistoryEntry): void {
 	const total = session.content.questions.length;
 	summary.innerHTML = `
 			<section class="panel reviewSummary" aria-labelledby="review-summary-title">
-				<h2 id="review-summary-title">${session.mode === "exam" ? "Mock exam" : session.mode === "weak" ? "Missed-question review" : "Practice"} · ${escapeHtml(session.certificationId)}</h2>
+				<h2 id="review-summary-title">${session.mode === "exam" ? "Mock exam" : session.mode === "weak" ? "Missed-question review" : session.mode === "review" ? "Spaced review" : "Practice"} · ${escapeHtml(session.certificationId)}</h2>
 				<dl>
 					<div><dt>Status</dt><dd>${escapeHtml(session.status.replaceAll("_", " "))}</dd></div>
 					<div><dt>Started</dt><dd>${formatDate(session.startedAt)}</dd></div>

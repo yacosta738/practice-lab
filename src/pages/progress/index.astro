@@ -131,6 +131,7 @@ const clientData = JSON.stringify({ banks, certificationLabels, studyNotes }).re
 							<option value="practice">Practice</option>
 							<option value="exam">Mock exam</option>
 							<option value="weak">Review missed questions</option>
+							<option value="review">Spaced review</option>
 						</select>
 					</label>
 					<label>
@@ -160,6 +161,19 @@ const clientData = JSON.stringify({ banks, certificationLabels, studyNotes }).re
 					<span class="small muted" id="metric-scope">All certifications</span>
 				</div>
 				<div class="progressMetricGrid" id="progress-metrics" aria-live="polite"></div>
+			</section>
+
+			<section class="panel progressReviewQueue" aria-labelledby="review-queue-title">
+				<div class="sectionHead">
+					<div>
+						<h2 id="review-queue-title">Due review queue</h2>
+						<p class="small muted">
+							Scheduled from your evaluated attempts using local calendar dates. Normal practice and
+							mock exams remain unchanged.
+						</p>
+					</div>
+				</div>
+				<div id="review-queue" aria-live="polite"></div>
 			</section>
 
 			<div class="progressVisualGrid">
@@ -288,6 +302,15 @@ const clientData = JSON.stringify({ banks, certificationLabels, studyNotes }).re
 						attempts), stale knowledge, and unseen domains. Official exam blueprint weights are used
 						only where explicitly labeled; local practice evidence does not predict official exam
 						pass probability.
+					</li>
+					<li>
+						<strong>Review scheduling (<code>review-v1</code>)</strong> uses a transparent
+						fixed-step interval ladder (1, 3, 7, 14, and 30 days max) based on actual evaluated
+						attempts. Incorrect or partial answers reset the interval to 1 day. Due dates are stored
+						as floating local calendar dates (<code>YYYY-MM-DD</code>) so daylight-saving shifts and
+						travel do not drift schedules. Skipped questions are not evaluated and do not advance
+						intervals; undated legacy totals do not fabricate due dates; materially revised
+						questions are queued for re-verification.
 					</li>
 					<li>
 						<strong>Exam trend</strong> includes completed and expired mock exams; unanswered
@@ -479,6 +502,88 @@ function renderMetrics(
 		`;
 }
 
+function renderReviewQueue(summary: ReturnType<typeof deriveProgressSummary>): void {
+	const container = byId<HTMLDivElement>("review-queue");
+	const queue = summary.reviewQueue;
+	const counts = queue.counts;
+	const stepsLabel = queue.policy.successIntervalsDays.join(", ");
+	const caption = `<p class="small muted progressPolicyCaption">Policy <code>${escapeHtml(queue.policy.version)}</code> · Intervals: ${stepsLabel} days (max ${queue.policy.maxIntervalDays}d) · Local date: ${escapeHtml(queue.today)} · Browser-local only (no notifications or cloud sync).</p>`;
+	const summaryPills = `<div class="reviewQueueStats" role="list" aria-label="Review queue counts">
+		<div class="reviewQueueStat" role="listitem"><strong>${counts.dueNow}</strong><span>Due now</span></div>
+		<div class="reviewQueueStat" role="listitem"><strong>${counts.overdue}</strong><span>Overdue</span></div>
+		<div class="reviewQueueStat" role="listitem"><strong>${counts.dueToday}</strong><span>Due today</span></div>
+		<div class="reviewQueueStat" role="listitem"><strong>${counts.revisionChanged}</strong><span>Updated</span></div>
+		<div class="reviewQueueStat" role="listitem"><strong>${counts.upcoming}</strong><span>Upcoming</span></div>
+	</div>`;
+
+	if (counts.dueNow === 0) {
+		const emptyMessage =
+			counts.upcoming > 0 && queue.nextDueDate
+				? `No questions are due for review today. ${counts.upcoming} ${counts.upcoming === 1 ? "question is" : "questions are"} scheduled next, starting ${queue.nextDueDate}.`
+				: counts.legacyOnly > 0
+					? "No scheduled reviews yet. Imported legacy totals do not include evaluation dates; answer questions to build a review schedule."
+					: "No questions are due for review right now. Complete a practice session or mock exam to schedule future reviews.";
+		container.innerHTML = `${caption}${summaryPills}<p class="muted reviewQueueEmpty">${escapeHtml(emptyMessage)}</p>`;
+		return;
+	}
+
+	const cards = queue.byCertification
+		.filter((cert) => cert.counts.dueNow > 0)
+		.map((cert) => {
+			const certSlug = encodeURIComponent(cert.certificationId);
+			const defaultAmount = Math.min(10, cert.counts.dueNow);
+			const amountOptions = [5, 10, 20]
+				.filter((n) => n < cert.counts.dueNow)
+				.map(
+					(n) =>
+						`<option value="${n}" ${n === defaultAmount ? "selected" : ""}>${n} questions</option>`,
+				);
+			amountOptions.push(
+				`<option value="${cert.counts.dueNow}" ${defaultAmount === cert.counts.dueNow ? "selected" : ""}>All due (${cert.counts.dueNow})</option>`,
+			);
+			const topReasons = cert.dueItems
+				.slice(0, 3)
+				.map(
+					(item) =>
+						`<li><span class="progressStatusTag">${escapeHtml(item.domainId)}</span> <span>${escapeHtml(item.reason)}</span></li>`,
+				)
+				.join("");
+			const remaining = cert.dueItems.length - 3;
+			const startHref = `${base}certifications/${certSlug}/?mode=review&amount=${defaultAmount}#review-queue`;
+			const selectId = `review-count-${cert.certificationId.replace(/[^a-z0-9_-]/gi, "-")}`;
+			return `<article class="reviewQueueCard">
+				<div class="reviewQueueCardHead">
+					<div>
+						<h3>${escapeHtml(cert.certificationSubtitle)}</h3>
+						<p class="small muted">${cert.counts.dueNow} due · ${cert.counts.overdue} overdue · ${cert.counts.dueToday} due today${cert.counts.revisionChanged ? ` · ${cert.counts.revisionChanged} updated` : ""}</p>
+					</div>
+					<div class="reviewQueueControls">
+						<label class="small" for="${selectId}"><span>Questions</span>
+							<select id="${selectId}" class="reviewQueueCountSelect" data-review-cert="${escapeHtml(cert.certificationId)}">${amountOptions.join("")}</select>
+						</label>
+						<a class="primary reviewQueueStartLink" data-review-start="${escapeHtml(cert.certificationId)}" href="${escapeHtml(startHref)}">Start review</a>
+					</div>
+				</div>
+				<ul class="reviewQueueReasons">${topReasons}${remaining > 0 ? `<li class="small muted">+ ${remaining} more ${remaining === 1 ? "question" : "questions"} in queue</li>` : ""}</ul>
+			</article>`;
+		})
+		.join("");
+
+	container.innerHTML = `${caption}${summaryPills}<div class="reviewQueueCards">${cards}</div>`;
+	for (const select of container.querySelectorAll<HTMLSelectElement>(".reviewQueueCountSelect")) {
+		select.addEventListener("change", () => {
+			const certId = select.dataset.reviewCert;
+			if (!certId) return;
+			const link = container.querySelector<HTMLAnchorElement>(
+				`a[data-review-start="${CSS.escape(certId)}"]`,
+			);
+			if (!link) return;
+			const certSlug = encodeURIComponent(certId);
+			link.href = `${base}certifications/${certSlug}/?mode=review&amount=${encodeURIComponent(select.value)}#review-queue`;
+		});
+	}
+}
+
 function renderMasteryBreakdown(summary: ReturnType<typeof deriveProgressSummary>): void {
 	const container = byId<HTMLDivElement>("mastery-breakdown");
 	const m = summary.mastery;
@@ -667,9 +772,17 @@ function renderHistory(page: SessionHistoryPage): void {
 			const isActive = session.status === "in_progress";
 			const actionLabel = isActive ? "Resume" : "Review";
 			const actionUrl = isActive
-				? `${label?.href ?? `${base}certifications/${encodeURIComponent(session.certificationId)}/`}?mode=${session.mode === "exam" ? "assess" : "practice"}&resume=1`
+				? `${label?.href ?? `${base}certifications/${encodeURIComponent(session.certificationId)}/`}?mode=${session.mode === "exam" ? "assess" : session.mode === "review" ? "review" : "practice"}&resume=1`
 				: `${base}progress/session/?session=${encodeURIComponent(session.id)}`;
-			return `<tr><td>${formatDate(session.startedAt)}</td><td>${escapeHtml(label?.subtitle ?? session.certificationId)}</td><td>${session.mode === "exam" ? "Mock exam" : session.mode === "weak" ? "Missed questions" : "Practice"}</td><td><span class="progressStatusTag">${statusLabel(session.status)}</span></td><td>${result}</td><td>${duration}</td><td><a href="${actionUrl}" aria-label="${actionLabel} saved ${session.mode} session from ${formatDate(session.startedAt)}">${actionLabel}</a></td></tr>`;
+			const modeLabel =
+				session.mode === "exam"
+					? "Mock exam"
+					: session.mode === "weak"
+						? "Missed questions"
+						: session.mode === "review"
+							? "Spaced review"
+							: "Practice";
+			return `<tr><td>${formatDate(session.startedAt)}</td><td>${escapeHtml(label?.subtitle ?? session.certificationId)}</td><td>${modeLabel}</td><td><span class="progressStatusTag">${statusLabel(session.status)}</span></td><td>${result}</td><td>${duration}</td><td><a href="${actionUrl}" aria-label="${actionLabel} saved ${session.mode} session from ${formatDate(session.startedAt)}">${actionLabel}</a></td></tr>`;
 		})
 		.join("");
 }
@@ -693,6 +806,7 @@ async function load(): Promise<void> {
 			{ basePath: base },
 		);
 		renderMetrics(summary, selectedBanks, summaryData.hasSessions);
+		renderReviewQueue(summary);
 		renderMasteryBreakdown(summary);
 		renderRecommendations(summary);
 		renderDomainChart(summary);
@@ -728,7 +842,7 @@ function applyQueryToFilters(): void {
 		certificationFilter.value = certification;
 	}
 	const mode = params.get("mode");
-	if (mode && ["practice", "exam", "weak"].includes(mode)) modeFilter.value = mode;
+	if (mode && ["practice", "exam", "weak", "review"].includes(mode)) modeFilter.value = mode;
 	const status = params.get("status");
 	if (status && ["in_progress", "completed", "expired", "abandoned"].includes(status)) {
 		statusFilter.value = status;
@@ -1254,8 +1368,128 @@ void loadStudyProgress();
 .progressFilters,
 .progressDefinitions,
 .progressVisual,
-.progressHistory {
+.progressHistory,
+.progressReviewQueue {
 	padding: 18px;
+}
+
+.progressReviewQueue {
+	margin-bottom: 20px;
+}
+
+.progressReviewQueue h2 {
+	font-size: 17px;
+	margin: 0 0 4px;
+}
+
+.progressReviewQueue .sectionHead p {
+	margin: 0 0 12px;
+}
+
+.progressPage :global(.reviewQueueStats) {
+	display: grid;
+	gap: 10px;
+	grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+	margin-bottom: 14px;
+}
+
+.progressPage :global(.reviewQueueStat) {
+	background: var(--raised);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	display: grid;
+	gap: 2px;
+	padding: 10px 12px;
+}
+
+.progressPage :global(.reviewQueueStat strong) {
+	font-size: 20px;
+	line-height: 1.2;
+}
+
+.progressPage :global(.reviewQueueStat span) {
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.progressPage :global(.reviewQueueEmpty) {
+	margin: 4px 0 0;
+}
+
+.progressPage :global(.reviewQueueCards) {
+	display: grid;
+	gap: 12px;
+}
+
+.progressPage :global(.reviewQueueCard) {
+	background: var(--raised);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 14px;
+}
+
+.progressPage :global(.reviewQueueCardHead) {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	justify-content: space-between;
+	margin-bottom: 10px;
+}
+
+.progressPage :global(.reviewQueueCardHead h3) {
+	font-size: 15px;
+	margin: 0 0 3px;
+}
+
+.progressPage :global(.reviewQueueCardHead p) {
+	margin: 0;
+}
+
+.progressPage :global(.reviewQueueControls) {
+	align-items: end;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.progressPage :global(.reviewQueueControls label) {
+	display: grid;
+	font-weight: 600;
+	gap: 4px;
+}
+
+.progressPage :global(.reviewQueueControls select) {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	color: var(--ink);
+	font: inherit;
+	min-height: 38px;
+	padding: 6px 10px;
+}
+
+.progressPage :global(.reviewQueueStartLink) {
+	align-items: center;
+	display: inline-flex;
+	min-height: 38px;
+	text-decoration: none;
+}
+
+.progressPage :global(.reviewQueueReasons) {
+	display: grid;
+	font-size: 13px;
+	gap: 6px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.progressPage :global(.reviewQueueReasons li) {
+	align-items: baseline;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
 }
 
 .progressFilters h2,

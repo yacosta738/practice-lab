@@ -17,6 +17,7 @@ import {
 	type QuestionProgress,
 	type SessionHistoryEntry,
 } from "./model";
+import { buildReviewQueue, type ReviewQueueSummary } from "./review-scheduler";
 
 export interface ProgressBankQuestion {
 	certificationId: string;
@@ -46,6 +47,7 @@ export interface ProgressSummary {
 	domainBreakdown: DomainMasterySnapshot[];
 	mastery: MasteryCounts;
 	recommendations: ReviewRecommendation[];
+	reviewQueue: ReviewQueueSummary;
 	policy: typeof MASTERY_POLICY;
 	examTrend: ExamTrendPoint[];
 	legacy: { attempts: number; correct: number };
@@ -89,6 +91,7 @@ export interface ExamTrendPoint {
 export interface DeriveProgressSummaryOptions {
 	now?: number;
 	basePath?: string;
+	timeZone?: string;
 }
 
 const RECENT_ATTEMPT_LIMIT = MASTERY_POLICY.recentWindowSize;
@@ -300,6 +303,11 @@ export function deriveProgressSummary(
 		basePath,
 	});
 
+	const reviewQueue = buildReviewQueue([...eligibleQuestions.values()], progressByKey, {
+		now: () => now,
+		...(options.timeZone ? { timeZone: options.timeZone } : {}),
+	});
+
 	const sessions = history.map(({ session }) => session);
 	const completedMockExams =
 		projection?.completedMockExams ??
@@ -342,6 +350,7 @@ export function deriveProgressSummary(
 		domainBreakdown,
 		mastery: overallMastery,
 		recommendations,
+		reviewQueue,
 		policy: MASTERY_POLICY,
 		examTrend,
 		legacy,

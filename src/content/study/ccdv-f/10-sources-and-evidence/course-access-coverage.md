@@ -13,7 +13,8 @@ tags:
 
 > **Partial verified course access, not complete extraction.** The
 > existing [CCDV-F - Apuntes de Skilljar](../ccdv-f-apuntes-de-skilljar/) reports viewing the first
-> authenticated screens before a checkpoint locked further navigation on 2026-11-14. This PKM does not
+> authenticated screens before a checkpoint locked further navigation on 2026-11-14. This PKM does
+> not
 > claim to have personally reopened or passed the gated checkpoints in this session.
 
 The Phase 0 public-source review on 2026-11-24 did not access new authenticated Skilljar screens.

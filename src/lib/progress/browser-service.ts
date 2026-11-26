@@ -23,6 +23,7 @@ import type {
 	QuestionProgress,
 	SessionHistoryEntry,
 } from "./model";
+import { REVIEW_SCHEDULER_POLICY_VERSION } from "./review-scheduler";
 import {
 	type CheckpointSessionCommand,
 	type CreateSessionCommand,
@@ -48,6 +49,7 @@ export interface BrowserProgressOptions {
 export interface BrowserProgressState {
 	generationToken: string;
 	stats: Record<string, { attempts: number; correct: number; lastWrong: boolean }>;
+	questionProgress: QuestionProgress[];
 	history: SessionHistoryEntry[];
 	currentSession?: ProgressSession;
 	migrationPending: boolean;
@@ -159,6 +161,7 @@ export class BrowserProgressService {
 		return {
 			generationToken: this.generationToken,
 			stats,
+			questionProgress: progress,
 			history,
 			...(currentSession ? { currentSession: currentSession.session } : {}),
 			migrationPending: this.pendingMigrationPlan !== undefined,
@@ -219,6 +222,7 @@ export class BrowserProgressService {
 				{
 					format: "practice-lab-progress-export",
 					version: 1,
+					schedulerPolicyVersion: REVIEW_SCHEDULER_POLICY_VERSION,
 					exportedAt: archive.exportedAt,
 					legacyRecords: archive,
 					previousMigrationBackups,
@@ -244,6 +248,7 @@ export class BrowserProgressService {
 		const exported = {
 			format: "practice-lab-progress-export",
 			version: 1,
+			schedulerPolicyVersion: REVIEW_SCHEDULER_POLICY_VERSION,
 			exportedAt: archive.exportedAt,
 			legacyBackupKey: backupKey,
 			legacyRecords: archive,
@@ -276,6 +281,7 @@ export class BrowserProgressService {
 			{
 				format: "practice-lab-progress-recovery",
 				version: 1,
+				schedulerPolicyVersion: REVIEW_SCHEDULER_POLICY_VERSION,
 				exportedAt: archive.exportedAt,
 				legacyRecords: archive,
 				previousMigrationBackups,

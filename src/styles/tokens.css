@@ -112,9 +112,11 @@
 	--pill-warning-ink: light-dark(#854d0e, #fcd34d);
 	--sidebar-width: 248px;
 	--fs-xs: 12px;
+
 	&:has(> head > meta[name="color-scheme"][content="dark"]) {
 		color-scheme: dark;
 	}
+
 	&:has(> head > meta[name="color-scheme"][content="light"]) {
 		color-scheme: light;
 	}

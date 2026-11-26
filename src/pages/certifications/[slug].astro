@@ -91,12 +91,14 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 <script>
 import { parseProgressBackup } from "../../lib/progress/backup-restore";
 import type { BrowserProgressService } from "../../lib/progress/browser-service";
+import { computeQuestionRevision } from "../../lib/progress/legacy-migration";
 import type {
 	EvaluationOutcome,
 	ProgressSession,
 	SessionCheckpoint,
 	SessionMode,
 } from "../../lib/progress/model";
+import { buildReviewQueue, type ReviewQuestionRef } from "../../lib/progress/review-scheduler";
 import { initializeQuizClient } from "../../lib/quiz-client";
 import {
 	formatTime,
@@ -160,6 +162,17 @@ document.addEventListener("click", (event: MouseEvent) => {
 	const params = new URLSearchParams(window.location.search);
 	const rawDomain = params.get("domain");
 	const requestedDomain = rawDomain && Object.hasOwn(cfg.domains, rawDomain) ? rawDomain : "all";
+	const rawReviewAmount = Number(params.get("amount"));
+	const requestedReviewAmount =
+		Number.isSafeInteger(rawReviewAmount) && rawReviewAmount > 0 ? rawReviewAmount : undefined;
+	const reviewQuestionRefs: ReviewQuestionRef[] = qs.map((q) => ({
+		certificationId: cfg.slug,
+		certificationSubtitle: cfg.subtitle,
+		questionId: q.id,
+		domainId: q.domain,
+		domainName: cfg.domains[q.domain]?.name ?? q.domain,
+		revision: computeQuestionRevision(q),
+	}));
 	let examNavigatorExpanded = !window.matchMedia("(max-width: 860px)").matches;
 
 	// Native <dialog> confirmation helper (replaces window.confirm())
@@ -470,6 +483,16 @@ document.addEventListener("click", (event: MouseEvent) => {
 		return qs.filter((question) => saved.stats[question.id]?.lastWrong).length;
 	}
 
+	function getReviewQueue() {
+		const progressByKey = new Map(
+			progressState.questionProgress.map((item) => [
+				`${item.certificationId}\u0000${item.questionId}`,
+				item,
+			]),
+		);
+		return buildReviewQueue(reviewQuestionRefs, progressByKey, { now: () => Date.now() });
+	}
+
 	// --- Start session ---
 	async function start(mode: SessionMode, domain?: string, amount?: number): Promise<void> {
 		await checkpointQueue;
@@ -488,6 +511,12 @@ document.addEventListener("click", (event: MouseEvent) => {
 			const weak = qs.filter((q) => saved.stats[q.id]?.lastWrong);
 			if (!weak.length) return;
 			ids = shuffle(weak).map((q) => q.id);
+		} else if (mode === "review") {
+			const queue = getReviewQueue();
+			if (!queue.dueItems.length) return;
+			const limit =
+				amount && amount > 0 ? Math.min(amount, queue.dueItems.length) : queue.dueItems.length;
+			ids = queue.dueItems.slice(0, limit).map((item) => item.questionId);
 		} else {
 			let pool = [...qs];
 			if (domain && domain !== "all") {
@@ -517,7 +546,8 @@ document.addEventListener("click", (event: MouseEvent) => {
 			previousSession,
 		);
 		applyProgressSession(savedSession);
-		saved.stats = (await progressService.readState()).stats;
+		progressState = await progressService.readState();
+		saved.stats = progressState.stats;
 		setResumeUrl(true);
 		render("question");
 		window.scrollTo({ top: 0, behavior: "smooth" });
@@ -544,7 +574,14 @@ document.addEventListener("click", (event: MouseEvent) => {
 		const url = new URL(window.location.href);
 		if (shouldResume && activeSession) {
 			session = activeSession;
-			url.searchParams.set("mode", activeSession.mode === "exam" ? "assess" : "practice");
+			url.searchParams.set(
+				"mode",
+				activeSession.mode === "exam"
+					? "assess"
+					: activeSession.mode === "review"
+						? "review"
+						: "practice",
+			);
 			url.searchParams.set("resume", "1");
 			url.searchParams.delete("result");
 		} else {
@@ -555,6 +592,12 @@ document.addEventListener("click", (event: MouseEvent) => {
 		window.dispatchEvent(new Event("practice-lab:workspace-mode-change"));
 	}
 
+	function sessionModeLabel(mode: SessionMode): string {
+		if (mode === "exam") return "mock exam";
+		if (mode === "review") return "review session";
+		return "practice session";
+	}
+
 	// --- Home view ---
 	function home(): void {
 		const values = qs.map(
@@ -563,6 +606,61 @@ document.addEventListener("click", (event: MouseEvent) => {
 		const attempted = values.filter((s) => s.attempts > 0).length;
 		const mastered = values.filter((s) => s.attempts > 0 && !s.lastWrong).length;
 		const weak = getWeakCount();
+		const reviewQueue = getReviewQueue();
+		const dueCount = reviewQueue.counts.dueNow;
+		const defaultReviewAmount = dueCount
+			? Math.min(requestedReviewAmount ?? Math.min(10, dueCount), dueCount)
+			: 0;
+		const reviewAmountOptions = dueCount
+			? [
+					...[5, 10, 20]
+						.filter((n) => n < dueCount)
+						.map(
+							(n) =>
+								`<option value="${n}" ${n === defaultReviewAmount ? "selected" : ""}>${n} questions</option>`,
+						),
+					...(requestedReviewAmount &&
+					requestedReviewAmount < dueCount &&
+					![5, 10, 20].includes(requestedReviewAmount)
+						? [
+								`<option value="${requestedReviewAmount}" selected>${requestedReviewAmount} questions</option>`,
+							]
+						: []),
+					`<option value="${dueCount}" ${defaultReviewAmount === dueCount ? "selected" : ""}>All due (${dueCount})</option>`,
+				].join("")
+			: '<option value="0">0 due</option>';
+		const reviewReasonsHtml = dueCount
+			? `<ul class="reviewQueuePreview">${reviewQueue.dueItems
+					.slice(0, 3)
+					.map(
+						(item) =>
+							`<li><span class="badge">${esc(item.domainId)}</span> <span>${esc(item.reason)}</span></li>`,
+					)
+					.join(
+						"",
+					)}${reviewQueue.dueItems.length > 3 ? `<li class="small muted">+ ${reviewQueue.dueItems.length - 3} more in queue</li>` : ""}</ul>`
+			: `<p class="small muted reviewQueueEmptyNote">${esc(
+					reviewQueue.counts.upcoming > 0 && reviewQueue.nextDueDate
+						? `All caught up for ${reviewQueue.today}. ${reviewQueue.counts.upcoming} ${reviewQueue.counts.upcoming === 1 ? "question is" : "questions are"} scheduled next, starting ${reviewQueue.nextDueDate}.`
+						: reviewQueue.counts.legacyOnly > 0
+							? "Imported legacy totals have no evaluation dates. Answer questions in Practice mode to build a review schedule."
+							: "No questions are due for review right now. Complete a practice session or mock exam to schedule future reviews.",
+				)}</p>`;
+		const reviewQueuePanel = `<section class="panel reviewQueuePanel" id="review-queue" aria-labelledby="review-queue-heading">
+			<div class="reviewQueuePanelHead">
+				<div>
+					<h3 id="review-queue-heading">Due review queue</h3>
+					<p class="small muted">Policy <code>${esc(reviewQueue.policy.version)}</code> · ${dueCount} due now (${reviewQueue.counts.overdue} overdue · ${reviewQueue.counts.dueToday} due today${reviewQueue.counts.revisionChanged ? ` · ${reviewQueue.counts.revisionChanged} updated` : ""})</p>
+				</div>
+				<div class="reviewQueuePanelActions">
+					<label class="small" for="review-amount">Review questions
+						<select class="select" id="review-amount" ${dueCount ? "" : "disabled"}>${reviewAmountOptions}</select>
+					</label>
+					<button class="primary" data-action="start-review" ${dueCount && !progressState.migrationPending && !progressState.legacyWriteDetected ? "" : "disabled"}>Start review</button>
+				</div>
+			</div>
+			${reviewReasonsHtml}
+		</section>`;
 		const assessSetup = new URLSearchParams(window.location.search).get("mode") === "assess";
 
 		const readinessPct = pct(mastered, qs.length);
@@ -627,9 +725,10 @@ document.addEventListener("click", (event: MouseEvent) => {
 					<strong>Set up a mock exam</strong>
 					<p>Start a timed assessment when you are ready to test yourself.</p>
 				</a>
-			</div>`;
+			</div>
+			${reviewQueuePanel}`;
 		const activeSessionNotice = activeSession
-			? `<p class="sessionNotice" role="status">Your ${activeSession.mode === "exam" ? "mock exam" : "practice session"} is saved. ${activeSession.mode === "exam" ? "The timer continues while you are away." : "Your answers are ready to resume."}</p>`
+			? `<p class="sessionNotice" role="status">Your ${sessionModeLabel(activeSession.mode)} is saved. ${activeSession.mode === "exam" ? "The timer continues while you are away." : "Your answers are ready to resume."}</p>`
 			: "";
 
 		setAppHTML(`
@@ -644,7 +743,7 @@ document.addEventListener("click", (event: MouseEvent) => {
 				<div class="ctaRow">
 					${
 						activeSession
-							? `<button class="primary" data-action="resume">Resume ${activeSession.mode === "exam" ? "mock exam" : "practice"} · ${activeSession.currentIndex + 1}/${activeSession.ids.length}</button>`
+							? `<button class="primary" data-action="resume">Resume ${sessionModeLabel(activeSession.mode)} · ${activeSession.currentIndex + 1}/${activeSession.ids.length}</button>`
 							: `<a class="primary" href="#session">${assessSetup ? "Review mock exam setup" : "Choose practice settings"}</a>`
 					}
 					${studyHref ? `<a class="ghost ghostOnDark" href="${esc(studyHref)}" data-action="go-to-site-home">Open study notes</a>` : ""}
@@ -749,7 +848,7 @@ document.addEventListener("click", (event: MouseEvent) => {
 			</div>`
 			: "";
 
-		const main = `<h1 class="sr-only">${esc(cfg.title)} — ${isExam ? "Mock exam" : "Practice session"}</h1>
+		const main = `<h1 class="sr-only">${esc(cfg.title)} — ${isExam ? "Mock exam" : currentSession.mode === "review" ? "Spaced review session" : "Practice session"}</h1>
 			${examBar}
 			<div class="qhead"><span>Question ${currentSession.currentIndex + 1} of ${currentSession.ids.length} · ${esc(currentSession.mode.toUpperCase())}</span><span class="qheadRight">${progress} answered · <span class="kbdHint">Keys 1–4 · Enter</span></span></div>
 			<progress class="progress" value="${currentSession.currentIndex + 1}" max="${currentSession.ids.length}" aria-label="Question progress"></progress>
@@ -985,7 +1084,7 @@ document.addEventListener("click", (event: MouseEvent) => {
 		setAppHTML(`
 			<div class="results">
 				<div class="panel padded">
-					<h1>${currentSession.mode === "exam" ? "Mock exam results" : "Practice session results"}${currentSession.timedOut ? " · time expired" : ""}</h1>
+					<h1>${currentSession.mode === "exam" ? "Mock exam results" : currentSession.mode === "review" ? "Spaced review results" : "Practice session results"}${currentSession.timedOut ? " · time expired" : ""}</h1>
 					<div class="score" style="margin:12px 0">
 						<div class="ring" style="--score:${score}%">
 							<span>${score}%</span>
@@ -1261,6 +1360,11 @@ document.addEventListener("click", (event: MouseEvent) => {
 			}
 			if (action === "start-exam") return await requestStart("exam");
 			if (action === "start-weak") return await requestStart("weak");
+			if (action === "start-review") {
+				const amountSelect = document.getElementById("review-amount");
+				const n = amountSelect instanceof HTMLSelectElement ? Number(amountSelect.value) || 10 : 10;
+				return await requestStart("review", undefined, n);
+			}
 			const currentSession = session;
 			if (!currentSession || currentSession.submitted) return;
 

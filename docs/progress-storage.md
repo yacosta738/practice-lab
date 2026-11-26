@@ -49,11 +49,13 @@ visibility-time revision checks detect conflicts where supported.
 ## Study-note progress and goals
 
 Opening a note records it as **in progress**; visiting or scrolling never marks it complete. The
-reader must choose **Mark as complete**, and **Mark unread** reverses that state. Reading anchors are
+reader must choose **Mark as complete**, and **Mark unread** reverses that state. Reading anchors
+are
 saved only when a heading changes after a short debounce and are offered as explicit resume links;
 the app does not force scroll or focus. Bookmarks and note states are scoped by certification.
 
-By default a note's stable ID is its content path. Before renaming a file, keep its existing `noteId`
+By default a note's stable ID is its content path. Before renaming a file, keep its existing
+`noteId`
 or set an explicit stable `noteId`; add prior IDs to `aliases` when changing the canonical ID. The
 route may change while progress follows the stable ID or an alias. Removed notes remain in archived
 history and in backups, but are excluded from the current eligible-note denominator. When note body
@@ -62,15 +64,46 @@ retained; a saved reading anchor from the old revision is cleared rather than re
 unverified location.
 
 Exam targets are optional `YYYY-MM-DD` floating local-calendar dates, not UTC timestamps or a time
-zone-specific instant. Question and completed-note targets are also optional. Existing numeric target
+zone-specific instant. Question and completed-note targets are also optional. Existing numeric
+target
 timestamps are preserved as legacy values during migration and backup; they are not converted into
 invented local dates. No notification permission or remote calendar integration is used.
 
 The full backup uses schema version 2 and includes note IDs, states, reading anchors, bookmarks, and
 goals; version 1 backups are normalized on restore. Stable IDs and aliases are part of the published
 note metadata, not copies of note content in the backup. Full data management resets remove study
-states and goals for the chosen scope. The separate quiz-only
-**Reset progress** action intentionally keeps study-note progress and goals.
+states and goals for the chosen scope. The separate quiz-only **Reset progress** action
+intentionally keeps study-note progress and goals.
+
+## Review scheduling (`review-v1`)
+
+Practice Lab maintains a rebuildable, browser-local due-review projection (`reviewSchedule` on each
+`questionProgress` record) derived deterministically from actual evaluated `questionAttempts`:
+
+- **Policy version**: `review-v1`, stored on each scheduled projection, in IndexedDB metadata
+  (`review-scheduler:policy-version`), and in exported backups (`schedulerPolicyVersion`).
+- **Fixed-step interval ladder**: consecutive on-time or overdue correct evaluations across distinct
+  sessions advance through `1 → 3 → 7 → 14 → 30` calendar days (maximum interval `30` days).
+  Incorrect or partial evaluations reset the streak and schedule the next review in `1` calendar
+  day.
+- **Floating local calendar dates**: due dates are stored as `YYYY-MM-DD` floating local calendar
+  dates (`dueDateTimezone: "floating-local"`), plus `scheduledInTimeZone` for deterministic
+  rebuilds.
+  Calendar arithmetic avoids 23-hour/25-hour daylight-saving drift and evaluates due/overdue status
+  against the device's current local calendar date.
+- **Overdue, early, and skipped questions**: overdue reviews advance from the actual evaluation
+  date rather than staying overdue; early correct reviews before `dueDate` do not inflate intervals
+  from same-day repetition; unanswered/skipped questions produce no attempt record and never alter
+  review schedules.
+- **Legacy baselines and material revisions**: undated `legacyBaseline` totals never fabricate
+  review dates. When a question's content revision changes materially, it is queued for
+  re-verification and resets to step 0 when next evaluated, while historical session scores stay
+  intact.
+- **Atomic pipeline & portability**: review sessions (`mode: "review"`) record attempts through the
+  same atomic `recordEvaluation` / `finalizeSession` transactions as practice and mock exams, stay
+  idempotent on retries and cross-tab conflicts, and never alter official-style mock exam scoring.
+  Backups preserve review schedules and upgrade older scheduler policies automatically on restore.
+  No push notifications, accounts, or backend sync are required.
 
 ## Reset and recovery limits
 

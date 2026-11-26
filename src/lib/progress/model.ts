@@ -4,8 +4,13 @@ import {
 	compareAttemptsChronologically,
 	type QuestionMasteryEvidence,
 } from "./mastery";
+import {
+	applyAttemptToReviewSchedule,
+	needsReviewScheduleUpgrade,
+	type QuestionReviewSchedule,
+} from "./review-scheduler";
 
-export type SessionMode = "practice" | "exam" | "weak";
+export type SessionMode = "practice" | "exam" | "weak" | "review";
 export type SessionStatus = "in_progress" | "completed" | "expired" | "abandoned";
 export type FinalSessionStatus = Exclude<SessionStatus, "in_progress">;
 export type EvaluationOutcome = "correct" | "incorrect" | "partial";
@@ -200,6 +205,7 @@ export interface QuestionProgress {
 	lastEvaluatedAt?: number;
 	lastAttemptSessionId?: string;
 	mastery?: QuestionMasteryEvidence;
+	reviewSchedule?: QuestionReviewSchedule;
 	legacyBaseline: QuestionProgressBaseline | null;
 }
 
@@ -416,6 +422,7 @@ export function evaluationMatches(a: QuestionAttempt, b: QuestionAttempt): boole
 export function applyAttemptToProgress(
 	current: QuestionProgress | undefined,
 	attempt: QuestionAttempt,
+	options: { timeZone?: string } = {},
 ): QuestionProgress {
 	const isLatest =
 		current?.lastEvaluatedAt === undefined ||
@@ -427,6 +434,13 @@ export function applyAttemptToProgress(
 		isLatest || current?.mastery === undefined
 			? applyAttemptToMasteryEvidence(current?.mastery, attempt)
 			: current.mastery;
+
+	const reviewSchedule =
+		isLatest ||
+		current?.reviewSchedule === undefined ||
+		needsReviewScheduleUpgrade(current.reviewSchedule)
+			? applyAttemptToReviewSchedule(current?.reviewSchedule, attempt, options)
+			: current.reviewSchedule;
 
 	return {
 		certificationId: attempt.certificationId,
@@ -445,6 +459,7 @@ export function applyAttemptToProgress(
 					lastAttemptSessionId: current?.lastAttemptSessionId,
 				}),
 		mastery,
+		reviewSchedule,
 		legacyBaseline: current?.legacyBaseline ?? null,
 	};
 }
@@ -452,6 +467,7 @@ export function applyAttemptToProgress(
 export function projectQuestionAttempts(
 	attempts: readonly QuestionAttempt[],
 	existing: readonly QuestionProgress[],
+	options: { timeZone?: string; timeZoneByQuestion?: ReadonlyMap<string, string> } = {},
 ): QuestionProgress[] {
 	const existingById = new Map(
 		existing.map((progress) => [
@@ -474,9 +490,18 @@ export function projectQuestionAttempts(
 	const sortedAttempts = [...attempts].sort(compareAttemptsChronologically);
 	for (const attempt of sortedAttempts) {
 		const key = progressKey(attempt.certificationId, attempt.questionId);
+		const existingProgress = existingById.get(key);
+		const timeZone =
+			options.timeZoneByQuestion?.get(key) ??
+			existingProgress?.reviewSchedule?.scheduledInTimeZone ??
+			options.timeZone;
 		projected.set(
 			key,
-			applyAttemptToProgress(projected.get(key) ?? existingById.get(key), attempt),
+			applyAttemptToProgress(
+				projected.get(key) ?? existingProgress,
+				attempt,
+				timeZone ? { timeZone } : {},
+			),
 		);
 	}
 
@@ -528,7 +553,7 @@ export function validateSession(session: ProgressSession): void {
 	assertTimestamp(session.startedAt, "startedAt");
 	assertTimestamp(session.updatedAt, "updatedAt");
 	assertRevision(session.revision);
-	if (!["practice", "exam", "weak"].includes(session.mode)) {
+	if (!["practice", "exam", "weak", "review"].includes(session.mode)) {
 		throw new ProgressValidationError("The session mode is invalid.");
 	}
 	if (!["in_progress", "completed", "expired", "abandoned"].includes(session.status)) {

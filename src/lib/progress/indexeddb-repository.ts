@@ -43,6 +43,7 @@ import type {
 	SessionHistoryQuery,
 	StudyProgressRepository,
 } from "./repository-port";
+import { REVIEW_SCHEDULER_POLICY_VERSION } from "./review-scheduler";
 import type { MetadataRecord, ProgressDatabaseSchema, ProgressStoreName } from "./schema";
 import { isValidLearningGoalRecord, isValidStudyProgressRecord } from "./study-domain";
 
@@ -322,6 +323,9 @@ class IndexedDbProgressRepository implements ProgressRepository, StudyProgressRe
 							? {}
 							: { lastAttemptSessionId: current.lastAttemptSessionId }),
 						...(current?.mastery === undefined ? {} : { mastery: current.mastery }),
+						...(current?.reviewSchedule === undefined
+							? {}
+							: { reviewSchedule: current.reviewSchedule }),
 						legacyBaseline: { ...baseline },
 					});
 				}
@@ -616,6 +620,10 @@ class IndexedDbProgressRepository implements ProgressRepository, StudyProgressRe
 					await metadata.put({ key: "legacy-backup:latest", value: backupKey });
 				}
 
+				await metadata.put({
+					key: "review-scheduler:policy-version",
+					value: REVIEW_SCHEDULER_POLICY_VERSION,
+				});
 				const tokens: Record<string, string> = {};
 				for (const certificationId of certificationIds) {
 					const token = globalThis.crypto.randomUUID();
@@ -709,6 +717,10 @@ class IndexedDbProgressRepository implements ProgressRepository, StudyProgressRe
 				}
 
 				const metadata = transaction.objectStore("metadata");
+				await metadata.put({
+					key: "review-scheduler:policy-version",
+					value: REVIEW_SCHEDULER_POLICY_VERSION,
+				});
 				const tokens: Record<string, string> = {};
 				for (const id of targetSet) {
 					const token = globalThis.crypto.randomUUID();
@@ -1151,6 +1163,9 @@ class IndexedDbProgressRepository implements ProgressRepository, StudyProgressRe
 						? {}
 						: { lastAttemptSessionId: current.lastAttemptSessionId }),
 					...(current?.mastery === undefined ? {} : { mastery: current.mastery }),
+					...(current?.reviewSchedule === undefined
+						? {}
+						: { reviewSchedule: current.reviewSchedule }),
 					legacyBaseline: { ...baseline },
 				};
 				await store.put(updated);
