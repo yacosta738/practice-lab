@@ -84,7 +84,7 @@ test("links seeded domain accuracy to certification-specific study and practice 
 		await expect(domain).toHaveCount(1);
 		const studyHref = `${BASE_PATH}/study/${certificationId}/#${domainId}`;
 		await expect(
-			domain.getByRole("link", { name: `Study ${subtitle} ${domainId}` }),
+			domain.getByRole("link", { name: `Study section for ${subtitle} ${domainId}` }),
 		).toHaveAttribute("href", studyHref);
 		const studyTab = await page.context().newPage();
 		await studyTab.goto(studyHref);
@@ -92,7 +92,9 @@ test("links seeded domain accuracy to certification-specific study and practice 
 		await studyTab.close();
 
 		const practiceHref = `${BASE_PATH}/certifications/${certificationId}/?mode=practice&domain=${encodeURIComponent(domainId)}#session`;
-		const practiceLink = domain.getByRole("link", { name: `Practice ${subtitle} ${domainId}` });
+		const practiceLink = domain.getByRole("link", {
+			name: `Practice domain for ${subtitle} ${domainId}`,
+		});
 		await expect(practiceLink).toHaveAttribute("href", practiceHref);
 		const practiceTab = await page.context().newPage();
 		await practiceTab.goto(practiceHref);

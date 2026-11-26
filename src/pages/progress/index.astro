@@ -363,7 +363,7 @@ function renderDomainChart(summary: ReturnType<typeof deriveProgressSummary>): v
 			const name = escapeHtml(domain.domainName);
 			const studyUrl = `${base}study/${certificationId}/#${domainId}`;
 			const practiceUrl = `${base}certifications/${certificationId}/?mode=practice&domain=${domainId}#session`;
-			return `<li><div class="progressBarHeading"><span>${certification} · ${escapeHtml(domain.domainId)} ${name}</span><strong>${formatAccuracy(domain.correct, domain.attempts)}</strong></div><div class="progressDomainLinks"><a href="${escapeHtml(studyUrl)}" aria-label="Study ${certification} ${escapeHtml(domain.domainId)}">Study section</a><a href="${escapeHtml(practiceUrl)}" aria-label="Practice ${certification} ${escapeHtml(domain.domainId)}">Practice domain</a></div><progress max="100" value="${rate}" aria-label="${certification}, ${escapeHtml(domain.domainId)} ${name}: ${rate}% accuracy"></progress></li>`;
+			return `<li><div class="progressBarHeading"><span>${certification} · ${escapeHtml(domain.domainId)} ${name}</span><strong>${formatAccuracy(domain.correct, domain.attempts)}</strong></div><div class="progressDomainLinks"><a href="${escapeHtml(studyUrl)}" aria-label="Study section for ${certification} ${escapeHtml(domain.domainId)}">Study section</a><a href="${escapeHtml(practiceUrl)}" aria-label="Practice domain for ${certification} ${escapeHtml(domain.domainId)}">Practice domain</a></div><progress max="100" value="${rate}" aria-label="${certification}, ${escapeHtml(domain.domainId)} ${name}: ${rate}% accuracy"></progress></li>`;
 		})
 		.join("")}</ul>`;
 }
