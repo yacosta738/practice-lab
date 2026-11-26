@@ -369,6 +369,7 @@ import { rankSearchItems, type SearchItem } from "../lib/study-search";
 	let searchItems: SearchItem[] = [];
 	let searchIndexPromise: Promise<SearchItem[]> | undefined;
 	let searchStatusTimeout: number | undefined;
+	let searchOpener: HTMLElement | null = null;
 
 	function announceSearchStatus(message: string) {
 		window.clearTimeout(searchStatusTimeout);
@@ -464,10 +465,15 @@ import { rankSearchItems, type SearchItem } from "../lib/study-search";
 		announceSearchStatus(`${filtered.length} search result${filtered.length === 1 ? "" : "s"}.`);
 	}
 
-	function openSearch() {
+	function openSearch(
+		opener: HTMLElement | null = document.activeElement instanceof HTMLElement
+			? document.activeElement
+			: null,
+	) {
 		if (isExamFocusActive()) return;
 		if (!searchDialog || typeof searchDialog.showModal !== "function") return;
 		if (!searchDialog.open) {
+			searchOpener = opener;
 			searchDialog.showModal();
 			if (searchInput) {
 				searchInput.value = "";
@@ -503,9 +509,10 @@ import { rankSearchItems, type SearchItem } from "../lib/study-search";
 	document.addEventListener("click", (event) => {
 		const target = event.target instanceof Element ? event.target : null;
 		if (!target) return;
-		if (target.closest("[data-pl-open-search]")) {
+		const searchTrigger = target.closest<HTMLElement>("[data-pl-open-search]");
+		if (searchTrigger) {
 			event.preventDefault();
-			openSearch();
+			openSearch(searchTrigger);
 		} else if (target.closest("[data-pl-open-drawer]")) {
 			event.preventDefault();
 			if (drawer && typeof drawer.showModal === "function" && !drawer.open) {
@@ -536,8 +543,18 @@ import { rankSearchItems, type SearchItem } from "../lib/study-search";
 	searchDialog?.addEventListener("close", () => {
 		window.clearTimeout(searchStatusTimeout);
 		searchStatusTimeout = undefined;
+		const opener = searchOpener;
+		searchOpener = null;
+		if (opener?.isConnected) opener.focus();
 	});
 	searchDialog?.addEventListener("keydown", (event) => {
+		if (event.key === "Escape" && searchInput?.value) {
+			event.preventDefault();
+			searchInput.value = "";
+			renderResults("");
+			searchInput.focus();
+			return;
+		}
 		if (event.key === "ArrowDown" && event.target === searchInput) {
 			event.preventDefault();
 			moveSearchFocus(1);

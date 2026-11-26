@@ -172,7 +172,18 @@ test("mobile question navigator exposes combined states and supports keyboard na
 	});
 	await testInfo.attach(darkFilename, { path: darkPath, contentType: "image/png" });
 
+	const questionGrid = navigator.locator(".qgrid");
 	await navigator.locator("summary").focus();
+	await page.keyboard.press("Tab");
+	await expect(questionGrid).toBeFocused();
+	await expect(questionGrid).toHaveAttribute("role", "region");
+	await expect(questionGrid).toHaveAttribute("aria-label", "Question list");
+	await expect(questionGrid).toHaveAttribute("tabindex", "0");
+	expect(
+		await questionGrid.evaluate(
+			(grid) => grid.matches(":focus-visible") && getComputedStyle(grid).outlineStyle !== "none",
+		),
+	).toBe(true);
 	await page.keyboard.press("Tab");
 	await expect(firstQuestion).toBeFocused();
 	expect(
@@ -242,6 +253,7 @@ test("distinguishes keyboard focus from flagged state in both themes", async ({ 
 	await page.getByRole("button", { name: "Start mock exam" }).click();
 
 	const navigator = page.locator("details.examNavigator");
+	const questionGrid = navigator.locator(".qgrid");
 	await navigator.locator("summary").click();
 	await page.locator('[data-action="flag"]').click();
 	await page.locator('.qchip[data-value="1"]').click();
@@ -260,6 +272,8 @@ test("distinguishes keyboard focus from flagged state in both themes", async ({ 
 		});
 
 		await navigator.locator("summary").focus();
+		await page.keyboard.press("Tab");
+		await expect(questionGrid).toBeFocused();
 		await page.keyboard.press("Tab");
 		await expect(flaggedQuestion).toBeFocused();
 		const focusedIndicator = await flaggedQuestion.evaluate((button) => {

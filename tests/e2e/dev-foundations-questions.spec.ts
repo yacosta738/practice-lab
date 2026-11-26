@@ -2,32 +2,6 @@ import { expect, test } from "@playwright/test";
 
 const BASE_PATH = "/practice-lab";
 
-// Developer Foundations exam recall question IDs
-const _RECALL_IDS = [
-	"D5-020", // Model selection tradeoffs
-	"D2-038", // Real-time communication
-	"D2-039", // Code migration strategy
-	"D6-017", // Context drift
-	"D2-040", // JSON validation
-	"D8-014", // MCP local transport
-	"D1-022", // Multi-agent architecture
-	"D6-018", // Prompt vs Context Engineering
-	"D3-006", // CLAUDE.md organization
-];
-
-// Expected question text snippets to identify each recall question
-const _RECALL_QUESTION_SNIPPETS: Record<string, string> = {
-	"D5-020": "balancing three factors",
-	"D2-038": "real-time, bidirectional communication",
-	"D2-039": "40 different places",
-	"D6-017": "context drift",
-	"D2-040": "strict JSON schema",
-	"D8-014": "MCP",
-	"D1-022": "insurance claims",
-	"D6-018": "Prompt Engineering and Context Engineering",
-	"D3-006": "CLAUDE.md",
-};
-
 test("CCDV-F practice mode renders and checks single- and multi-select questions", async ({
 	page,
 }) => {

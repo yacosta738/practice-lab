@@ -89,23 +89,56 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 ></div>
 
 <script>
-// @ts-nocheck — this legacy UI script is runtime-validated; progress modules remain strictly typed.
 import { parseProgressBackup } from "../../lib/progress/backup-restore";
-import { createBrowserProgressService } from "../../lib/progress/browser-service";
+import type { BrowserProgressService } from "../../lib/progress/browser-service";
+import type {
+	EvaluationOutcome,
+	ProgressSession,
+	SessionCheckpoint,
+	SessionMode,
+} from "../../lib/progress/model";
+import { initializeQuizClient } from "../../lib/quiz-client";
+import {
+	formatTime,
+	isAnswerCorrectWithShuffle,
+	percent as pct,
+	shuffle,
+	shuffleQuestionOptions,
+} from "../../lib/quiz-engine";
+import { delegateQuizActions, renderQuizContent, setQuizFocusMode } from "../../lib/quiz-renderer";
+import type {
+	DomainInfo,
+	Question,
+	QuestionStats,
+	ShuffledQuestionOptions,
+} from "../../lib/quiz-types";
+
+type QuizSessionView = ReturnType<BrowserProgressService["hydrateSession"]>["session"] & {
+	questionsById?: Record<string, Question>;
+	domainsById?: Record<string, Pick<DomainInfo, "name" | "weight">>;
+};
+type DomainSummary = Pick<DomainInfo, "name" | "weight">;
+type RetryPersistence = () => unknown;
 
 const app = document.getElementById("app");
-function showProgressFailure(error) {
+const HTML_ESCAPES: Record<string, string> = {
+	"&": "&amp;",
+	"<": "&lt;",
+	">": "&gt;",
+	'"': "&quot;",
+	"'": "&#39;",
+};
+
+function showProgressFailure(error: unknown) {
 	const message = error instanceof Error ? error.message : String(error);
 	if (app) {
-		const safeMessage = message.replace(
-			/[&<>"']/g,
-			(char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char],
-		);
+		const safeMessage = message.replace(/[&<>"']/g, (char) => HTML_ESCAPES[char] ?? char);
 		app.innerHTML = `<section class="panel padded" role="alert"><h1>Progress storage unavailable</h1><p>${safeMessage}</p><p>Your existing data has not been replaced by browser-only fallback state.</p><button class="primary" data-storage-action="retry">Retry storage</button><button class="ghost" data-storage-action="backup">Download recovery backup</button></section>`;
 	}
 }
-document.addEventListener("click", (event) => {
-	const action = event.target.closest("[data-storage-action]")?.dataset.storageAction;
+document.addEventListener("click", (event: MouseEvent) => {
+	const target = event.target instanceof Element ? event.target : null;
+	const action = target?.closest("[data-storage-action]")?.getAttribute("data-storage-action");
 	if (action === "retry") window.location.reload();
 	if (action === "backup") {
 		event.preventDefault();
@@ -114,41 +147,12 @@ document.addEventListener("click", (event) => {
 });
 
 (async function () {
-	const bootstrapElement = document.getElementById("quiz-bootstrap");
-	if (!bootstrapElement) return;
-	const { cfg, qs, optionKeys, studyHref, base, knownCertifications } = JSON.parse(
-		bootstrapElement.dataset.bootstrap || "{}",
-	);
-	if (!cfg || !qs) return;
-	const progressService = createBrowserProgressService({
-		certificationId: cfg.slug,
-		config: cfg,
-		questions: qs,
-		knownCertificationIds: knownCertifications,
-	});
-	window.practiceLabProgressService = progressService;
-	window.addEventListener("pagehide", () => progressService.close(), { once: true });
-	let progressState = await progressService.initialize();
-	// Build lookup maps
-	const byId = {};
-	for (const q of qs) {
-		byId[q.id] = q;
-	}
-	const domains = {};
-	for (const [key, d] of Object.entries(cfg.domains)) {
-		domains[key] = { name: d.name, weight: d.weight };
-	}
-
-	// Shuffle the options of a question and remap correctAnswers.
-	// Returns { options: string[], correctAnswers: number[] }.
-	function shuffleQuestionOptions(q) {
-		const indices = q.options.map((_, i) => i);
-		const shuffled = shuffle(indices);
-		const newOptions = shuffled.map((i) => q.options[i]);
-		const newCorrect = q.correctAnswers.map((origIdx) => shuffled.indexOf(origIdx));
-		const optionIds = shuffled.map((index) => `${q.id}:option:${index}`);
-		return { options: newOptions, correctAnswers: newCorrect, optionIds };
-	}
+	if (!app) return;
+	const client = await initializeQuizClient();
+	if (!client) return;
+	const { cfg, qs, optionKeys, studyHref, base, knownCertifications } = client.bootstrap;
+	const { progressService, byId, domains } = client;
+	let progressState = client.progressState;
 
 	const LETTERS = "ABCDE";
 	let reviewFilter = "all";
@@ -158,17 +162,23 @@ document.addEventListener("click", (event) => {
 	let examNavigatorExpanded = !window.matchMedia("(max-width: 860px)").matches;
 
 	// Native <dialog> confirmation helper (replaces window.confirm())
-	function confirmAction(title, message, okLabel, onConfirm) {
+	function confirmAction(
+		title: string,
+		message: string,
+		okLabel: string,
+		onConfirm: () => unknown,
+	): void {
 		const invoke = () => {
 			Promise.resolve()
 				.then(onConfirm)
 				.catch((error) => setPersistenceError(error, () => window.location.reload()));
 		};
-		const dialog = document.getElementById("pl-confirm-dialog");
-		if (!dialog || typeof dialog.showModal !== "function") {
+		const dialogElement = document.getElementById("pl-confirm-dialog");
+		if (!(dialogElement instanceof HTMLDialogElement)) {
 			if (window.confirm(message)) invoke();
 			return;
 		}
+		const dialog = dialogElement;
 		const titleEl = document.getElementById("pl-confirm-title");
 		const msgEl = document.getElementById("pl-confirm-message");
 		const okBtn = document.getElementById("pl-confirm-ok");
@@ -188,7 +198,8 @@ document.addEventListener("click", (event) => {
 	// falls back to innerHTML for browsers without support (e.g. Safari).
 	// The quiz content is trusted (from the question bank), so the sanitizer allows
 	// data-* attributes required for event delegation.
-	function setAppHTML(html, focusTarget) {
+	function setAppHTML(html: string, focusTarget?: string): void {
+		if (!app) return;
 		const notices = [];
 		if (restoreMessage) {
 			notices.push(
@@ -220,119 +231,106 @@ document.addEventListener("click", (event) => {
 			);
 		}
 		const content = `${notices.join("")}${html}`;
-		if ("setHTML" in Element.prototype && typeof Sanitizer !== "undefined") {
-			try {
-				const sanitizer = new Sanitizer({
-					allowDataAttributes: true,
-				});
-				app.setHTML(content, { sanitizer });
-			} catch (_) {
-				app.innerHTML = content;
-			}
-		} else {
-			app.innerHTML = content;
-		}
-		syncFocusMode();
-		if (focusTarget) {
-			const target = app.querySelector(`[data-focus-target="${focusTarget}"]`);
-			if (target instanceof HTMLElement) target.focus();
-		}
-		const navigator = app.querySelector("details.examNavigator");
-		navigator?.addEventListener("toggle", () => {
-			examNavigatorExpanded = navigator.open;
+		renderQuizContent(app, content, {
+			focusTarget,
+			onNavigatorToggle: (expanded) => {
+				examNavigatorExpanded = expanded;
+			},
 		});
+		syncFocusMode();
 	}
 
 	function syncFocusMode() {
-		const shell = document.querySelector(".pl-shell");
-		if (!shell) return;
 		const active =
 			activeSession?.mode === "exam" &&
 			activeSession.progress.status === "in_progress" &&
 			new URLSearchParams(window.location.search).get("resume") === "1";
-		shell.setAttribute("data-exam-focus", active ? "true" : "false");
+		setQuizFocusMode(document, active);
 	}
 
 	// --- IndexedDB-backed progress ---
-	let saved = { stats: progressState.stats };
-	let session = null;
-	let activeSession = null;
-	let sessionQuestionsById = {};
-	let sessionDomainsById = {};
-	let persistenceError = null;
+	let saved: { stats: Record<string, QuestionStats> } = { stats: progressState.stats };
+	let session: QuizSessionView | null = null;
+	let activeSession: QuizSessionView | null = null;
+	let sessionQuestionsById: Record<string, Question> = {};
+	let sessionDomainsById: Record<string, DomainSummary> = {};
+	let persistenceError: string | null = null;
 	let restoreMessage = "";
-	let retryPersistence = null;
+	let retryPersistence: RetryPersistence | null = null;
 	let invalidationMessage = "";
 	let finishing = false;
 	let checking = false;
-	let checkpointQueue = Promise.resolve();
+	let checkpointQueue: Promise<void> = Promise.resolve();
 
-	function applyProgressSession(progressSession, { display = true, trackActive = true } = {}) {
+	function applyProgressSession(
+		progressSession: ProgressSession,
+		{ display = true, trackActive = true }: { display?: boolean; trackActive?: boolean } = {},
+	): QuizSessionView {
 		const hydrated = progressService.hydrateSession(progressSession);
-		const hydratedDomains = {};
+		const hydratedDomains: Record<string, DomainSummary> = {};
 		for (const snapshot of progressSession.content.questions) {
 			hydratedDomains[snapshot.domainId] = {
 				name: snapshot.domainName || snapshot.domainId,
 				weight: progressSession.scoring.domainWeights[snapshot.domainId] || 0,
 			};
 		}
-		Object.defineProperty(hydrated.session, "questionsById", {
+		const hydratedSession = hydrated.session as QuizSessionView;
+		Object.defineProperty(hydratedSession, "questionsById", {
 			value: hydrated.questionsById,
 			configurable: true,
 		});
-		Object.defineProperty(hydrated.session, "domainsById", {
+		Object.defineProperty(hydratedSession, "domainsById", {
 			value: hydratedDomains,
 			configurable: true,
 		});
 		if (trackActive) {
-			activeSession = progressSession.status === "in_progress" ? hydrated.session : null;
+			activeSession = progressSession.status === "in_progress" ? hydratedSession : null;
 		}
 		if (display) {
-			session = hydrated.session;
+			session = hydratedSession;
 			sessionQuestionsById = hydrated.questionsById;
 			sessionDomainsById = hydratedDomains;
 		}
-		return hydrated.session;
+		return hydratedSession;
 	}
 
-	function getQuestion(id) {
-		return sessionQuestionsById[id] || byId[id];
+	function getQuestion(id: string): Question {
+		const question = sessionQuestionsById[id] || byId[id];
+		if (!question) throw new Error(`Question ${id} is no longer available.`);
+		return question;
 	}
 
-	function getDomain(id) {
-		const question = getQuestion(id);
-		return (
-			sessionDomainsById[question?.domain] ||
-			domains[question?.domain] || { name: question?.domain || "Unknown domain", weight: 0 }
-		);
+	function getDomain(id: string): DomainSummary {
+		return sessionDomainsById[id] || domains[id] || { name: id || "Unknown domain", weight: 0 };
 	}
 
-	function sessionCheckpoint() {
-		const selectedOptionIdsByQuestion = {};
-		for (const id of session.ids) {
-			const selected = session.answers[id] || [];
-			const optionIds = session.shuffledOptions?.[id]?.optionIds;
+	function sessionCheckpoint(currentSession: QuizSessionView): SessionCheckpoint {
+		const selectedOptionIdsByQuestion: Record<string, string[]> = {};
+		for (const id of currentSession.ids) {
+			const selected = currentSession.answers[id] || [];
+			const optionIds = currentSession.shuffledOptions?.[id]?.optionIds;
 			if (selected.length && optionIds)
 				selectedOptionIdsByQuestion[id] = selected.map((index) => optionIds[index]);
 		}
 		return {
-			currentQuestionId: session.ids[session.currentIndex] ?? null,
-			deadlineAt: session.deadline,
+			currentQuestionId: currentSession.ids[currentSession.currentIndex] ?? null,
+			deadlineAt: currentSession.deadline,
 			selectedOptionIdsByQuestion,
-			checkedQuestionIds: session.ids.filter((id) => session.checked[id]),
-			flaggedQuestionIds: [...session.flags],
+			checkedQuestionIds: currentSession.ids.filter((id) => currentSession.checked[id]),
+			flaggedQuestionIds: [...currentSession.flags],
 		};
 	}
 
-	async function persist() {
+	async function persist(): Promise<unknown> {
 		const write = checkpointQueue.then(async () => {
-			if (!session?.progress)
+			const currentSession = session;
+			if (!currentSession?.progress)
 				throw new Error("This session is not connected to durable progress storage.");
-			const sessionId = session.progress.id;
+			const sessionId = currentSession.progress.id;
 			const updated = await progressService.checkpointSession({
 				sessionId,
-				expectedRevision: session.progress.revision,
-				checkpoint: sessionCheckpoint(),
+				expectedRevision: currentSession.progress.revision,
+				checkpoint: sessionCheckpoint(currentSession),
 			});
 			if (session?.progress.id === sessionId) {
 				session.progress.revision = updated.revision;
@@ -347,7 +345,7 @@ document.addEventListener("click", (event) => {
 		return write;
 	}
 
-	function setPersistenceError(error, retry) {
+	function setPersistenceError(error: unknown, retry: RetryPersistence | null = null): void {
 		persistenceError = error instanceof Error ? error.message : String(error);
 		retryPersistence = retry;
 		render();
@@ -389,7 +387,7 @@ document.addEventListener("click", (event) => {
 		}
 	});
 
-	function handleInvalidation(message) {
+	function handleInvalidation(message: string) {
 		invalidationMessage = message;
 		progressService
 			.readState()
@@ -423,77 +421,58 @@ document.addEventListener("click", (event) => {
 		}
 	}
 
-	// --- Engine functions ---
-	function shuffle(arr) {
-		const a = [...arr];
-		for (let i = a.length - 1; i > 0; i--) {
-			const j = Math.floor(Math.random() * (i + 1));
-			[a[i], a[j]] = [a[j], a[i]];
-		}
-		return a;
+	function esc(s: unknown): string {
+		return String(s).replace(/[&<>"']/g, (char) => HTML_ESCAPES[char] ?? char);
 	}
 
-	function pct(n, t) {
-		return t ? Math.round((n / t) * 100) : 0;
-	}
-
-	function esc(s) {
-		return String(s).replace(
-			/[&<>"']/g,
-			(c) =>
-				({
-					"&": "&amp;",
-					"<": "&lt;",
-					">": "&gt;",
-					'"': "&quot;",
-					"'": "&#39;",
-				})[c],
-		);
-	}
-
-	function migrationNoticeList(warnings) {
+	function migrationNoticeList(warnings: readonly string[]): string {
 		if (!warnings?.length)
 			return '<p class="small muted">No legacy records required recovery notes.</p>';
 		return `<ul class="small">${warnings.map((warning) => `<li>${esc(warning)}</li>`).join("")}</ul>`;
 	}
 
-	function getSelectCount(q, id) {
+	function getSelectCount(q: Question, id?: string): number {
 		// Prefer the question's explicit selectCount when defined;
 		// otherwise fall back to the answer-key length (from shuffled
 		// session data or the original question).
 		if (q.selectCount != null) return q.selectCount;
-		const so = session?.shuffledOptions?.[id];
+		const so = id ? session?.shuffledOptions?.[id] : undefined;
 		if (so) return so.correctAnswers.length;
 		return q.correctAnswers.length;
 	}
 
-	function answered(id) {
+	function answered(id: string): boolean {
 		return Array.isArray(session?.answers?.[id]) && session.answers[id].length > 0;
 	}
 
 	// Shared accessor: returns { options, correctAnswers } for a question,
 	// preferring the session's shuffled permutation when available.
-	function getQuestionOptions(id) {
+	function getQuestionOptions(id: string): { options: string[]; correctAnswers: number[] } {
 		const q = getQuestion(id);
 		const so = session?.shuffledOptions?.[id];
 		if (so) return { options: so.options, correctAnswers: so.correctAnswers };
 		return { options: q.options, correctAnswers: q.correctAnswers };
 	}
 
-	function accurate(id) {
-		const { correctAnswers } = getQuestionOptions(id);
-		const v = session.answers[id] || [];
-		return v.length === correctAnswers.length && v.every((k) => correctAnswers.includes(k));
+	function accurate(id: string): boolean {
+		const currentSession = session;
+		if (!currentSession) return false;
+		return isAnswerCorrectWithShuffle(
+			getQuestion(id),
+			currentSession.answers[id] || [],
+			currentSession.shuffledOptions,
+			id,
+		);
 	}
 
-	function getWeakCount() {
+	function getWeakCount(): number {
 		return qs.filter((question) => saved.stats[question.id]?.lastWrong).length;
 	}
 
 	// --- Start session ---
-	async function start(mode, domain, amount) {
+	async function start(mode: SessionMode, domain?: string, amount?: number): Promise<void> {
 		await checkpointQueue;
-		let ids = [];
+		let ids: string[] = [];
 		if (mode === "exam") {
 			for (const [d, n] of Object.entries(cfg.examBlueprint)) {
 				const pool = qs.filter((q) => q.domain === d);
@@ -519,7 +498,7 @@ document.addEventListener("click", (event) => {
 				.map((q) => q.id);
 		}
 		if (!ids.length) return;
-		const shuffledOptions = {};
+		const shuffledOptions: Record<string, ShuffledQuestionOptions> = {};
 		for (const id of ids) {
 			shuffledOptions[id] = shuffleQuestionOptions(byId[id]);
 		}
@@ -543,7 +522,11 @@ document.addEventListener("click", (event) => {
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	}
 
-	async function requestStart(mode, domain, amount) {
+	async function requestStart(
+		mode: SessionMode,
+		domain?: string,
+		amount?: number,
+	): Promise<unknown> {
 		if (activeSession && activeSession.progress.status === "in_progress") {
 			const activeType = activeSession.mode === "exam" ? "mock exam" : "practice session";
 			return confirmAction(
@@ -556,7 +539,7 @@ document.addEventListener("click", (event) => {
 		await start(mode, domain, amount);
 	}
 
-	function setResumeUrl(shouldResume) {
+	function setResumeUrl(shouldResume: boolean): void {
 		const url = new URL(window.location.href);
 		if (shouldResume && activeSession) {
 			session = activeSession;
@@ -572,7 +555,7 @@ document.addEventListener("click", (event) => {
 	}
 
 	// --- Home view ---
-	function home() {
+	function home(): void {
 		const values = qs.map(
 			(question) => saved.stats[question.id] || { attempts: 0, correct: 0, lastWrong: false },
 		);
@@ -652,7 +635,7 @@ document.addEventListener("click", (event) => {
 			<div class="hero">
 				<span class="eyebrow">${esc(cfg.subtitle)} · ${esc(cfg.title)}</span>
 				<h1>Know the platform.<br>Ship with confidence.</h1>
-				<p class="lead">${qs.length} source-linked practice questions across the ${Object.keys(cfg.domains).length} domains${cfg.examGuideNote ? ` mapped to ${cfg.examGuideNote} for the <strong>${esc(cfg.title)}</strong> certification` : ` for the <strong>${esc(cfg.title)}</strong> certification`}. Learn by doing, then test your readiness.</p>
+			<p class="lead">${qs.length} source-linked practice questions across the ${Object.keys(cfg.domains).length} domains${cfg.examGuideNote ? ` mapped to ${esc(cfg.examGuideNote)} for the <strong>${esc(cfg.title)}</strong> certification` : ` for the <strong>${esc(cfg.title)}</strong> certification`}. Learn by doing, then test your readiness.</p>
 				<div class="readinessBar">
 					<div class="readinessMeta"><span>Study readiness · ${mastered} of ${qs.length} mastered</span><strong class="mono">${readinessPct}%</strong></div>
 					<progress class="progress" value="${mastered}" max="${qs.length}" aria-label="Certification readiness"></progress>
@@ -690,21 +673,27 @@ document.addEventListener("click", (event) => {
 	}
 
 	// --- Question view ---
-	function question(focusTarget) {
-		if (!session || session.submitted) return home();
-		if (session.mode === "exam" && session.deadline && session.deadline <= Date.now())
+	function question(focusTarget?: string): void | Promise<void> {
+		const currentSession = session;
+		if (!currentSession || currentSession.submitted) return home();
+		if (
+			currentSession.mode === "exam" &&
+			currentSession.deadline &&
+			currentSession.deadline <= Date.now()
+		)
 			return finish(true);
-		if (session.currentIndex >= session.ids.length)
-			return session.mode === "exam" ? examReview() : finish(false);
+		if (currentSession.currentIndex >= currentSession.ids.length)
+			return currentSession.mode === "exam" ? examReview() : finish(false);
 
-		const id = session.ids[session.currentIndex];
+		const id = currentSession.ids[currentSession.currentIndex];
+		if (!id) return home();
 		const x = getQuestion(id);
-		const v = session.answers[id] || [];
-		const checked = !!session.checked[id];
-		const isExam = session.mode === "exam";
-		const isLast = session.currentIndex === session.ids.length - 1;
+		const v = currentSession.answers[id] || [];
+		const checked = !!currentSession.checked[id];
+		const isExam = currentSession.mode === "exam";
+		const isLast = currentSession.currentIndex === currentSession.ids.length - 1;
 		const good = checked && accurate(id);
-		const progress = session.ids.filter(answered).length;
+		const progress = currentSession.ids.filter(answered).length;
 
 		// Shared accessor: shuffled session data wins, otherwise original question.
 		const { options: displayOptions, correctAnswers: displayCorrect } = getQuestionOptions(id);
@@ -748,8 +737,8 @@ document.addEventListener("click", (event) => {
 			? `<div class="examBar" role="region" aria-label="Exam status">
 				<div class="examBarLeft">
 					<span class="badge">EXAM</span>
-					<strong class="mono">Q ${session.currentIndex + 1}/${session.ids.length}</strong>
-					<span class="small muted">${progress} answered · ${session.flags.length} flagged</span>
+					<strong class="mono">Q ${currentSession.currentIndex + 1}/${currentSession.ids.length}</strong>
+					<span class="small muted">${progress} answered · ${currentSession.flags.length} flagged</span>
 				</div>
 				<div class="examBarRight">
 					<div id="clock" class="clock clockInline" aria-label="Time remaining">${clockText()}</div>
@@ -761,8 +750,8 @@ document.addEventListener("click", (event) => {
 
 		const main = `<h1 class="sr-only">${esc(cfg.title)} — ${isExam ? "Mock exam" : "Practice session"}</h1>
 			${examBar}
-			<div class="qhead"><span>Question ${session.currentIndex + 1} of ${session.ids.length} · ${esc(session.mode.toUpperCase())}</span><span class="qheadRight">${progress} answered · <span class="kbdHint">Keys 1–4 · Enter</span></span></div>
-			<progress class="progress" value="${session.currentIndex + 1}" max="${session.ids.length}" aria-label="Question progress"></progress>
+			<div class="qhead"><span>Question ${currentSession.currentIndex + 1} of ${currentSession.ids.length} · ${esc(currentSession.mode.toUpperCase())}</span><span class="qheadRight">${progress} answered · <span class="kbdHint">Keys 1–4 · Enter</span></span></div>
+			<progress class="progress" value="${currentSession.currentIndex + 1}" max="${currentSession.ids.length}" aria-label="Question progress"></progress>
 			<div class="panel question" style="margin-top:14px">
 				<span class="badge">${x.domain} · ${esc(domains[x.domain].name)}</span>
 				${x.topic ? `<span class="muted small" style="margin-left:8px">${esc(x.topic)}</span>` : ""}
@@ -770,10 +759,10 @@ document.addEventListener("click", (event) => {
 		 <p class="hint" data-select-count="${getSelectCount(x, id)}">${getSelectCount(x, id) === 1 ? "Select ONE answer." : `Select exactly ${getSelectCount(x, id)} answers.`}${isExam ? " Your choices stay editable until you submit." : " Check your answer to see the explanation."}</p>
 				${opts}${fb}
 				<div class="actions">
-					${session.currentIndex > 0 ? `<button class="ghost" data-action="prev">← Previous</button>` : ""}
+					${currentSession.currentIndex > 0 ? `<button class="ghost" data-action="prev">← Previous</button>` : ""}
 					${
 						isExam
-							? `<button class="ghost" data-action="flag" data-focus-target="flag" aria-pressed="${session.flags.includes(id)}"><span aria-hidden="true">⚑</span> ${session.flags.includes(id) ? "Flagged" : "Flag for review"}</button>
+							? `<button class="ghost" data-action="flag" data-focus-target="flag" aria-pressed="${currentSession.flags.includes(id)}"><span aria-hidden="true">⚑</span> ${currentSession.flags.includes(id) ? "Flagged" : "Flag for review"}</button>
 						<button class="primary" data-action="next">${isLast ? "Go to review" : "Next →"}</button>`
 							: checked
 								? `<button class="primary" data-action="next">${isLast ? "Finish session" : "Next question →"}</button>`
@@ -790,11 +779,11 @@ document.addEventListener("click", (event) => {
 				}
 			</div>`;
 
-		const grid = session.ids
+		const grid = currentSession.ids
 			.map((qid, k) => {
-				const isCurrent = k === session.currentIndex;
+				const isCurrent = k === currentSession.currentIndex;
 				const isAnswered = answered(qid);
-				const isFlagged = session.flags.includes(qid);
+				const isFlagged = currentSession.flags.includes(qid);
 				const stateLabel = `${isAnswered ? "answered" : "unanswered"}, ${isFlagged ? "flagged for review" : "not flagged for review"}${isCurrent ? ", current question" : ""}`;
 				const stateMarks = `${isAnswered ? "✓" : "—"}${isFlagged ? " ⚑" : ""}${isCurrent ? " ●" : ""}`;
 
@@ -810,33 +799,32 @@ document.addEventListener("click", (event) => {
 		</ul>`;
 		const navigatorContent = `<p class="small muted">Jump to any question.</p>
 			${legend}
-			<div class="small muted">${progress}/${session.ids.length} answered · ${session.flags.length} flagged</div>
-			<div class="qgrid">${grid}</div>
+			<div class="small muted">${progress}/${currentSession.ids.length} answered · ${currentSession.flags.length} flagged</div>
+			<div class="qgrid" role="region" aria-label="Question list" tabindex="0">${grid}</div>
 			<button class="ghost" data-action="finish">Submit mock exam</button>`;
 		const side = isExam
 			? `<details class="panel side examNavigator" ${examNavigatorExpanded ? "open" : ""}>
-				<summary><span>Question navigator</span><span class="small muted">${progress}/${session.ids.length} answered</span></summary>
+				<summary><span>Question navigator</span><span class="small muted">${progress}/${currentSession.ids.length} answered</span></summary>
 				${navigatorContent}
 			</details>`
 			: `<aside class="panel side">
 				<h3>Study session</h3>
 				<p class="small muted">Immediate rationale and primary-source references after each answer.</p>
 				${legend}
-				<div class="small muted">${progress}/${session.ids.length} answered</div>
-				<div class="qgrid">${grid}</div>
+				<div class="small muted">${progress}/${currentSession.ids.length} answered</div>
+				<div class="qgrid" role="region" aria-label="Question list" tabindex="0">${grid}</div>
 				<button class="ghost" data-action="home">Pause & go home</button>
 			</aside>`;
 
 		setAppHTML(`<div class="split"><div>${main}</div>${side}</div>`, focusTarget);
 	}
 
-	function clockText() {
+	function clockText(): string {
 		if (!session?.deadline) return "";
-		const t = Math.max(0, Math.ceil((session.deadline - Date.now()) / 1000));
-		return `${String(Math.floor(t / 3600)).padStart(2, "0")}:${String(Math.floor((t % 3600) / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+		return formatTime(session.deadline - Date.now());
 	}
 
-	function tick() {
+	function tick(): void {
 		const running = activeSession;
 		if (
 			running?.progress.status !== "in_progress" ||
@@ -855,7 +843,10 @@ document.addEventListener("click", (event) => {
 		if (running.deadline <= Date.now()) void finish(true, running);
 	}
 
-	async function finish(timed = false, sessionToFinish = session) {
+	async function finish(
+		timed = false,
+		sessionToFinish: QuizSessionView | null = session,
+	): Promise<void> {
 		if (!sessionToFinish || sessionToFinish.submitted || finishing || persistenceError) return;
 		finishing = true;
 		const isDisplayedSession = session?.progress.id === sessionToFinish.progress.id;
@@ -878,11 +869,13 @@ document.addEventListener("click", (event) => {
 			const correct =
 				selectedIndexes.length === correctAnswers.length &&
 				selectedIndexes.every((index) => correctAnswers.includes(index));
+			const outcome: EvaluationOutcome = correct ? "correct" : "incorrect";
 			return [
 				{
+					sessionId: sessionToFinish.progress.id,
 					questionId: id,
 					selectedOptionIds,
-					outcome: correct ? "correct" : "incorrect",
+					outcome,
 					scoreEarned: correct ? 1 : 0,
 					scorePossible: 1,
 				},
@@ -920,15 +913,19 @@ document.addEventListener("click", (event) => {
 	}
 
 	// --- Results view ---
-	function results() {
-		if (!session) return home();
-		const ids = session.ids;
+	function results(): void {
+		const currentSession = session;
+		if (!currentSession) {
+			home();
+			return;
+		}
+		const ids = currentSession.ids;
 		const correct = ids.filter((id) => answered(id) && accurate(id));
 		const score = pct(correct.length, ids.length);
 
 		// Show passing threshold reference when configured
 		let passingBandHtml = "";
-		const passingScore = session.progress?.scoring?.passingScore ?? cfg.passingScore;
+		const passingScore = currentSession.progress?.scoring?.passingScore ?? cfg.passingScore;
 		if (passingScore) {
 			passingBandHtml = `
 				<div class="infoCallout">
@@ -954,12 +951,12 @@ document.addEventListener("click", (event) => {
 			.join("");
 
 		const missedCount = ids.filter((id) => !(answered(id) && accurate(id))).length;
-		const flaggedCount = session.flags.length;
+		const flaggedCount = currentSession.flags.length;
 		const filteredIds = ids
 			.map((id, k) => ({ id, k }))
 			.filter(({ id }) => {
 				if (reviewFilter === "missed") return !(answered(id) && accurate(id));
-				if (reviewFilter === "flagged") return session.flags.includes(id);
+				if (reviewFilter === "flagged") return currentSession.flags.includes(id);
 				return true;
 			});
 
@@ -967,7 +964,7 @@ document.addEventListener("click", (event) => {
 			? filteredIds
 					.map(({ id, k }) => {
 						const q = getQuestion(id);
-						const v = session.answers[id] || [];
+						const v = currentSession.answers[id] || [];
 						const ok = accurate(id) && answered(id);
 						const { options: revOptions, correctAnswers: revCorrect } = getQuestionOptions(id);
 						return `<details class="panel review"><summary><span class="badge">${q.domain}</span> ${k + 1}. ${ok ? "✓" : "✕"} ${esc(q.question)}</summary>
@@ -987,7 +984,7 @@ document.addEventListener("click", (event) => {
 		setAppHTML(`
 			<div class="results">
 				<div class="panel padded">
-					<h1>${session.mode === "exam" ? "Mock exam results" : "Practice session results"}${session.timedOut ? " · time expired" : ""}</h1>
+					<h1>${currentSession.mode === "exam" ? "Mock exam results" : "Practice session results"}${currentSession.timedOut ? " · time expired" : ""}</h1>
 					<div class="score" style="margin:12px 0">
 						<div class="ring" style="--score:${score}%">
 							<span>${score}%</span>
@@ -1026,11 +1023,16 @@ document.addEventListener("click", (event) => {
 	}
 
 	// --- Exam review ---
-	function examReview() {
-		const un = session.ids.filter((id) => !answered(id)).length;
+	function examReview(): void {
+		const currentSession = session;
+		if (!currentSession) {
+			home();
+			return;
+		}
+		const un = currentSession.ids.filter((id) => !answered(id)).length;
 		setAppHTML(`<div class="panel padded results">
 			<h1>Review your answer sheet.</h1>
-			<p class="lead">${session.ids.length - un} answered · ${un} unanswered · ${session.flags.length} flagged. Time remaining: ${clockText()}.</p>
+			<p class="lead">${currentSession.ids.length - un} answered · ${un} unanswered · ${currentSession.flags.length} flagged. Time remaining: ${clockText()}.</p>
 			<div class="actions">
 				<button class="ghost" data-action="back-to-exam">Review questions</button>
 				<button class="primary" data-action="finish">Submit and score</button>
@@ -1039,7 +1041,7 @@ document.addEventListener("click", (event) => {
 	}
 
 	// --- Render ---
-	function render(focusTarget) {
+	function render(focusTarget?: string): void {
 		if (
 			session &&
 			!session.submitted &&
@@ -1053,7 +1055,7 @@ document.addEventListener("click", (event) => {
 	}
 
 	// --- Event handlers ---
-	async function checkAnswer(id) {
+	async function checkAnswer(id: string): Promise<void> {
 		if (!session || session.checked[id] || checking) return;
 		checking = true;
 		try {
@@ -1102,7 +1104,7 @@ document.addEventListener("click", (event) => {
 		}
 	}
 
-	function saveThen(write, onSaved) {
+	function saveThen(write: () => Promise<unknown>, onSaved: () => unknown): Promise<void> {
 		const attempt = async () => {
 			try {
 				await write();
@@ -1116,17 +1118,17 @@ document.addEventListener("click", (event) => {
 		return attempt();
 	}
 
-	document.addEventListener("click", async (event) => {
-		const el = event.target.closest("[data-action]");
-		if (!el) return;
+	delegateQuizActions(app, async (event, el) => {
 		const action = el.dataset.action;
+		if (!action) return;
 
 		// Allow site-home link and unified Layout theme toggle to handle their own events
 		if (action === "go-to-site-home" || action === "theme") return;
 		event.preventDefault();
 		if (action === "reload-progress") return window.location.reload();
 		if (action === "select-restore-file") {
-			document.getElementById("progress-restore-file")?.click();
+			const fileInput = document.getElementById("progress-restore-file");
+			if (fileInput instanceof HTMLInputElement) fileInput.click();
 			return;
 		}
 		if (action === "retry-storage") {
@@ -1173,10 +1175,10 @@ document.addEventListener("click", (event) => {
 				progressState = await progressService.migrateLegacyProgress();
 				saved.stats = progressState.stats;
 				if (progressState.currentSession) {
-					applyProgressSession(progressState.currentSession);
-					if (session.submitted) {
+					const currentSession = applyProgressSession(progressState.currentSession);
+					if (currentSession.submitted) {
 						const url = new URL(window.location.href);
-						url.searchParams.set("result", session.progress.id);
+						url.searchParams.set("result", currentSession.progress.id);
 						history.replaceState(null, "", url);
 					}
 				}
@@ -1251,22 +1253,36 @@ document.addEventListener("click", (event) => {
 				return;
 			}
 			if (action === "start-practice") {
-				const d = document.getElementById("domain")?.value || "all";
-				const n = +document.getElementById("amount")?.value || 20;
+				const d = (document.getElementById("domain") as HTMLSelectElement | null)?.value || "all";
+				const amountSelect = document.getElementById("amount");
+				const n = amountSelect instanceof HTMLSelectElement ? Number(amountSelect.value) || 20 : 20;
 				return await requestStart("practice", d, n);
 			}
 			if (action === "start-exam") return await requestStart("exam");
 			if (action === "start-weak") return await requestStart("weak");
-			if (!session || session.submitted) return;
+			const currentSession = session;
+			if (!currentSession || currentSession.submitted) return;
 
-			const id = session.ids[session.currentIndex];
+			if (action === "finish") {
+				confirmAction(
+					"Submit mock exam?",
+					"Your answers will be scored and rationales will be revealed immediately.",
+					"Submit and score",
+					() => finish(false),
+				);
+				return;
+			}
+
+			const id = currentSession.ids[currentSession.currentIndex];
+			if (!id) return;
 			const q = getQuestion(id);
 			if (action === "pick") {
-				if (session.checked[id]) return;
-				const n = +el.dataset.value;
-				const vals = session.answers[id] || [];
+				if (currentSession.checked[id]) return;
+				const n = Number(el.dataset.value);
+				if (!Number.isSafeInteger(n) || n < 0 || n >= q.options.length) return;
+				const vals = currentSession.answers[id] || [];
 				const pickCount = getSelectCount(q);
-				session.answers[id] =
+				currentSession.answers[id] =
 					pickCount === 1
 						? [n]
 						: vals.includes(n)
@@ -1283,19 +1299,19 @@ document.addEventListener("click", (event) => {
 				return checkAnswer(id);
 			}
 			if (action === "prev") {
-				session.currentIndex = Math.max(0, session.currentIndex - 1);
+				currentSession.currentIndex = Math.max(0, currentSession.currentIndex - 1);
 				return saveThen(
 					() => persist(),
 					() => question("question"),
 				);
 			}
 			if (action === "next") {
-				session.currentIndex++;
+				currentSession.currentIndex++;
 				return saveThen(
 					() => persist(),
 					() => {
-						if (session.currentIndex >= session.ids.length) {
-							if (session.mode === "exam") return examReview();
+						if (currentSession.currentIndex >= currentSession.ids.length) {
+							if (currentSession.mode === "exam") return examReview();
 							return finish();
 						}
 						return question("question");
@@ -1304,29 +1320,23 @@ document.addEventListener("click", (event) => {
 			}
 			if (action === "jump") {
 				// The guard applies to the destination question, not the one on screen.
-				const targetId = session.ids[+el.dataset.value];
-				if (session.mode !== "exam" && !session.checked[targetId]) return;
-				session.currentIndex = +el.dataset.value;
+				const targetIndex = Number(el.dataset.value);
+				const targetId = currentSession.ids[targetIndex];
+				if (!Number.isSafeInteger(targetIndex) || !targetId) return;
+				if (currentSession.mode !== "exam" && !currentSession.checked[targetId]) return;
+				currentSession.currentIndex = targetIndex;
 				return saveThen(
 					() => persist(),
 					() => question("question"),
 				);
 			}
 			if (action === "flag") {
-				session.flags = session.flags.includes(id)
-					? session.flags.filter((x) => x !== id)
-					: [...session.flags, id];
+				currentSession.flags = currentSession.flags.includes(id)
+					? currentSession.flags.filter((x) => x !== id)
+					: [...currentSession.flags, id];
 				return saveThen(
 					() => persist(),
 					() => question("flag"),
-				);
-			}
-			if (action === "finish") {
-				confirmAction(
-					"Submit mock exam?",
-					"Your answers will be scored and rationales will be revealed immediately.",
-					"Submit and score",
-					() => finish(false),
 				);
 			}
 		} catch (error) {
@@ -1336,14 +1346,14 @@ document.addEventListener("click", (event) => {
 
 	// Back to exam handler
 	document.addEventListener("click", async (e) => {
-		if (e.target.closest('[data-action="back-to-exam"]')) {
-			e.preventDefault();
-			session.currentIndex = 0;
-			return saveThen(
-				() => persist(),
-				() => question(),
-			);
-		}
+		if (!(e.target instanceof Element) || !e.target.closest('[data-action="back-to-exam"]')) return;
+		e.preventDefault();
+		if (!session) return;
+		session.currentIndex = 0;
+		return saveThen(
+			() => persist(),
+			() => question(),
+		);
 	});
 
 	// Keyboard shortcuts
@@ -1360,14 +1370,18 @@ document.addEventListener("click", (event) => {
 			return;
 		const optionIndex = optionKeys.indexOf(e.key);
 		if (optionIndex !== -1) {
-			const b = app.querySelector(`[data-action="pick"][data-value="${optionIndex}"]`);
+			const b = app.querySelector<HTMLButtonElement>(
+				`[data-action="pick"][data-value="${optionIndex}"]`,
+			);
 			if (b && !b.disabled) b.click();
 		} else if (
 			e.key === "Enter" &&
 			(document.activeElement === document.body ||
 				document.activeElement?.matches('[data-action="pick"]'))
 		) {
-			const b = app.querySelector('[data-action="check"]:not(:disabled),[data-action="next"]');
+			const b = app.querySelector<HTMLButtonElement>(
+				'[data-action="check"]:not(:disabled),[data-action="next"]',
+			);
 			if (b) {
 				e.preventDefault();
 				b.click();

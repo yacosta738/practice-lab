@@ -83,15 +83,18 @@ describe("portable learning backups", () => {
 				],
 			},
 		});
+		const selectedOptionIds = ["option-b", "option-a"];
 		const attempt = createQuestionAttempt(session, {
 			sessionId: session.id,
 			questionId: "question-one",
-			selectedOptionIds: ["option-b", "option-a"],
+			selectedOptionIds,
 			outcome: "correct",
 			scoreEarned: 1,
 			scorePossible: 1,
 			evaluatedAt: 200,
 		});
+		expect(attempt.selectedOptionIds).toEqual(["option-a", "option-b"]);
+		expect(selectedOptionIds).toEqual(["option-b", "option-a"]);
 		const snapshot = {
 			...emptySnapshot(),
 			sessions: [session],
@@ -152,6 +155,57 @@ describe("portable learning backups", () => {
 		await expect(
 			parseLearningBackup(JSON.stringify(invalidIdBackup), [CERTIFICATION_ID]),
 		).rejects.toThrow(/session ID must be a string/i);
+	});
+
+	it("serializes backup arrays deterministically without mutating the snapshot", async () => {
+		const snapshot = {
+			...emptySnapshot(),
+			studyProgress: [
+				{
+					certificationId: CERTIFICATION_ID,
+					noteId: "ccdv-f/z",
+					completed: true,
+					completedAt: 200,
+					bookmarked: false,
+					updatedAt: 200,
+				},
+				{
+					certificationId: CERTIFICATION_ID,
+					noteId: "ccdv-f/a",
+					completed: true,
+					completedAt: 100,
+					bookmarked: true,
+					updatedAt: 100,
+				},
+			],
+		};
+		Object.freeze(snapshot.studyProgress);
+
+		const backup = await createLearningBackup(snapshot, [], "https://practice.example", 250);
+		const reversedBackup = await createLearningBackup(
+			{ ...snapshot, studyProgress: [...snapshot.studyProgress].reverse() },
+			[],
+			"https://practice.example",
+			250,
+		);
+
+		expect(backup.data.studyProgress.map(({ noteId }) => noteId)).toEqual(["ccdv-f/a", "ccdv-f/z"]);
+		expect(snapshot.studyProgress.map(({ noteId }) => noteId)).toEqual(["ccdv-f/z", "ccdv-f/a"]);
+		expect(JSON.stringify(backup)).toBe(JSON.stringify(reversedBackup));
+	});
+
+	it("projects attempts chronologically without mutating their input order", () => {
+		const attempts = [createAttempt("session-b"), createAttempt("session-a")];
+		const projected = projectQuestionAttempts(attempts, []);
+
+		expect(attempts.map(({ sessionId }) => sessionId)).toEqual(["session-b", "session-a"]);
+		expect(projected).toMatchObject([
+			{
+				attemptCount: 2,
+				lastAttemptSessionId: "session-b",
+				lastEvaluatedAt: 200,
+			},
+		]);
 	});
 
 	it("rejects question progress from unknown certifications before grouping", async () => {

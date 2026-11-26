@@ -35,24 +35,24 @@ export async function createLearningBackup(
 	exportedAt = Date.now(),
 ): Promise<LearningBackup> {
 	const data: LearningDataRestoreData = {
-		sessions: [...snapshot.sessions].sort((a, b) => a.id.localeCompare(b.id)),
-		questionAttempts: [...snapshot.questionAttempts].sort(
+		sessions: snapshot.sessions.toSorted((a, b) => a.id.localeCompare(b.id)),
+		questionAttempts: snapshot.questionAttempts.toSorted(
 			(a, b) => a.sessionId.localeCompare(b.sessionId) || a.questionId.localeCompare(b.questionId),
 		),
-		questionProgress: [...snapshot.questionProgress].sort(
+		questionProgress: snapshot.questionProgress.toSorted(
 			(a, b) =>
 				a.certificationId.localeCompare(b.certificationId) ||
 				a.questionId.localeCompare(b.questionId),
 		),
-		studyProgress: [...snapshot.studyProgress].sort(
+		studyProgress: snapshot.studyProgress.toSorted(
 			(a, b) =>
 				a.certificationId.localeCompare(b.certificationId) || a.noteId.localeCompare(b.noteId),
 		),
-		learningGoals: [...snapshot.learningGoals].sort((a, b) =>
+		learningGoals: snapshot.learningGoals.toSorted((a, b) =>
 			a.certificationId.localeCompare(b.certificationId),
 		),
-		legacyProvenance: [...snapshot.legacyProvenance].sort((a, b) => a.key.localeCompare(b.key)),
-		legacyRecords: [...legacyRecords].sort((a, b) =>
+		legacyProvenance: snapshot.legacyProvenance.toSorted((a, b) => a.key.localeCompare(b.key)),
+		legacyRecords: legacyRecords.toSorted((a, b) =>
 			a.certificationId.localeCompare(b.certificationId),
 		),
 	};
@@ -668,7 +668,7 @@ function stableStringify(value: unknown): string {
 	if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
 	if (value !== null && typeof value === "object") {
 		return `{${Object.entries(value)
-			.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+			.toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
 			.map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`)
 			.join(",")}}`;
 	}

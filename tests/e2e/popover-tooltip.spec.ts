@@ -12,14 +12,19 @@ const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 
 test("demo page loads without errors", async ({ page }) => {
 	const consoleErrors: string[] = [];
+	const externalPolyfillRequests: string[] = [];
 	page.on("console", (msg) => {
 		if (msg.type() === "error") consoleErrors.push(msg.text());
+	});
+	page.on("request", (request) => {
+		if (request.url().includes("unpkg.com")) externalPolyfillRequests.push(request.url());
 	});
 
 	await page.goto(ROUTE);
 	await page.waitForLoadState("networkidle");
 
 	expect(consoleErrors).toEqual([]);
+	expect(externalPolyfillRequests).toEqual([]);
 });
 
 test("page has the expected title and heading", async ({ page }) => {
@@ -48,9 +53,13 @@ test("renders trigger buttons with correct attributes", async ({ page }) => {
 	for (const id of triggerIds) {
 		const trigger = page.locator(`button[interestfor="${id}"]`);
 		await expect(trigger).toBeVisible();
-		await expect(trigger).toHaveAttribute("popovertarget", id);
-		await expect(trigger).toHaveAttribute("popovertargetaction", "show");
 		await expect(trigger).toHaveAttribute("aria-describedby", id);
+		if (id === "tooltip-shipping") {
+			await expect(trigger).toHaveAttribute("popovertarget", id);
+			await expect(trigger).toHaveAttribute("popovertargetaction", "show");
+		} else {
+			await expect(trigger).not.toHaveAttribute("popovertarget");
+		}
 	}
 });
 
@@ -116,6 +125,41 @@ test("tooltip content is rendered inside the popover", async ({ page }) => {
 	await expect(abovePopover.locator(".popover-tooltip__content")).toContainText(
 		"above the trigger",
 	);
+});
+
+test("popover polyfill loads when the browser APIs are unavailable", async ({ page }) => {
+	await page.addInitScript(() => {
+		Reflect.deleteProperty(HTMLElement.prototype, "popover");
+		Reflect.deleteProperty(HTMLElement.prototype, "showPopover");
+		Reflect.deleteProperty(HTMLElement.prototype, "hidePopover");
+		Reflect.deleteProperty(HTMLElement.prototype, "togglePopover");
+		Reflect.deleteProperty(HTMLButtonElement.prototype, "interestForElement");
+
+		const nativeSupports = CSS.supports.bind(CSS);
+		CSS.supports = ((property: string, value?: string) => {
+			if (property === "anchor-name: --a") return false;
+			return value === undefined ? nativeSupports(property) : nativeSupports(property, value);
+		}) as typeof CSS.supports;
+	});
+
+	await page.goto(ROUTE);
+	await page.waitForLoadState("networkidle");
+
+	const polyfilledFeatures = await page.evaluate(() => ({
+		popover: "popover" in HTMLElement.prototype,
+		showPopover: typeof HTMLElement.prototype.showPopover === "function",
+		interestForElement: "interestForElement" in HTMLButtonElement.prototype,
+	}));
+	expect(polyfilledFeatures).toEqual({
+		popover: true,
+		showPopover: true,
+		interestForElement: true,
+	});
+
+	const trigger = page.getByRole("button", { name: "More about shipping" });
+	await trigger.click();
+	await expect(page.locator("#tooltip-shipping")).toBeVisible();
+	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 });
 
 // ---------------------------------------------------------------------------

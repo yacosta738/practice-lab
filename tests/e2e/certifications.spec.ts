@@ -33,6 +33,90 @@ for (const { slug, heading } of CERTIFICATIONS) {
 	});
 }
 
+test("exam guide note renders as text with native and fallback HTML renderers", async ({
+	browser,
+}) => {
+	const note = '<img data-injected src="/not-an-image"> & "quoted" \'single\'';
+
+	for (const renderer of ["setHTML", "innerHTML"] as const) {
+		const context = await browser.newContext();
+		const page = await context.newPage();
+
+		await page.addInitScript(
+			({ renderer, note }) => {
+				const originalParse = JSON.parse;
+				JSON.parse = function (text, reviver) {
+					const parsed = originalParse.call(this, text, reviver);
+					if (parsed?.cfg?.slug === "ccdv-f") parsed.cfg.examGuideNote = note;
+					return parsed;
+				};
+
+				Object.defineProperty(globalThis, "__setHTMLCalled", {
+					configurable: true,
+					value: false,
+					writable: true,
+				});
+				if (renderer === "setHTML") {
+					Object.defineProperty(Element.prototype, "setHTML", {
+						configurable: true,
+						value(html: string) {
+							(globalThis as typeof globalThis & { __setHTMLCalled: boolean }).__setHTMLCalled =
+								true;
+							this.innerHTML = html;
+						},
+					});
+					Object.defineProperty(globalThis, "Sanitizer", {
+						configurable: true,
+						value: class {},
+					});
+				} else {
+					Reflect.deleteProperty(Element.prototype, "setHTML");
+					Reflect.deleteProperty(globalThis, "Sanitizer");
+				}
+			},
+			{ renderer, note },
+		);
+
+		await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
+		await page.waitForLoadState("networkidle");
+
+		const lead = page.locator(".hero .lead");
+		await expect(lead).toContainText(note);
+		await expect(lead.locator("img[data-injected]")).toHaveCount(0);
+		await expect(lead.locator("strong")).toContainText("Claude Developer Foundations");
+		if (renderer === "setHTML") {
+			expect(
+				await page.evaluate(
+					() => (globalThis as typeof globalThis & { __setHTMLCalled: boolean }).__setHTMLCalled,
+				),
+			).toBe(true);
+		}
+
+		await page.selectOption("#amount", { label: "10" });
+		await page.getByRole("button", { name: "Practice mode" }).click();
+		const firstOption = page.locator("button.option").first();
+		await expect(firstOption).toBeVisible();
+		await expect(firstOption).toHaveAttribute("aria-pressed", "false");
+		await context.close();
+	}
+});
+
+test("shared document head loads the font stylesheet and preconnects", async ({ page }) => {
+	await page.goto(`${BASE_PATH}/`);
+
+	await expect(
+		page.locator(
+			'head link[rel="stylesheet"][href*="fonts.googleapis.com/css2?family=IBM+Plex+Sans"]',
+		),
+	).toHaveCount(1);
+	await expect(
+		page.locator('head link[rel="preconnect"][href="https://fonts.googleapis.com"]'),
+	).toHaveCount(1);
+	await expect(
+		page.locator('head link[rel="preconnect"][href="https://fonts.gstatic.com"]'),
+	).toHaveAttribute("crossorigin", "");
+});
+
 test("CCAO-F practice mode starts and renders questions", async ({ page }) => {
 	await page.goto(`${BASE_PATH}/certifications/ccao-f/`);
 	await page.waitForLoadState("networkidle");
