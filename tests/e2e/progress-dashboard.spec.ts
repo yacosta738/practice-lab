@@ -3,6 +3,55 @@ import { expect, test } from "@playwright/test";
 
 const BASE_PATH = "/practice-lab";
 
+test("does not load every session and attempt to refresh dashboard aggregates", async ({
+	page,
+}) => {
+	await page.addInitScript(() => {
+		const state = window as unknown as Window & { fullProgressReads: string[] };
+		state.fullProgressReads = [];
+		const getAll = IDBIndex.prototype.getAll;
+		IDBIndex.prototype.getAll = function (...args) {
+			const request = getAll.apply(this, args);
+			if (this.name === "by-certification") {
+				request.addEventListener("success", () => {
+					const records = request.result as Record<string, unknown>[];
+					if (records.some((record) => "mode" in record || "outcome" in record)) {
+						state.fullProgressReads.push(this.name);
+					}
+				});
+			}
+			return request;
+		};
+	});
+
+	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
+	await page.getByRole("button", { name: "Practice mode" }).click();
+	await expect(page.locator("button.option").first()).toBeVisible();
+	const checkAnswer = page.getByRole("button", { name: "Check answer" });
+	const optionCount = await page.locator("button.option").count();
+	for (let answer = 0; answer < optionCount; answer += 1) {
+		if (await checkAnswer.isEnabled()) break;
+		await page.locator('button.option[aria-pressed="false"]').first().click();
+	}
+	await expect(checkAnswer).toBeEnabled();
+	await checkAnswer.click();
+	await expect(page.locator(".feedback")).toBeVisible();
+	await page.evaluate(() => {
+		(window as unknown as Window & { fullProgressReads: string[] }).fullProgressReads.length = 0;
+	});
+
+	await page.goto(`${BASE_PATH}/progress/`);
+	await page.selectOption("#filter-certification", "ccdv-f");
+	await expect(page.getByText("Saved progress is up to date.")).toBeVisible();
+	await expect
+		.poll(() =>
+			page.evaluate(
+				() => (window as unknown as Window & { fullProgressReads: string[] }).fullProgressReads,
+			),
+		)
+		.toEqual([]);
+});
+
 test("shows an accessible empty progress dashboard and responsive visual evidence", async ({
 	page,
 }, testInfo) => {
