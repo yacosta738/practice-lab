@@ -4,12 +4,13 @@ import type {
 	ProgressSession,
 	QuestionAttempt,
 	QuestionProgress,
+	SessionMode,
 	SessionStatus,
 	StudyProgressRecord,
 } from "./model";
 
 export const PROGRESS_DATABASE_NAME = "practice-lab";
-export const PROGRESS_DATABASE_VERSION = 1;
+export const PROGRESS_DATABASE_VERSION = 3;
 
 export interface MetadataRecord {
 	key: string;
@@ -22,9 +23,31 @@ export interface ProgressDatabaseSchema extends DBSchema {
 		value: ProgressSession;
 		indexes: {
 			"by-certification": string;
+			"by-certification-finished-at-id": [string, number, string];
+			"by-certification-mode-started-at-id": [string, SessionMode, number, string];
+			"by-certification-mode-status-finished-at-id": [
+				string,
+				SessionMode,
+				SessionStatus,
+				number,
+				string,
+			];
+			"by-certification-mode-status-started-at-id": [
+				string,
+				SessionMode,
+				SessionStatus,
+				number,
+				string,
+			];
+			"by-certification-started-at-id": [string, number, string];
+			"by-certification-status-started-at-id": [string, SessionStatus, number, string];
 			"by-status": SessionStatus;
 			"by-started-at": number;
+			"by-started-at-id": [number, string];
 			"by-finished-at": number;
+			"by-mode-started-at-id": [SessionMode, number, string];
+			"by-mode-status-started-at-id": [SessionMode, SessionStatus, number, string];
+			"by-status-started-at-id": [SessionStatus, number, string];
 		};
 	};
 	questionAttempts: {
@@ -32,8 +55,10 @@ export interface ProgressDatabaseSchema extends DBSchema {
 		value: QuestionAttempt;
 		indexes: {
 			"by-certification": string;
+			"by-certification-evaluated-at": [string, number];
 			"by-domain": string;
 			"by-evaluated-at": number;
+			"by-session": string;
 		};
 	};
 	questionProgress: {

@@ -25,6 +25,7 @@ import {
 	type LegacyProgressMigrationResult,
 	type LegacyRecordsBackup,
 	type ProgressSession,
+	type ProgressSummaryData,
 	projectQuestionAttempts,
 	type QuestionAttempt,
 	type QuestionProgress,
@@ -34,7 +35,11 @@ import {
 	validateLegacyBaseline,
 	validateSession,
 } from "./model";
-import type { ProgressRepository } from "./repository-port";
+import type {
+	ProgressRepository,
+	SessionHistoryPage,
+	SessionHistoryQuery,
+} from "./repository-port";
 import type { MetadataRecord, ProgressDatabaseSchema, ProgressStoreName } from "./schema";
 
 type StoreNames = ProgressStoreName[];
@@ -823,6 +828,95 @@ class IndexedDbProgressRepository implements ProgressRepository {
 		);
 	}
 
+	getProgressSummaryData(certificationIds: readonly string[]): Promise<ProgressSummaryData> {
+		const selectedCertifications = [...new Set(certificationIds)];
+		return withTransaction(
+			this.getDatabase,
+			["sessions", "questionAttempts", "questionProgress"],
+			"readonly",
+			async (transaction) => {
+				const sessionStore = transaction.objectStore("sessions");
+				const attemptStore = transaction.objectStore("questionAttempts");
+				const attemptsBySession = attemptStore.index("by-session");
+				const sessionsById = new Map<string, ProgressSession>();
+				const questionProgress: QuestionProgress[] = [];
+				const recentAttempts: QuestionAttempt[] = [];
+				let completedMockExams = 0;
+				let hasSessions = false;
+
+				for (const certificationId of selectedCertifications) {
+					const sessionCount = await sessionStore.index("by-certification").count(certificationId);
+					hasSessions ||= sessionCount > 0;
+					questionProgress.push(
+						...(await transaction
+							.objectStore("questionProgress")
+							.index("by-certification")
+							.getAll(certificationId)),
+					);
+
+					const attemptRange = IDBKeyRange.bound(
+						[certificationId, Number.MIN_SAFE_INTEGER],
+						[certificationId, Number.MAX_SAFE_INTEGER],
+					);
+					let attemptCursor = await attemptStore
+						.index("by-certification-evaluated-at")
+						.openCursor(attemptRange, "prev");
+					let attemptsRead = 0;
+					while (attemptCursor && attemptsRead < 10) {
+						recentAttempts.push(attemptCursor.value);
+						attemptsRead += 1;
+						attemptCursor = await attemptCursor.continue();
+					}
+
+					const latestRange = IDBKeyRange.bound(
+						[certificationId, Number.MIN_SAFE_INTEGER, ""],
+						[certificationId, Number.MAX_SAFE_INTEGER, "\uffff"],
+					);
+					const latestCursor = await sessionStore
+						.index("by-certification-finished-at-id")
+						.openCursor(latestRange, "prev");
+					if (latestCursor) sessionsById.set(latestCursor.value.id, latestCursor.value);
+
+					const examIndex = sessionStore.index("by-certification-mode-status-finished-at-id");
+					for (const status of ["completed", "expired"] as const) {
+						const examRange = IDBKeyRange.bound(
+							[certificationId, "exam", status, Number.MIN_SAFE_INTEGER, ""],
+							[certificationId, "exam", status, Number.MAX_SAFE_INTEGER, "\uffff"],
+						);
+						if (status === "completed") {
+							completedMockExams += await examIndex.count(examRange);
+						}
+						let examCursor = await examIndex.openCursor(examRange, "prev");
+						let examsRead = 0;
+						while (examCursor && examsRead < 24) {
+							sessionsById.set(examCursor.value.id, examCursor.value);
+							examsRead += 1;
+							examCursor = await examCursor.continue();
+						}
+					}
+				}
+
+				const history = await Promise.all(
+					[...sessionsById.values()].map(async (session) => ({
+						session,
+						attempts: (await attemptsBySession.getAll(session.id)).sort(
+							(a, b) => a.evaluatedAt - b.evaluatedAt || a.questionId.localeCompare(b.questionId),
+						),
+					})),
+				);
+				recentAttempts.sort(compareAttemptsNewestFirst);
+
+				return {
+					history,
+					questionProgress,
+					recentAttempts: recentAttempts.slice(0, 10),
+					completedMockExams,
+					hasSessions,
+				};
+			},
+		);
+	}
+
 	getMetadata(key: string): Promise<unknown> {
 		return withTransaction(this.getDatabase, ["metadata"], "readonly", async (transaction) => {
 			const record = await transaction.objectStore("metadata").get(key);
@@ -876,6 +970,92 @@ class IndexedDbProgressRepository implements ProgressRepository {
 					value: true,
 				});
 				return generationToken;
+			},
+		);
+	}
+
+	getSessionHistoryPage(query: SessionHistoryQuery): Promise<SessionHistoryPage> {
+		const page = Number.isSafeInteger(query.page) && query.page > 0 ? query.page : 1;
+		const pageSize = Number.isSafeInteger(query.pageSize)
+			? Math.max(1, Math.min(100, query.pageSize))
+			: 20;
+		const rawOffset = (page - 1) * pageSize;
+		const offset = Number.isSafeInteger(rawOffset) ? rawOffset : Number.MAX_SAFE_INTEGER;
+		const indexFields: string[] = [];
+		const rangePrefix: IDBValidKey[] = [];
+		if (query.certificationId !== undefined) {
+			indexFields.push("certification");
+			rangePrefix.push(query.certificationId);
+		}
+		if (query.mode !== undefined) {
+			indexFields.push("mode");
+			rangePrefix.push(query.mode);
+		}
+		if (query.status !== undefined) {
+			indexFields.push("status");
+			rangePrefix.push(query.status);
+		}
+		const indexName = (
+			indexFields.length ? `by-${indexFields.join("-")}-started-at-id` : "by-started-at-id"
+		) as keyof ProgressDatabaseSchema["sessions"]["indexes"];
+		const from = query.from ?? Number.MIN_SAFE_INTEGER;
+		const through = query.through ?? Number.MAX_SAFE_INTEGER;
+		if (!Number.isFinite(from) || !Number.isFinite(through) || from > through) {
+			return Promise.resolve({ entries: [], total: 0, page, pageSize });
+		}
+		const range = IDBKeyRange.bound(
+			[...rangePrefix, from, ""],
+			[...rangePrefix, through, "\uffff"],
+		);
+
+		return withTransaction(
+			this.getDatabase,
+			["sessions", "questionAttempts"],
+			"readonly",
+			async (transaction) => {
+				const selected: ProgressSession[] = [];
+				const index = transaction.objectStore("sessions").index(indexName);
+				const total = await index.count(range);
+				if (offset >= total) return { entries: [], total, page, pageSize };
+				let cursor = await index.openCursor(range, "prev");
+				if (cursor && offset > 0) cursor = await cursor.advance(offset);
+				while (cursor && selected.length < pageSize) {
+					if (matchesHistoryQuery(cursor.value, query)) selected.push(cursor.value);
+					cursor = await cursor.continue();
+				}
+
+				const attempts = transaction.objectStore("questionAttempts").index("by-session");
+				const entries = await Promise.all(
+					selected.map(async (session) => ({
+						session,
+						attempts: (await attempts.getAll(session.id)).sort(
+							(a, b) => a.evaluatedAt - b.evaluatedAt || a.questionId.localeCompare(b.questionId),
+						),
+					})),
+				);
+				return { entries, total, page, pageSize };
+			},
+		);
+	}
+
+	getSessionById(sessionId: string): Promise<SessionHistoryEntry | undefined> {
+		return withTransaction(
+			this.getDatabase,
+			["sessions", "questionAttempts"],
+			"readonly",
+			async (transaction) => {
+				const session = await transaction.objectStore("sessions").get(sessionId);
+				if (!session) return undefined;
+				const attempts = await transaction
+					.objectStore("questionAttempts")
+					.index("by-session")
+					.getAll(sessionId);
+				return {
+					session,
+					attempts: attempts.sort(
+						(a, b) => a.evaluatedAt - b.evaluatedAt || a.questionId.localeCompare(b.questionId),
+					),
+				};
 			},
 		);
 	}
@@ -1041,6 +1221,14 @@ function buildSessionHistory(
 				(a, b) => a.evaluatedAt - b.evaluatedAt || a.questionId.localeCompare(b.questionId),
 			),
 		}));
+}
+
+function compareAttemptsNewestFirst(a: QuestionAttempt, b: QuestionAttempt): number {
+	return (
+		b.evaluatedAt - a.evaluatedAt ||
+		b.sessionId.localeCompare(a.sessionId) ||
+		b.questionId.localeCompare(a.questionId)
+	);
 }
 
 async function createSessionInTransaction(
@@ -1224,4 +1412,14 @@ function stableStringify(value: unknown): string {
 
 function stringSequencesEqual(a: readonly string[], b: readonly string[]): boolean {
 	return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+function matchesHistoryQuery(session: ProgressSession, query: SessionHistoryQuery): boolean {
+	return (
+		(query.certificationId === undefined || session.certificationId === query.certificationId) &&
+		(query.mode === undefined || session.mode === query.mode) &&
+		(query.status === undefined || session.status === query.status) &&
+		(query.from === undefined || session.startedAt >= query.from) &&
+		(query.through === undefined || session.startedAt <= query.through)
+	);
 }

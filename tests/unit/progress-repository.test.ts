@@ -49,11 +49,16 @@ const SCORING: ScoringProvenance = {
 
 let repository: ProgressRepository;
 
-function sessionInput(id: string, certificationId = "ccdv-f", startedAt = 100): CreateSessionInput {
+function sessionInput(
+	id: string,
+	certificationId = "ccdv-f",
+	startedAt = 100,
+	mode: CreateSessionInput["mode"] = "practice",
+): CreateSessionInput {
 	return {
 		id,
 		certificationId,
-		mode: "practice",
+		mode,
 		startedAt,
 		scoring: SCORING,
 		content: CONTENT,
@@ -134,32 +139,169 @@ describe("IndexedDB progress repository", () => {
 		]);
 		expect(Array.from(database.transaction("sessions").store.indexNames).sort()).toEqual([
 			"by-certification",
+			"by-certification-finished-at-id",
+			"by-certification-mode-started-at-id",
+			"by-certification-mode-status-finished-at-id",
+			"by-certification-mode-status-started-at-id",
+			"by-certification-started-at-id",
+			"by-certification-status-started-at-id",
 			"by-finished-at",
+			"by-mode-started-at-id",
+			"by-mode-status-started-at-id",
 			"by-started-at",
+			"by-started-at-id",
 			"by-status",
+			"by-status-started-at-id",
 		]);
 		expect(Array.from(database.transaction("questionAttempts").store.indexNames).sort()).toEqual([
 			"by-certification",
+			"by-certification-evaluated-at",
 			"by-domain",
 			"by-evaluated-at",
+			"by-session",
 		]);
 		expect(await database.get("metadata", "schema-version")).toMatchObject({
 			value: { version: PROGRESS_DATABASE_VERSION },
 		});
 		expect(await database.get("metadata", "migration:0-1")).toBeDefined();
+		expect(await database.get("metadata", "migration:1-2")).toBeDefined();
+		expect(await database.get("metadata", "migration:2-3")).toBeDefined();
 		expect(await database.get("metadata", "data-generation-token")).toMatchObject({
 			value: expect.stringMatching(/^[0-9a-f-]{36}$/i),
 		});
 		database.close();
 	});
 
+	it("upgrades version 1 history indexes without dropping its saved sessions", async () => {
+		const legacy = await openDB<ProgressDatabaseSchema>(PROGRESS_DATABASE_NAME, 1, {
+			upgrade(database) {
+				const sessions = database.createObjectStore("sessions", { keyPath: "id" });
+				sessions.createIndex("by-certification", "certificationId");
+				sessions.createIndex("by-status", "status");
+				sessions.createIndex("by-started-at", "startedAt");
+				sessions.createIndex("by-finished-at", "finishedAt");
+				const attempts = database.createObjectStore("questionAttempts", {
+					keyPath: ["sessionId", "questionId"],
+				});
+				attempts.createIndex("by-certification", "certificationId");
+				attempts.createIndex("by-domain", "domainId");
+				attempts.createIndex("by-evaluated-at", "evaluatedAt");
+				database.createObjectStore("metadata", { keyPath: "key" });
+			},
+		});
+		const oldSession: ProgressSession = {
+			...sessionInput("00000000-0000-4000-8000-000000000001", "ccdv-f", 100),
+			status: "completed" as const,
+			revision: 2,
+			updatedAt: 150,
+			finishedAt: 150,
+			checkpoint: {
+				currentQuestionId: null,
+				deadlineAt: null,
+				selectedOptionIdsByQuestion: {},
+				checkedQuestionIds: [],
+				flaggedQuestionIds: [],
+			},
+		};
+		await legacy.put("sessions", oldSession);
+		await legacy.put("metadata", {
+			key: "schema-version",
+			value: { version: 1 },
+		});
+		legacy.close();
+
+		await expect(repository.getSessionById(oldSession.id)).resolves.toMatchObject({
+			session: { id: oldSession.id, status: "completed" },
+			attempts: [],
+		});
+		await repository.close();
+		const upgraded = await openDB<ProgressDatabaseSchema>(PROGRESS_DATABASE_NAME);
+		expect(upgraded.version).toBe(PROGRESS_DATABASE_VERSION);
+		expect(upgraded.transaction("sessions").store.indexNames).toContain("by-started-at-id");
+		expect(upgraded.transaction("questionAttempts").store.indexNames).toContain("by-session");
+		expect(upgraded.transaction("sessions").store.indexNames).toContain(
+			"by-certification-mode-status-started-at-id",
+		);
+		expect(await upgraded.get("metadata", "migration:1-2")).toMatchObject({
+			value: { fromVersion: 1, toVersion: 2 },
+		});
+		expect(await upgraded.get("metadata", "migration:2-3")).toMatchObject({
+			value: { fromVersion: 2, toVersion: 3 },
+		});
+		upgraded.close();
+	});
+
+	it("returns a newest-first, filtered history page and resolves an immutable review entry", async () => {
+		const first = await repository.createSession(
+			sessionInput("00000000-0000-4000-8000-000000000001", "ccdv-f", 100),
+		);
+		await expect(
+			repository.createSession(sessionInput("00000000-0000-4000-8000-000000000001", "ccdv-f", 100)),
+		).resolves.toMatchObject({ id: first.id, revision: first.revision });
+		await repository.finalizeSession(first.id, first.revision, "completed", 150);
+		const second = await repository.createSession(
+			sessionInput("00000000-0000-4000-8000-000000000002", "ccdv-f", 200),
+		);
+		await repository.checkpointSession({
+			sessionId: second.id,
+			expectedRevision: second.revision,
+			checkpoint: {
+				...second.checkpoint,
+				selectedOptionIdsByQuestion: { "question-stable-id": ["option-a"] },
+			},
+			updatedAt: 210,
+		});
+		await repository.recordEvaluation({
+			sessionId: second.id,
+			questionId: "question-stable-id",
+			selectedOptionIds: ["option-a"],
+			outcome: "correct",
+			scoreEarned: 1,
+			scorePossible: 1,
+			evaluatedAt: 220,
+		});
+		const evaluatedSecond = await repository.getSession(second.id);
+		if (!evaluatedSecond) throw new Error("Expected the evaluated session to remain available.");
+		await repository.finalizeSession(second.id, evaluatedSecond.revision, "completed", 250);
+		const third = await repository.createSession(
+			sessionInput("00000000-0000-4000-8000-000000000003", "ccdv-f", 300),
+		);
+
+		const page = await repository.getSessionHistoryPage({ page: 1, pageSize: 2 });
+		expect(page.total).toBe(3);
+		expect(page.entries.map(({ session }) => session.id)).toEqual([third.id, second.id]);
+		const completed = await repository.getSessionHistoryPage({
+			certificationId: "ccdv-f",
+			mode: "practice",
+			status: "completed",
+			from: 150,
+			page: 1,
+			pageSize: 10,
+		});
+		expect(completed.total).toBe(1);
+		expect(completed.entries[0]?.session.id).toBe(second.id);
+		const emptyRange = await repository.getSessionHistoryPage({
+			certificationId: "ccdv-f",
+			from: 400,
+			through: 300,
+			page: 1,
+			pageSize: 10,
+		});
+		expect(emptyRange).toMatchObject({ entries: [], total: 0 });
+		await expect(repository.getSessionById(second.id)).resolves.toMatchObject({
+			session: { id: second.id },
+			attempts: [{ questionId: "question-stable-id" }],
+		});
+		expect(await repository.getQuestionProgressForCertification("ccdv-f")).toHaveLength(1);
+	});
+
 	it("closes its connection when a newer schema version requests an upgrade", async () => {
 		await repository.createSession(sessionInput("00000000-0000-4000-8000-000000000001"));
-		const upgraded = await openDB<ProgressDatabaseSchema>(PROGRESS_DATABASE_NAME, 2, {
+		const upgraded = await openDB<ProgressDatabaseSchema>(PROGRESS_DATABASE_NAME, 3, {
 			upgrade() {},
 		});
 
-		expect(upgraded.version).toBe(2);
+		expect(upgraded.version).toBe(3);
 		upgraded.close();
 	});
 
@@ -475,6 +617,24 @@ describe("IndexedDB progress repository", () => {
 				legacyBaseline: { attempts: 4, correct: 2, lastWrong: true },
 			},
 		]);
+		const exam = await repository.createSession(
+			sessionInput("00000000-0000-4000-8000-000000000002", "ccdv-f", 400, "exam"),
+		);
+		await repository.finalizeSession(exam.id, exam.revision, "completed", 500);
+		const summaryData = await repository.getProgressSummaryData(["ccdv-f", "ccar-f"]);
+		expect(summaryData.questionProgress).toMatchObject([
+			{ questionId: "question-stable-id", attemptCount: 1, correctCount: 1 },
+		]);
+		expect(summaryData.recentAttempts).toEqual([first]);
+		expect(summaryData.completedMockExams).toBe(1);
+		expect(summaryData.hasSessions).toBe(true);
+		expect(summaryData.history.map(({ session }) => session.id)).toContain(exam.id);
+		expect(await repository.getProgressSummaryData(["ccar-f"])).toMatchObject({
+			history: [],
+			recentAttempts: [],
+			completedMockExams: 0,
+			hasSessions: false,
+		});
 
 		const rebuilt = await repository.rebuildQuestionProgress("ccdv-f");
 		expect(rebuilt).toHaveLength(1);

@@ -1,3 +1,12 @@
+export {
+	type DomainAccuracy,
+	deriveProgressSummary,
+	type ExamTrendPoint,
+	type ProgressBank,
+	type ProgressBankQuestion,
+	type ProgressSummary,
+	type SessionResult,
+} from "./analytics";
 export { parseProgressBackup } from "./backup-restore";
 export type { ProgressStorageErrorCode } from "./errors";
 export {
@@ -22,10 +31,12 @@ export type {
 	CreateSessionInput,
 	EvaluationOutcome,
 	FinalSessionStatus,
+	FrozenQuestionSnapshot,
 	LearningDataRestoreData,
 	LearningDataSnapshot,
 	LearningGoalRecord,
 	ProgressSession,
+	ProgressSummaryData,
 	QuestionAttempt,
 	QuestionProgress,
 	QuestionProgressBaseline,
@@ -38,7 +49,11 @@ export type {
 	SessionStatus,
 	StudyProgressRecord,
 } from "./model";
-export type { ProgressRepository } from "./repository-port";
+export type {
+	ProgressRepository,
+	SessionHistoryPage,
+	SessionHistoryQuery,
+} from "./repository-port";
 export {
 	type MetadataRecord,
 	PROGRESS_DATABASE_NAME,

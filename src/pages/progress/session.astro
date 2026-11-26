@@ -1,0 +1,309 @@
+---
+import AppShell from "../../components/AppShell.astro";
+import Layout from "../../layouts/Layout.astro";
+import { base } from "../../lib/base";
+import "../../styles/tokens.css";
+import "../../styles/quiz.css";
+
+const backHref = `${base}progress/`;
+---
+
+<Layout
+	title="Session Review | Practice Lab"
+	description="Review the question and answer snapshots saved with a practice session."
+>
+	<AppShell activeNav="progress" activeCertSlug="ccdv-f" breadcrumb="Session review" wide>
+		<div class="sessionReview" id="session-review-main">
+			<a class="small wsTextLink" href={backHref}>← Back to My Progress</a>
+			<h1>Session review</h1>
+			<p class="muted">
+				This review uses the frozen question versions saved when the session was taken.
+			</p>
+			<p id="review-status" role="status" aria-live="polite">Loading saved review…</p>
+			<p id="review-error" class="reviewError" role="alert" hidden></p>
+			<div id="review-summary"></div>
+			<div id="review-questions"></div>
+		</div>
+	</AppShell>
+</Layout>
+
+<script>
+import { createProgressRepository } from "../../lib/progress/indexeddb-repository";
+import type {
+	FrozenQuestionSnapshot,
+	QuestionProvenance,
+	SessionHistoryEntry,
+} from "../../lib/progress/model";
+import { createProgressUseCases } from "../../lib/progress/use-cases";
+
+const repository = createProgressRepository();
+const useCases = createProgressUseCases(repository);
+const status = document.getElementById("review-status") as HTMLParagraphElement;
+const error = document.getElementById("review-error") as HTMLParagraphElement;
+const summary = document.getElementById("review-summary") as HTMLDivElement;
+const questions = document.getElementById("review-questions") as HTMLDivElement;
+
+function escapeHtml(value: string): string {
+	return value.replace(/[&<>"']/g, (character) => {
+		const entities: Record<string, string> = {
+			"&": "&amp;",
+			"<": "&lt;",
+			">": "&gt;",
+			'"': "&quot;",
+			"'": "&#39;",
+		};
+		return entities[character];
+	});
+}
+
+function formatDate(timestamp: number): string {
+	return new Intl.DateTimeFormat(undefined, {
+		dateStyle: "full",
+		timeStyle: "short",
+	}).format(timestamp);
+}
+
+function safeSourceUrl(value: string): string | undefined {
+	try {
+		const url = new URL(value);
+		return url.protocol === "https:" || url.protocol === "http:" ? url.href : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+function getFrozenSnapshot(question: QuestionProvenance): FrozenQuestionSnapshot | undefined {
+	if (question.snapshot) return question.snapshot;
+	if (
+		!question.questionText ||
+		question.optionIds.length === 0 ||
+		question.optionTexts.length !== question.optionIds.length ||
+		question.displayOptionIds.length !== question.optionIds.length
+	) {
+		return undefined;
+	}
+	const options = question.displayOptionIds.flatMap((id) => {
+		const optionIndex = question.optionIds.indexOf(id);
+		return optionIndex < 0 ? [] : [{ id, text: question.optionTexts[optionIndex] }];
+	});
+	if (options.length !== question.optionIds.length) return undefined;
+	return {
+		question: question.questionText,
+		...(question.topic ? { topic: question.topic } : {}),
+		domainName: question.domainName,
+		options,
+		correctOptionIds: question.correctOptionIds,
+		explanation: question.explanation,
+		...(question.whyNot ? { whyNot: question.whyNot } : {}),
+		source: { label: question.sourceLabel, url: question.sourceUrl },
+	};
+}
+
+function renderReview(entry: SessionHistoryEntry): void {
+	const { session } = entry;
+	const correct = entry.attempts.filter((attempt) => attempt.outcome === "correct").length;
+	const total = session.content.questions.length;
+	summary.innerHTML = `
+			<section class="panel reviewSummary" aria-labelledby="review-summary-title">
+				<h2 id="review-summary-title">${session.mode === "exam" ? "Mock exam" : session.mode === "weak" ? "Missed-question review" : "Practice"} · ${escapeHtml(session.certificationId)}</h2>
+				<dl>
+					<div><dt>Status</dt><dd>${escapeHtml(session.status.replaceAll("_", " "))}</dd></div>
+					<div><dt>Started</dt><dd>${formatDate(session.startedAt)}</dd></div>
+					<div><dt>Finished</dt><dd>${session.finishedAt ? formatDate(session.finishedAt) : "In progress"}</dd></div>
+					<div><dt>Score</dt><dd>${session.status === "in_progress" ? "Not submitted" : `${correct} of ${total} questions correct`}</dd></div>
+					<div><dt>Bank revision</dt><dd><code>${escapeHtml(session.content.bankRevision)}</code></dd></div>
+				</dl>
+			</section>`;
+	if (session.status === "in_progress") {
+		questions.innerHTML =
+			'<p class="panel reviewLocked" role="status">This session is still in progress. Frozen answers and explanations are available after it is finished.</p>';
+		return;
+	}
+
+	questions.innerHTML = session.content.questions
+		.map((question, index) => {
+			const snapshot = getFrozenSnapshot(question);
+			const attempt = entry.attempts.find((item) => item.questionId === question.questionId);
+			const selectedIds = new Set(
+				attempt?.selectedOptionIds ??
+					session.checkpoint.selectedOptionIdsByQuestion[question.questionId] ??
+					[],
+			);
+			if (!snapshot) {
+				return `<section class="panel frozenQuestion"><h2>Question ${index + 1}</h2><p class="muted">The original question text was not captured for this older session. No current question content has been substituted.</p><p>Saved question ID: <code>${escapeHtml(question.questionId)}</code></p></section>`;
+			}
+			const options = snapshot.options
+				.map((option, optionIndex) => {
+					const isCorrect = snapshot.correctOptionIds.includes(option.id);
+					const isSelected = selectedIds.has(option.id);
+					const markers = [isSelected ? "Your selection" : "", isCorrect ? "Correct answer" : ""]
+						.filter(Boolean)
+						.join(" · ");
+					return `<li class="reviewOption${isCorrect ? " reviewCorrect" : isSelected ? " reviewIncorrect" : ""}"><span class="reviewOptionLetter" aria-hidden="true">${String.fromCharCode(65 + optionIndex)}</span><span>${escapeHtml(option.text)}</span>${markers ? `<strong>${markers}</strong>` : ""}</li>`;
+				})
+				.join("");
+			const result = attempt
+				? attempt.outcome === "correct"
+					? "Correct"
+					: attempt.outcome === "partial"
+						? "Partially correct"
+						: "Incorrect"
+				: selectedIds.size
+					? "Not evaluated"
+					: "Unanswered";
+			const sourceUrl = safeSourceUrl(snapshot.source.url);
+			const source = sourceUrl
+				? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(snapshot.source.label)} (opens in a new tab)</a>`
+				: `<span>${escapeHtml(snapshot.source.label)}</span>`;
+			return `<section class="panel frozenQuestion" aria-labelledby="question-${index}-title"><div class="reviewQuestionMeta"><span>${escapeHtml(question.domainId)} · ${escapeHtml(snapshot.domainName)}</span><span>${result}</span></div><h2 id="question-${index}-title">${index + 1}. ${escapeHtml(snapshot.question)}</h2>${snapshot.topic ? `<p class="muted">${escapeHtml(snapshot.topic)}</p>` : ""}<ul class="reviewOptionList">${options}</ul><p><strong>Explanation</strong> · ${escapeHtml(snapshot.explanation)}</p>${snapshot.whyNot ? `<p class="muted"><strong>Why not the others</strong> · ${escapeHtml(snapshot.whyNot)}</p>` : ""}<p class="reviewSource"><strong>Source</strong> · ${source}</p></section>`;
+		})
+		.join("");
+}
+
+const sessionId = new URLSearchParams(location.search).get("session");
+if (!sessionId) {
+	status.textContent = "No session was selected.";
+	error.textContent = "Return to My Progress and choose a saved session to review.";
+	error.hidden = false;
+} else {
+	void useCases
+		.getSessionById(sessionId)
+		.then((entry) => {
+			if (!entry) {
+				status.textContent = "This session is not available in this browser.";
+				return;
+			}
+			renderReview(entry);
+			status.textContent = "Saved review loaded. Its question snapshots are read-only.";
+		})
+		.catch((cause: unknown) => {
+			status.textContent = "The saved review could not be loaded.";
+			error.textContent =
+				cause instanceof Error ? cause.message : "Browser storage is unavailable.";
+			error.hidden = false;
+		});
+}
+window.addEventListener("pagehide", () => repository.close(), { once: true });
+</script>
+
+<style>
+.sessionReview {
+	margin: 0 auto;
+	max-width: 1000px;
+	padding: clamp(18px, 3vw, 36px);
+}
+
+.sessionReview h1 {
+	font-size: clamp(28px, 4vw, 38px);
+	margin: 12px 0 4px;
+}
+
+.sessionReview > p {
+	color: var(--muted);
+}
+
+.sessionReview > .reviewError {
+	background: var(--error-soft);
+	border-radius: var(--radius-sm);
+	color: var(--error-ink);
+	padding: 12px;
+}
+
+.sessionReview :global(.reviewLocked) {
+	margin: 16px 0;
+	padding: 16px;
+}
+
+.sessionReview :global(.reviewSummary),
+.sessionReview :global(.frozenQuestion) {
+	margin: 16px 0;
+	padding: 18px;
+}
+
+.sessionReview :global(.reviewSummary h2),
+.sessionReview :global(.frozenQuestion h2) {
+	font-size: 18px;
+	line-height: 1.5;
+}
+
+.sessionReview :global(.reviewSummary dl) {
+	display: grid;
+	gap: 12px;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	margin: 0;
+}
+
+.sessionReview :global(.reviewSummary dl div) {
+	min-width: 0;
+}
+
+.sessionReview :global(.reviewSummary dt) {
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.sessionReview :global(.reviewSummary dd) {
+	font-size: 13px;
+	margin: 3px 0 0;
+	overflow-wrap: anywhere;
+}
+
+.sessionReview :global(.reviewQuestionMeta) {
+	align-items: center;
+	color: var(--muted);
+	display: flex;
+	font-size: 12px;
+	gap: 12px;
+	justify-content: space-between;
+}
+
+.sessionReview :global(.reviewOptionList) {
+	display: grid;
+	gap: 8px;
+	list-style: none;
+	margin: 14px 0;
+	padding: 0;
+}
+
+.sessionReview :global(.reviewOption) {
+	align-items: start;
+	background: var(--raised);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	display: grid;
+	gap: 10px;
+	grid-template-columns: 28px minmax(0, 1fr) auto;
+	padding: 10px;
+}
+
+.sessionReview :global(.reviewOptionLetter) {
+	font-family: var(--font-mono);
+}
+
+.sessionReview :global(.reviewOption strong) {
+	color: var(--muted);
+	font-size: 11px;
+}
+
+.sessionReview :global(.reviewCorrect) {
+	border-color: var(--success-border);
+}
+
+.sessionReview :global(.reviewIncorrect) {
+	border-color: var(--error-border);
+}
+
+.sessionReview :global(.reviewSource) {
+	font-size: 13px;
+}
+
+@media (max-width: 600px) {
+	.sessionReview :global(.reviewOption) {
+		grid-template-columns: 24px minmax(0, 1fr);
+	}
+
+	.sessionReview :global(.reviewOption strong) {
+		grid-column: 2;
+	}
+}
+</style>

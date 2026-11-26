@@ -11,12 +11,32 @@ import type {
 	LegacyProgressMigrationResult,
 	LegacyRecordsBackup,
 	ProgressSession,
+	ProgressSummaryData,
 	QuestionAttempt,
 	QuestionProgress,
 	QuestionProgressBaseline,
 	RecordEvaluationInput,
 	SessionHistoryEntry,
+	SessionMode,
+	SessionStatus,
 } from "./model";
+
+export interface SessionHistoryQuery {
+	certificationId?: string;
+	mode?: SessionMode;
+	status?: SessionStatus;
+	from?: number;
+	through?: number;
+	page: number;
+	pageSize: number;
+}
+
+export interface SessionHistoryPage {
+	entries: SessionHistoryEntry[];
+	total: number;
+	page: number;
+	pageSize: number;
+}
 
 export interface ProgressRepository {
 	createSession(input: CreateSessionInput): Promise<ProgressSession>;
@@ -44,6 +64,7 @@ export interface ProgressRepository {
 	saveLegacyBackup(backup: LegacyRecordsBackup): Promise<string>;
 	resetCertificationProgress(certificationId: string): Promise<string>;
 	getSessionHistory(certificationId: string): Promise<SessionHistoryEntry[]>;
+	getProgressSummaryData(certificationIds: readonly string[]): Promise<ProgressSummaryData>;
 	getCertificationProgressSnapshot(certificationId: string): Promise<CertificationProgressSnapshot>;
 	restoreCertificationProgress(
 		snapshots: readonly CertificationProgressRestoreSnapshot[],
@@ -62,6 +83,10 @@ export interface ProgressRepository {
 	markSuccessfulBackup(timestamp: number): Promise<void>;
 	getSession(sessionId: string): Promise<ProgressSession | undefined>;
 	getQuestionProgressForCertification(certificationId: string): Promise<QuestionProgress[]>;
+	getSessionHistoryPage(query: SessionHistoryQuery): Promise<SessionHistoryPage>;
+
+	getSessionById(sessionId: string): Promise<SessionHistoryEntry | undefined>;
+
 	getQuestionProgress(
 		certificationId: string,
 		questionId: string,
