@@ -20,6 +20,7 @@ import {
 	type FinalSessionStatus,
 	type LearningDataRestoreData,
 	type LearningDataSnapshot,
+	type LearningGoalRecord,
 	type LegacyProgressBackup,
 	type LegacyProgressMigrationInput,
 	type LegacyProgressMigrationResult,
@@ -32,6 +33,7 @@ import {
 	type QuestionProgressBaseline,
 	type RecordEvaluationInput,
 	type SessionHistoryEntry,
+	type StudyProgressRecord,
 	validateLegacyBaseline,
 	validateSession,
 } from "./model";
@@ -39,16 +41,18 @@ import type {
 	ProgressRepository,
 	SessionHistoryPage,
 	SessionHistoryQuery,
+	StudyProgressRepository,
 } from "./repository-port";
 import type { MetadataRecord, ProgressDatabaseSchema, ProgressStoreName } from "./schema";
+import { isValidLearningGoalRecord, isValidStudyProgressRecord } from "./study-domain";
 
 type StoreNames = ProgressStoreName[];
 
-export function createProgressRepository(): ProgressRepository {
+export function createProgressRepository(): ProgressRepository & StudyProgressRepository {
 	return new IndexedDbProgressRepository();
 }
 
-class IndexedDbProgressRepository implements ProgressRepository {
+class IndexedDbProgressRepository implements ProgressRepository, StudyProgressRepository {
 	private databasePromise?: Promise<ProgressDatabase>;
 
 	createSession(input: CreateSessionInput): Promise<ProgressSession> {
@@ -922,6 +926,50 @@ class IndexedDbProgressRepository implements ProgressRepository {
 			const record = await transaction.objectStore("metadata").get(key);
 			return record?.value;
 		});
+	}
+
+	getStudyProgressForCertification(certificationId: string): Promise<StudyProgressRecord[]> {
+		return withTransaction(this.getDatabase, ["studyProgress"], "readonly", (transaction) =>
+			transaction.objectStore("studyProgress").index("by-certification").getAll(certificationId),
+		);
+	}
+
+	getLearningGoalForCertification(
+		certificationId: string,
+	): Promise<LearningGoalRecord | undefined> {
+		return withTransaction(this.getDatabase, ["learningGoals"], "readonly", (transaction) =>
+			transaction.objectStore("learningGoals").get(certificationId),
+		);
+	}
+
+	saveStudyProgress(record: StudyProgressRecord, expectedGenerationToken: string): Promise<void> {
+		if (!isValidStudyProgressRecord(record)) {
+			return Promise.reject(new ProgressConflictError("The study progress record is invalid."));
+		}
+		return withTransaction(
+			this.getDatabase,
+			["studyProgress", "metadata"],
+			"readwrite",
+			async (transaction) => {
+				await assertGeneration(transaction, record.certificationId, expectedGenerationToken);
+				await transaction.objectStore("studyProgress").put(record);
+			},
+		);
+	}
+
+	saveLearningGoal(record: LearningGoalRecord, expectedGenerationToken: string): Promise<void> {
+		if (!isValidLearningGoalRecord(record)) {
+			return Promise.reject(new ProgressConflictError("The study goals are invalid."));
+		}
+		return withTransaction(
+			this.getDatabase,
+			["learningGoals", "metadata"],
+			"readwrite",
+			async (transaction) => {
+				await assertGeneration(transaction, record.certificationId, expectedGenerationToken);
+				await transaction.objectStore("learningGoals").put(record);
+			},
+		);
 	}
 
 	getDataGenerationToken(certificationId: string): Promise<string> {

@@ -12,6 +12,7 @@ interface Props {
 	activeCertCode?: string;
 	breadcrumb?: string;
 	domains?: SidebarDomain[];
+	disableAnalytics?: boolean;
 }
 
 const {
@@ -21,10 +22,15 @@ const {
 	activeCertCode,
 	breadcrumb = title,
 	domains = [],
+	disableAnalytics = false,
 } = Astro.props;
 ---
 
-<Layout title={`${title} · Study · Practice Lab`} description={description}>
+<Layout
+	title={`${title} · Study · Practice Lab`}
+	description={description}
+	disableAnalytics={disableAnalytics}
+>
 	<AppShell
 		activeNav="study"
 		activeCertSlug={activeCertSlug}

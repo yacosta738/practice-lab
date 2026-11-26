@@ -6,6 +6,7 @@ const study = defineCollection({
 	loader: glob({ pattern: "**/*.md", base: "./src/content/study", deferRender: true }),
 	schema: z.looseObject({
 		title: z.string(),
+		noteId: z.string().optional(),
 		domain: z.string().optional(),
 		dominio: z.string().optional(),
 		domain_name: z.string().optional(),
@@ -15,7 +16,7 @@ const study = defineCollection({
 		certification: z.string().optional(),
 		updated: z.union([z.string(), z.date()]).optional(),
 		tags: z.unknown().optional(),
-		aliases: z.unknown().optional(),
+		aliases: z.array(z.string()).optional(),
 	}),
 });
 

@@ -74,15 +74,20 @@ async function seedAdditionalRecords(certificationIds: readonly string[]): Promi
 		await transaction.objectStore("studyProgress").put({
 			certificationId,
 			noteId: `${certificationId}/introduction`,
-			completed: true,
+			status: "completed",
 			completedAt: 120,
+			completedRevision: "body-revision-1",
 			bookmarked: false,
 			updatedAt: 120,
 		});
 		await transaction.objectStore("learningGoals").put({
 			certificationId,
 			dailyQuestionTarget: 10,
-			targetDate: 300,
+			targetQuestionCount: null,
+			targetNoteCount: null,
+			targetDate: null,
+			targetDateTimezone: "floating-local",
+			legacyTargetDate: 300,
 			updatedAt: 120,
 		});
 		const session = makeSession(sessionId, certificationId);
@@ -188,8 +193,9 @@ describe("global learning data repository operations", () => {
 				{
 					certificationId: "ccdv-f",
 					noteId: "ccdv-f/introduction",
-					completed: true,
+					status: "completed",
 					completedAt: 150,
+					completedRevision: "body-revision-1",
 					bookmarked: true,
 					updatedAt: 150,
 				},
@@ -198,7 +204,11 @@ describe("global learning data repository operations", () => {
 				{
 					certificationId: "ccdv-f",
 					dailyQuestionTarget: 5,
-					targetDate: 300,
+					targetQuestionCount: null,
+					targetNoteCount: null,
+					targetDate: null,
+					targetDateTimezone: "floating-local",
+					legacyTargetDate: 300,
 					updatedAt: 150,
 				},
 			],

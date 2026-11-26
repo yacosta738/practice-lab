@@ -184,6 +184,97 @@ function upgradeSchema(
 			}),
 		);
 	}
+	if (oldVersion < 4) {
+		ensureStudyStores(db, transaction);
+		migrateStudyRecords(transaction);
+		migrateLearningGoals(transaction);
+
+		const metadata = transaction.objectStore("metadata");
+		writeUpgradeMetadata(
+			metadata.put({
+				key: "schema-version",
+				value: { version: PROGRESS_DATABASE_VERSION },
+			}),
+		);
+		writeUpgradeMetadata(
+			metadata.put({
+				key: "migration:3-4",
+				value: { fromVersion: 3, toVersion: 4, completedAt: Date.now() },
+			}),
+		);
+	}
+}
+
+function ensureStudyStores(
+	db: ProgressDatabase,
+	transaction: IDBPTransaction<ProgressDatabaseSchema, ProgressStoreName[], "versionchange">,
+): void {
+	if (!db.objectStoreNames.contains("questionProgress")) {
+		const questionProgress = db.createObjectStore("questionProgress", {
+			keyPath: ["certificationId", "questionId"],
+		});
+		questionProgress.createIndex("by-certification", "certificationId");
+	}
+	if (!db.objectStoreNames.contains("studyProgress")) {
+		db.createObjectStore("studyProgress", { keyPath: ["certificationId", "noteId"] });
+	}
+	if (!db.objectStoreNames.contains("learningGoals")) {
+		db.createObjectStore("learningGoals", { keyPath: "certificationId" });
+	}
+	if (!db.objectStoreNames.contains("metadata")) {
+		db.createObjectStore("metadata", { keyPath: "key" });
+	}
+	const studyProgress = transaction.objectStore("studyProgress");
+	if (!studyProgress.indexNames.contains("by-certification")) {
+		studyProgress.createIndex("by-certification", "certificationId");
+	}
+}
+
+function migrateStudyRecords(
+	transaction: IDBPTransaction<ProgressDatabaseSchema, ProgressStoreName[], "versionchange">,
+): void {
+	const store = transaction.objectStore("studyProgress");
+	void (async () => {
+		let cursor = await store.openCursor();
+		while (cursor) {
+			const previous = cursor.value as typeof cursor.value & { completed?: boolean };
+			const record = { ...previous };
+			delete record.completed;
+			await cursor.update({
+				...record,
+				status: previous.status ?? (previous.completed ? "completed" : "not_started"),
+			});
+			cursor = await cursor.continue();
+		}
+	})().catch(() => transaction.abort());
+}
+
+function migrateLearningGoals(
+	transaction: IDBPTransaction<ProgressDatabaseSchema, ProgressStoreName[], "versionchange">,
+): void {
+	const store = transaction.objectStore("learningGoals");
+	void (async () => {
+		let cursor = await store.openCursor();
+		while (cursor) {
+			const previous = cursor.value as unknown as Record<string, unknown>;
+			const legacyTargetDate =
+				typeof previous.legacyTargetDate === "number"
+					? previous.legacyTargetDate
+					: typeof previous.targetDate === "number"
+						? previous.targetDate
+						: undefined;
+			const record = {
+				...previous,
+				targetQuestionCount: previous.targetQuestionCount ?? null,
+				targetNoteCount: previous.targetNoteCount ?? null,
+				targetDate: typeof previous.targetDate === "string" ? previous.targetDate : null,
+				targetDateTimezone: "floating-local" as const,
+				...(legacyTargetDate === undefined ? {} : { legacyTargetDate }),
+			};
+			await cursor.update(record as unknown as typeof cursor.value);
+			cursor = await cursor.continue();
+		}
+	})().catch(() => transaction.abort());
 }
 
 function writeUpgradeMetadata(request: Promise<IDBValidKey>): void {

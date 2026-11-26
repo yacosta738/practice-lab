@@ -26,6 +26,23 @@ function emptySnapshot(): LearningDataSnapshot {
 	};
 }
 
+function canonicalJson(value: unknown): string {
+	if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+	if (value !== null && typeof value === "object") {
+		const entries = Object.entries(value).toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+		return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`).join(",")}}`;
+	}
+	return JSON.stringify(value) ?? "null";
+}
+
+async function digest(value: unknown): Promise<string> {
+	const result = await crypto.subtle.digest(
+		"SHA-256",
+		new TextEncoder().encode(canonicalJson(value)),
+	);
+	return [...new Uint8Array(result)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 function createAttempt(sessionId: string): QuestionAttempt {
 	return {
 		sessionId,
@@ -95,7 +112,7 @@ describe("portable learning backups", () => {
 		});
 		expect(attempt.selectedOptionIds).toEqual(["option-a", "option-b"]);
 		expect(selectedOptionIds).toEqual(["option-b", "option-a"]);
-		const snapshot = {
+		const snapshot: LearningDataSnapshot = {
 			...emptySnapshot(),
 			sessions: [session],
 			questionAttempts: [{ ...attempt, selectedOptionIds: ["option-b", "option-a"] }],
@@ -104,8 +121,9 @@ describe("portable learning backups", () => {
 				{
 					certificationId: CERTIFICATION_ID,
 					noteId: "ccdv-f/introduction",
-					completed: true,
+					status: "completed",
 					completedAt: 220,
+					completedRevision: "body-revision-1",
 					bookmarked: false,
 					updatedAt: 220,
 				},
@@ -114,7 +132,11 @@ describe("portable learning backups", () => {
 				{
 					certificationId: CERTIFICATION_ID,
 					dailyQuestionTarget: 10,
-					targetDate: 300,
+					targetQuestionCount: null,
+					targetNoteCount: null,
+					targetDate: null,
+					targetDateTimezone: "floating-local",
+					legacyTargetDate: 300,
 					updatedAt: 220,
 				},
 			],
@@ -158,22 +180,24 @@ describe("portable learning backups", () => {
 	});
 
 	it("serializes backup arrays deterministically without mutating the snapshot", async () => {
-		const snapshot = {
+		const snapshot: LearningDataSnapshot = {
 			...emptySnapshot(),
 			studyProgress: [
 				{
 					certificationId: CERTIFICATION_ID,
 					noteId: "ccdv-f/z",
-					completed: true,
+					status: "completed",
 					completedAt: 200,
+					completedRevision: "body-revision-1",
 					bookmarked: false,
 					updatedAt: 200,
 				},
 				{
 					certificationId: CERTIFICATION_ID,
 					noteId: "ccdv-f/a",
-					completed: true,
+					status: "completed",
 					completedAt: 100,
+					completedRevision: "body-revision-1",
 					bookmarked: true,
 					updatedAt: 100,
 				},
@@ -192,6 +216,63 @@ describe("portable learning backups", () => {
 		expect(backup.data.studyProgress.map(({ noteId }) => noteId)).toEqual(["ccdv-f/a", "ccdv-f/z"]);
 		expect(snapshot.studyProgress.map(({ noteId }) => noteId)).toEqual(["ccdv-f/z", "ccdv-f/a"]);
 		expect(JSON.stringify(backup)).toBe(JSON.stringify(reversedBackup));
+	});
+
+	it("normalizes version 1 study records without guessing the timezone of a legacy target", async () => {
+		const current = await createLearningBackup(
+			emptySnapshot(),
+			[],
+			"https://practice.example",
+			250,
+		);
+		const legacyPayload = {
+			format: current.format,
+			schemaVersion: 1,
+			exportedAt: current.exportedAt,
+			sourceOrigin: current.sourceOrigin,
+			data: {
+				...current.data,
+				studyProgress: [
+					{
+						certificationId: CERTIFICATION_ID,
+						noteId: "ccdv-f/old-note",
+						completed: true,
+						completedAt: 200,
+						bookmarked: true,
+						updatedAt: 200,
+					},
+				],
+				learningGoals: [
+					{
+						certificationId: CERTIFICATION_ID,
+						dailyQuestionTarget: 5,
+						targetDate: 1_800_000_000_000,
+						updatedAt: 200,
+					},
+				],
+			},
+		};
+		const legacyBackup = {
+			...legacyPayload,
+			integrity: { algorithm: "SHA-256" as const, digest: await digest(legacyPayload) },
+		};
+
+		const restored = await parseLearningBackup(JSON.stringify(legacyBackup), [CERTIFICATION_ID]);
+
+		expect(restored.schemaVersion).toBe(2);
+		expect(restored.data.studyProgress[0]).toMatchObject({
+			status: "completed",
+			completedAt: 200,
+			bookmarked: true,
+		});
+		expect(restored.data.studyProgress[0]).not.toHaveProperty("completed");
+		expect(restored.data.learningGoals[0]).toMatchObject({
+			targetDate: null,
+			targetDateTimezone: "floating-local",
+			legacyTargetDate: 1_800_000_000_000,
+			targetQuestionCount: null,
+			targetNoteCount: null,
+		});
 	});
 
 	it("projects attempts chronologically without mutating their input order", () => {
@@ -370,7 +451,7 @@ describe("portable learning backups", () => {
 					{
 						certificationId: CERTIFICATION_ID,
 						noteId: "ccdv-f/introduction",
-						completed: true,
+						status: "completed",
 						bookmarked: false,
 						updatedAt: 1,
 					},
@@ -381,7 +462,7 @@ describe("portable learning backups", () => {
 			/integrity check failed/i,
 		);
 		await expect(
-			parseLearningBackup(JSON.stringify({ ...backup, schemaVersion: 2 }), [CERTIFICATION_ID]),
+			parseLearningBackup(JSON.stringify({ ...backup, schemaVersion: 3 }), [CERTIFICATION_ID]),
 		).rejects.toThrow(/version is not supported/i);
 	});
 
@@ -389,7 +470,7 @@ describe("portable learning backups", () => {
 		const snapshot = emptySnapshot();
 		const payloadWithEmptyOrigin = {
 			format: "practice-lab-learning-backup",
-			schemaVersion: 1,
+			schemaVersion: 2,
 			exportedAt: 250,
 			sourceOrigin: "",
 			data: {

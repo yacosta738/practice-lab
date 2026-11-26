@@ -10,7 +10,7 @@ import type {
 } from "./model";
 
 export const PROGRESS_DATABASE_NAME = "practice-lab";
-export const PROGRESS_DATABASE_VERSION = 3;
+export const PROGRESS_DATABASE_VERSION = 4;
 
 export interface MetadataRecord {
 	key: string;

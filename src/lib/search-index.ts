@@ -38,7 +38,7 @@ export async function getSearchIndex(): Promise<SearchItem[]> {
 				href: `${base}study/${cert.slug}/${note.slug}/`,
 				category: "Study Note",
 				badge: domain ? `${note.sectionId} · ${domain.name}` : cert.subtitle,
-				text: normalizeSearchText(studyEntryById.get(note.id)?.body ?? ""),
+				text: normalizeSearchText(studyEntryById.get(note.entryId)?.body ?? ""),
 			});
 		}
 	}
