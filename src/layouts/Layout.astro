@@ -17,9 +17,8 @@ const isVercelDeployment = process.env.VERCEL === "1";
 const seoTitle = limitSeoTitle(title);
 const seoDescription = limitMetaDescription(description);
 
-// Build canonical URLs from the configured production site and deployment base path.
-const canonicalPath = `${base}${Astro.url.pathname.replace(/^\/+/, "")}`;
-const canonicalUrl = new URL(canonicalPath, Astro.site).href;
+// Astro.url.pathname already includes the deployment base path.
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site).href;
 
 // Default OG image resolved against the site origin so og:image and twitter:image
 // always carry an absolute URL as required by the Open Graph protocol.

@@ -35,7 +35,7 @@ for (const route of ROUTES) {
 		expect(metadata.description?.length).toBeLessThanOrEqual(160);
 		expect(metadata.openGraphTitle).toBe(metadata.title);
 		expect(metadata.openGraphUrl).toBe(metadata.canonical);
-		expect(metadata.canonical).toBeTruthy();
+		expect(metadata.canonical).toBe(new URL(route, "https://yacosta738.github.io").href);
 		expect(metadata.openGraphImage).toBeTruthy();
 		if (!metadata.canonical || !metadata.openGraphImage) return;
 
