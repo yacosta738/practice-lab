@@ -11,7 +11,7 @@ export interface SidebarDomain {
 }
 
 interface Props {
-	activeNav: "overview" | "study" | "practice" | "assess" | "data";
+	activeNav: "overview" | "study" | "practice" | "assess" | "data" | "progress";
 	activeCertSlug?: string;
 	activeCertCode?: string;
 	breadcrumb?: string;
@@ -55,6 +55,14 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 				data-action="go-to-site-home"
 			>
 				<span>Overview</span>
+			</a>
+			<a
+				class="pl-nav-link"
+				href={`${base}progress/`}
+				aria-current={activeNav === "progress" ? "page" : undefined}
+				data-action="go-to-site-home"
+			>
+				<span>My Progress</span>
 			</a>
 			<a
 				class="pl-nav-link"
@@ -203,6 +211,13 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 		Home
 	</a>
 	<a
+		href={`${base}progress/`}
+		aria-current={activeNav === "progress" ? "page" : undefined}
+		data-action="go-to-site-home"
+	>
+		Progress
+	</a>
+	<a
 		href={learnHref}
 		aria-current={activeNav === "study" ? "page" : undefined}
 		data-action="go-to-site-home"
@@ -241,6 +256,13 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 	<nav class="pl-nav-section" aria-label="Mobile workspace">
 		<span class="pl-nav-label">Workspace</span>
 		<a class="pl-nav-link" href={base} data-action="go-to-site-home">Overview</a>
+		<a
+			class="pl-nav-link"
+			href={`${base}progress/`}
+			aria-current={activeNav === "progress" ? "page" : undefined}
+			data-action="go-to-site-home"
+			>My Progress</a
+		>
 		<a class="pl-nav-link" href={learnHref} data-action="go-to-site-home">Learn · Study library</a>
 		<a
 			class="pl-nav-link"

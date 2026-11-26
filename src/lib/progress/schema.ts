@@ -9,7 +9,7 @@ import type {
 } from "./model";
 
 export const PROGRESS_DATABASE_NAME = "practice-lab";
-export const PROGRESS_DATABASE_VERSION = 1;
+export const PROGRESS_DATABASE_VERSION = 2;
 
 export interface MetadataRecord {
 	key: string;
@@ -24,6 +24,7 @@ export interface ProgressDatabaseSchema extends DBSchema {
 			"by-certification": string;
 			"by-status": SessionStatus;
 			"by-started-at": number;
+			"by-started-at-id": [number, string];
 			"by-finished-at": number;
 		};
 	};
@@ -34,6 +35,7 @@ export interface ProgressDatabaseSchema extends DBSchema {
 			"by-certification": string;
 			"by-domain": string;
 			"by-evaluated-at": number;
+			"by-session": string;
 		};
 	};
 	questionProgress: {

@@ -60,6 +60,7 @@ export interface ShuffledQuestionOptions {
 }
 
 export interface QuizSession {
+	progressId?: string;
 	mode: "practice" | "exam" | "weak";
 	ids: string[];
 	currentIndex: number;

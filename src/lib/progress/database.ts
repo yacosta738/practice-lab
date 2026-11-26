@@ -114,6 +114,24 @@ function upgradeSchema(
 			}),
 		);
 	}
+	if (oldVersion < 2) {
+		transaction.objectStore("sessions").createIndex("by-started-at-id", ["startedAt", "id"]);
+		transaction.objectStore("questionAttempts").createIndex("by-session", "sessionId");
+
+		const metadata = transaction.objectStore("metadata");
+		writeUpgradeMetadata(
+			metadata.put({
+				key: "schema-version",
+				value: { version: PROGRESS_DATABASE_VERSION },
+			}),
+		);
+		writeUpgradeMetadata(
+			metadata.put({
+				key: "migration:1-2",
+				value: { fromVersion: oldVersion, toVersion: 2, completedAt: Date.now() },
+			}),
+		);
+	}
 }
 
 function writeUpgradeMetadata(request: Promise<IDBValidKey>): void {

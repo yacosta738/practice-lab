@@ -30,8 +30,16 @@ import {
 	validateLegacyBaseline,
 	validateSession,
 } from "./model";
-import type { ProgressRepository } from "./repository-port";
-import type { MetadataRecord, ProgressDatabaseSchema, ProgressStoreName } from "./schema";
+import type {
+	ProgressRepository,
+	SessionHistoryPage,
+	SessionHistoryQuery,
+} from "./repository-port";
+import type {
+	MetadataRecord,
+	ProgressDatabaseSchema,
+	ProgressStoreName,
+} from "./schema";
 
 type StoreNames = ProgressStoreName[];
 
@@ -866,6 +874,68 @@ class IndexedDbProgressRepository implements ProgressRepository {
 		);
 	}
 
+	getSessionHistoryPage(query: SessionHistoryQuery): Promise<SessionHistoryPage> {
+		const page = Number.isSafeInteger(query.page) && query.page > 0 ? query.page : 1;
+		const pageSize = Number.isSafeInteger(query.pageSize)
+			? Math.max(1, Math.min(100, query.pageSize))
+			: 20;
+		const offset = (page - 1) * pageSize;
+
+		return withTransaction(
+			this.getDatabase,
+			["sessions", "questionAttempts"],
+			"readonly",
+			async (transaction) => {
+				const selected: ProgressSession[] = [];
+				let total = 0;
+				let cursor = await transaction
+					.objectStore("sessions")
+					.index("by-started-at-id")
+					.openCursor(null, "prev");
+				while (cursor) {
+					if (matchesHistoryQuery(cursor.value, query)) {
+						if (total >= offset && selected.length < pageSize) selected.push(cursor.value);
+						total += 1;
+					}
+					cursor = await cursor.continue();
+				}
+
+				const attempts = transaction.objectStore("questionAttempts").index("by-session");
+				const entries = await Promise.all(
+					selected.map(async (session) => ({
+						session,
+						attempts: (await attempts.getAll(session.id)).sort(
+							(a, b) => a.evaluatedAt - b.evaluatedAt || a.questionId.localeCompare(b.questionId),
+						),
+					})),
+				);
+				return { entries, total, page, pageSize };
+			},
+		);
+	}
+
+	getSessionById(sessionId: string): Promise<SessionHistoryEntry | undefined> {
+		return withTransaction(
+			this.getDatabase,
+			["sessions", "questionAttempts"],
+			"readonly",
+			async (transaction) => {
+				const session = await transaction.objectStore("sessions").get(sessionId);
+				if (!session) return undefined;
+				const attempts = await transaction
+					.objectStore("questionAttempts")
+					.index("by-session")
+					.getAll(sessionId);
+				return {
+					session,
+					attempts: attempts.sort(
+						(a, b) => a.evaluatedAt - b.evaluatedAt || a.questionId.localeCompare(b.questionId),
+					),
+				};
+			},
+		);
+	}
+
 	getQuestionProgress(
 		certificationId: string,
 		questionId: string,
@@ -1206,4 +1276,14 @@ function stableStringify(value: unknown): string {
 
 function stringSequencesEqual(a: readonly string[], b: readonly string[]): boolean {
 	return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+function matchesHistoryQuery(session: ProgressSession, query: SessionHistoryQuery): boolean {
+	return (
+		(query.certificationId === undefined || session.certificationId === query.certificationId) &&
+		(query.mode === undefined || session.mode === query.mode) &&
+		(query.status === undefined || session.status === query.status) &&
+		(query.from === undefined || session.startedAt >= query.from) &&
+		(query.through === undefined || session.startedAt <= query.through)
+	);
 }

@@ -1,0 +1,783 @@
+---
+import { getCertificationList, loadCertification } from "../../certifications";
+import AppShell from "../../components/AppShell.astro";
+import Layout from "../../layouts/Layout.astro";
+import { base } from "../../lib/base";
+import type { ProgressBank } from "../../lib/progress/analytics";
+import "../../styles/tokens.css";
+import "../../styles/quiz.css";
+
+const certifications = await getCertificationList();
+const banks: ProgressBank[] = await Promise.all(
+	certifications.map(async (certification) => {
+		const bank = await loadCertification(certification.slug);
+		return {
+			certificationId: certification.slug,
+			certificationSubtitle: certification.subtitle,
+			questions: (bank?.questions ?? []).map((question) => ({
+				certificationId: certification.slug,
+				certificationSubtitle: certification.subtitle,
+				questionId: question.id,
+				domainId: question.domain,
+				domainName: certification.domains[question.domain]?.name ?? question.domain,
+			})),
+		};
+	}),
+);
+const certificationLabels = Object.fromEntries(
+	certifications.map((certification) => [
+		certification.slug,
+		{
+			title: certification.title,
+			subtitle: certification.subtitle,
+			href: `${base}certifications/${certification.slug}/`,
+		},
+	]),
+);
+const flagship = certifications.find((certification) => certification.slug === "ccdv-f");
+const sidebarDomains = flagship
+	? Object.entries(flagship.domains).map(([id, domain]) => ({
+			id,
+			name: domain.name,
+			weight: domain.weight,
+			href: `${base}study/${flagship.slug}/#${id}`,
+		}))
+	: [];
+const clientData = JSON.stringify({ banks, certificationLabels }).replaceAll("<", "\\u003c");
+---
+
+<Layout
+	title="My Progress | Practice Lab"
+	description="Review certification practice progress, exam history, and saved question reviews."
+>
+	<AppShell
+		activeNav="progress"
+		activeCertSlug="ccdv-f"
+		breadcrumb="My Progress"
+		domains={sidebarDomains}
+	>
+		<div class="progressPage" id="progress-main">
+			<header class="progressHeader">
+				<div>
+					<p class="eyebrow">Personal workspace</p>
+					<h1>My Progress</h1>
+					<p class="muted">A private, browser-local view of your practice and mock-exam history.</p>
+				</div>
+				<a class="ghost" href={`${base}certifications/ccdv-f/`}>Start practicing</a>
+			</header>
+
+			<p class="progressOffline" id="progress-offline" hidden>
+				You are offline. Saved progress is still available in this browser.
+			</p>
+			<p class="progressStatus" id="progress-status" role="status" aria-live="polite">
+				Loading saved progress…
+			</p>
+			<p class="progressError" id="progress-error" role="alert" hidden></p>
+
+			<section class="progressFilters panel" aria-labelledby="history-filters-title">
+				<h2 id="history-filters-title">Filter session history</h2>
+				<div class="progressFilterGrid">
+					<label>
+						<span>Certification</span>
+						<select id="filter-certification" name="certification">
+							<option value="all">All certifications</option>
+							{certifications.map((certification) => (
+								<option value={certification.slug}>{certification.subtitle}</option>
+							))}
+						</select>
+					</label>
+					<label>
+						<span>Session type</span>
+						<select id="filter-mode" name="mode">
+							<option value="all">All types</option>
+							<option value="practice">Practice</option>
+							<option value="exam">Mock exam</option>
+							<option value="weak">Review missed questions</option>
+						</select>
+					</label>
+					<label>
+						<span>Status</span>
+						<select id="filter-status" name="status">
+							<option value="all">All statuses</option>
+							<option value="in_progress">In progress</option>
+							<option value="completed">Completed</option>
+							<option value="expired">Time expired</option>
+							<option value="abandoned">Abandoned</option>
+						</select>
+					</label>
+					<label>
+						<span>Started from</span>
+						<input id="filter-from" name="from" type="date">
+					</label>
+					<label>
+						<span>Started through</span>
+						<input id="filter-through" name="through" type="date">
+					</label>
+				</div>
+			</section>
+
+			<section class="progressMetrics" aria-labelledby="metrics-title">
+				<div class="sectionHead">
+					<h2 id="metrics-title">At a glance</h2>
+					<span class="small muted" id="metric-scope">All certifications</span>
+				</div>
+				<div class="progressMetricGrid" id="progress-metrics" aria-live="polite"></div>
+			</section>
+
+			<details class="progressDefinitions panel">
+				<summary>How these metrics are calculated</summary>
+				<ul>
+					<li>
+						<strong>Coverage</strong> is distinct current-bank questions with a recorded evaluation
+						or imported legacy attempt, divided by eligible questions in the selected certification
+						bank.
+					</li>
+					<li>
+						<strong>Overall accuracy</strong> is correct recorded evaluations plus imported legacy
+						correct answers, divided by all recorded evaluations plus imported legacy attempts.
+					</li>
+					<li>
+						<strong>Recent accuracy</strong> uses the latest 10 recorded evaluations by evaluation
+						time; legacy totals have no timestamps and are excluded.
+					</li>
+					<li>
+						<strong>Completed mock exams</strong> counts exam sessions with completed status;
+						expired or abandoned exams are not counted as completed.
+					</li>
+					<li>
+						<strong>Last result</strong> is the most recently finished session; its score is correct
+						answers divided by the session's frozen question count, including unanswered questions.
+					</li>
+					<li>
+						<strong>Domain accuracy</strong> is correct evaluations divided by evaluations in that
+						domain, including imported legacy totals where available.
+					</li>
+					<li>
+						<strong>Exam trend</strong> includes completed and expired mock exams; unanswered
+						questions remain in the denominator. Revision and question count are shown so different
+						banks are not mistaken for a like-for-like comparison.
+					</li>
+					<li>
+						History is sorted by start time (newest first; session ID breaks ties), filtered by
+						start date, and paginated 20 sessions at a time. Imported legacy attempts are an undated
+						baseline.
+					</li>
+				</ul>
+			</details>
+
+			<div class="progressVisualGrid">
+				<section class="panel progressVisual" aria-labelledby="domains-title">
+					<h2 id="domains-title">Accuracy by domain</h2>
+					<div id="domain-chart"></div>
+				</section>
+				<section class="panel progressVisual" aria-labelledby="trend-title">
+					<h2 id="trend-title">Mock-exam performance</h2>
+					<div id="exam-trend"></div>
+				</section>
+			</div>
+
+			<section class="panel progressHistory" aria-labelledby="history-title">
+				<div class="sectionHead">
+					<div>
+						<h2 id="history-title">Session history</h2>
+						<p class="small muted" id="history-count">Showing recent saved sessions.</p>
+					</div>
+				</div>
+				<div class="progressTableWrap">
+					<table>
+						<caption class="visuallyHidden">
+							Saved practice and mock-exam sessions
+						</caption>
+						<thead>
+							<tr>
+								<th scope="col">Started</th>
+								<th scope="col">Certification</th>
+								<th scope="col">Type</th>
+								<th scope="col">Status</th>
+								<th scope="col">Result</th>
+								<th scope="col">Duration</th>
+								<th scope="col"><span class="visuallyHidden">Review</span></th>
+							</tr>
+						</thead>
+						<tbody id="history-rows"></tbody>
+					</table>
+				</div>
+				<nav class="progressPagination" aria-label="Session history pages">
+					<button class="ghost" id="history-previous" type="button">Previous</button>
+					<span id="history-page" aria-live="polite">Page 1</span>
+					<button class="ghost" id="history-next" type="button">Next</button>
+				</nav>
+			</section>
+		</div>
+	</AppShell>
+</Layout>
+
+<script type="application/json" id="progress-client-data" set:html={clientData}></script>
+
+<script>
+import { base } from "../../lib/base";
+import type { ProgressBank } from "../../lib/progress/analytics";
+import { deriveProgressSummary } from "../../lib/progress/analytics";
+import { createProgressRepository } from "../../lib/progress/indexeddb-repository";
+import type { SessionMode, SessionStatus } from "../../lib/progress/model";
+import type { SessionHistoryPage, SessionHistoryQuery } from "../../lib/progress/repository-port";
+import { createProgressUseCases } from "../../lib/progress/use-cases";
+
+interface DashboardData {
+	banks: ProgressBank[];
+	certificationLabels: Record<string, { title: string; subtitle: string; href: string }>;
+}
+
+const dataElement = document.getElementById("progress-client-data");
+const data = JSON.parse(dataElement?.textContent || "{}") as DashboardData;
+const PAGE_SIZE = 20;
+const repository = createProgressRepository();
+const useCases = createProgressUseCases(repository);
+const byId = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+const certificationFilter = byId<HTMLSelectElement>("filter-certification");
+const modeFilter = byId<HTMLSelectElement>("filter-mode");
+const statusFilter = byId<HTMLSelectElement>("filter-status");
+const fromFilter = byId<HTMLInputElement>("filter-from");
+const throughFilter = byId<HTMLInputElement>("filter-through");
+const statusMessage = byId<HTMLParagraphElement>("progress-status");
+const errorMessage = byId<HTMLParagraphElement>("progress-error");
+let currentPage = Number(new URLSearchParams(location.search).get("page")) || 1;
+let loadSequence = 0;
+
+function escapeHtml(value: string): string {
+	return value.replace(/[&<>"']/g, (character) => {
+		const entities: Record<string, string> = {
+			"&": "&amp;",
+			"<": "&lt;",
+			">": "&gt;",
+			'"': "&quot;",
+			"'": "&#39;",
+		};
+		return entities[character];
+	});
+}
+
+function formatDate(timestamp: number): string {
+	return new Intl.DateTimeFormat(undefined, {
+		dateStyle: "medium",
+		timeStyle: "short",
+	}).format(timestamp);
+}
+
+function formatDuration(startedAt: number, finishedAt?: number): string {
+	const seconds = Math.max(0, Math.floor(((finishedAt ?? Date.now()) - startedAt) / 1000));
+	const minutes = Math.floor(seconds / 60);
+	return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} hr ${minutes % 60} min`;
+}
+
+function percentage(correct: number, attempts: number): number | undefined {
+	return attempts ? Math.round((correct / attempts) * 100) : undefined;
+}
+
+function formatAccuracy(correct: number, attempts: number): string {
+	const rate = percentage(correct, attempts);
+	return rate === undefined ? "No attempts" : `${rate}% · ${correct}/${attempts}`;
+}
+
+function getSelectedBanks(): ProgressBank[] {
+	const selected = certificationFilter.value;
+	return selected === "all"
+		? data.banks
+		: data.banks.filter((bank) => bank.certificationId === selected);
+}
+
+function getHistoryQuery(): SessionHistoryQuery {
+	const query: SessionHistoryQuery = { page: currentPage, pageSize: PAGE_SIZE };
+	if (certificationFilter.value !== "all") query.certificationId = certificationFilter.value;
+	if (modeFilter.value !== "all") query.mode = modeFilter.value as SessionMode;
+	if (statusFilter.value !== "all") query.status = statusFilter.value as SessionStatus;
+	if (fromFilter.value) query.from = new Date(`${fromFilter.value}T00:00:00`).getTime();
+	if (throughFilter.value)
+		query.through = new Date(`${throughFilter.value}T23:59:59.999`).getTime();
+	return query;
+}
+
+function updateUrl(): void {
+	const params = new URLSearchParams();
+	if (certificationFilter.value !== "all") params.set("certification", certificationFilter.value);
+	if (modeFilter.value !== "all") params.set("mode", modeFilter.value);
+	if (statusFilter.value !== "all") params.set("status", statusFilter.value);
+	if (fromFilter.value) params.set("from", fromFilter.value);
+	if (throughFilter.value) params.set("through", throughFilter.value);
+	if (currentPage > 1) params.set("page", String(currentPage));
+	const query = params.toString();
+	history.replaceState(null, "", `${location.pathname}${query ? `?${query}` : ""}`);
+}
+
+function renderMetrics(
+	summary: ReturnType<typeof deriveProgressSummary>,
+	banks: ProgressBank[],
+): void {
+	const accuracy = percentage(summary.accuracy.correct, summary.accuracy.attempts);
+	const recent = percentage(summary.recentAccuracy.correct, summary.recentAccuracy.attempts);
+	const coverage = percentage(summary.coverage.evaluated, summary.coverage.eligible);
+	const lastResult = summary.lastResult;
+	const labels = data.certificationLabels;
+	byId("metric-scope").textContent =
+		banks.length === data.banks.length
+			? "All certifications"
+			: (labels[banks[0]?.certificationId]?.subtitle ?? "Selected certification");
+	byId("progress-metrics").innerHTML = `
+			<article class="progressMetric panel"><h3>Bank coverage</h3><strong>${coverage ?? 0}%</strong><p>${summary.coverage.evaluated} of ${summary.coverage.eligible} questions evaluated</p></article>
+			<article class="progressMetric panel"><h3>Overall accuracy</h3><strong>${accuracy === undefined ? "—" : `${accuracy}%`}</strong><p>${summary.accuracy.correct} correct of ${summary.accuracy.attempts} attempts</p></article>
+			<article class="progressMetric panel"><h3>Recent accuracy</h3><strong>${recent === undefined ? "—" : `${recent}%`}</strong><p>${summary.recentAccuracy.correct} correct of ${summary.recentAccuracy.attempts} recent attempts</p></article>
+			<article class="progressMetric panel"><h3>Completed mock exams</h3><strong>${summary.completedMockExams}</strong><p>Completed exam sessions</p></article>
+			<article class="progressMetric panel"><h3>Last result</h3><strong>${lastResult ? `${lastResult.correct}/${lastResult.questions}` : "—"}</strong><p>${lastResult ? `${escapeHtml(labels[lastResult.certificationId]?.subtitle ?? lastResult.certificationId)} · ${formatDate(lastResult.finishedAt)}` : "No finished sessions yet"}</p></article>
+		`;
+}
+
+function renderDomainChart(summary: ReturnType<typeof deriveProgressSummary>): void {
+	const container = byId<HTMLDivElement>("domain-chart");
+	if (!summary.domains.length) {
+		container.innerHTML =
+			'<p class="muted">Domain accuracy will appear after your first evaluated answer.</p>';
+		return;
+	}
+	container.innerHTML = `<ul class="progressBarList">${summary.domains
+		.map((domain) => {
+			const rate = percentage(domain.correct, domain.attempts) ?? 0;
+			const certification = escapeHtml(domain.certificationSubtitle);
+			const name = escapeHtml(domain.domainName);
+			return `<li><div class="progressBarHeading"><span>${certification} · ${escapeHtml(domain.domainId)} ${name}</span><strong>${formatAccuracy(domain.correct, domain.attempts)}</strong></div><progress max="100" value="${rate}" aria-label="${certification}, ${escapeHtml(domain.domainId)} ${name}: ${rate}% accuracy"></progress></li>`;
+		})
+		.join("")}</ul>`;
+}
+
+function renderExamTrend(summary: ReturnType<typeof deriveProgressSummary>): void {
+	const container = byId<HTMLDivElement>("exam-trend");
+	if (!summary.examTrend.length) {
+		container.innerHTML = '<p class="muted">Completed or expired mock exams will appear here.</p>';
+		return;
+	}
+	const groups = new Map<string, typeof summary.examTrend>();
+	for (const point of summary.examTrend) {
+		const key = `${point.certificationId}:${point.bankRevision}:${point.questions}`;
+		groups.set(key, [...(groups.get(key) ?? []), point]);
+	}
+	container.innerHTML = [...groups.values()]
+		.map((points) => {
+			const first = points[0];
+			const title = `${data.certificationLabels[first.certificationId]?.subtitle ?? first.certificationId} · revision ${escapeHtml(first.bankRevision.slice(0, 16))} · ${first.questions} questions`;
+			const rows = points
+				.map((point) => {
+					const rate = percentage(point.correct, point.questions) ?? 0;
+					const label = `${formatDate(point.finishedAt)}: ${point.correct} of ${point.questions} correct (${rate}%)`;
+					return `<li><span>${formatDate(point.finishedAt)}</span><meter min="0" max="100" value="${rate}" aria-label="${escapeHtml(label)}">${rate}%</meter><strong>${rate}%</strong></li>`;
+				})
+				.join("");
+			return `<section class="progressTrendGroup"><h3>${title}</h3><ol>${rows}</ol></section>`;
+		})
+		.join("");
+}
+
+function statusLabel(status: SessionStatus): string {
+	return {
+		in_progress: "In progress",
+		completed: "Completed",
+		expired: "Time expired",
+		abandoned: "Abandoned",
+	}[status];
+}
+
+function renderHistory(page: SessionHistoryPage): void {
+	const tbody = byId<HTMLTableSectionElement>("history-rows");
+	byId("history-count").textContent = page.total
+		? `Showing ${Math.min((page.page - 1) * page.pageSize + 1, page.total)}–${Math.min(page.page * page.pageSize, page.total)} of ${page.total} sessions.`
+		: "No sessions match these filters.";
+	byId("history-page").textContent =
+		`Page ${page.page} of ${Math.max(1, Math.ceil(page.total / page.pageSize))}`;
+	byId<HTMLButtonElement>("history-previous").disabled = page.page <= 1;
+	byId<HTMLButtonElement>("history-next").disabled = page.page * page.pageSize >= page.total;
+	if (!page.entries.length) {
+		tbody.innerHTML =
+			'<tr><td class="progressEmpty" colspan="7">No saved sessions yet. Choose a certification and start a practice session.</td></tr>';
+		return;
+	}
+	tbody.innerHTML = page.entries
+		.map(({ session, attempts }) => {
+			const label = data.certificationLabels[session.certificationId];
+			const questions = session.content.questions.length;
+			const correct = attempts.filter((attempt) => attempt.outcome === "correct").length;
+			const finishedAt = session.finishedAt;
+			const duration = formatDuration(session.startedAt, finishedAt);
+			const result = session.status === "in_progress" ? "—" : `${correct}/${questions}`;
+			const reviewUrl = `${base}progress/session/?session=${encodeURIComponent(session.id)}`;
+			return `<tr><td>${formatDate(session.startedAt)}</td><td>${escapeHtml(label?.subtitle ?? session.certificationId)}</td><td>${session.mode === "exam" ? "Mock exam" : session.mode === "weak" ? "Missed questions" : "Practice"}</td><td><span class="progressStatusTag">${statusLabel(session.status)}</span></td><td>${result}</td><td>${duration}</td><td><a href="${reviewUrl}" aria-label="Review saved ${session.mode} session from ${formatDate(session.startedAt)}">Review</a></td></tr>`;
+		})
+		.join("");
+}
+
+async function load(): Promise<void> {
+	const sequence = ++loadSequence;
+	statusMessage.textContent = "Loading saved progress…";
+	errorMessage.hidden = true;
+	try {
+		const selectedBanks = getSelectedBanks();
+		const [histories, progressRows, historyPage] = await Promise.all([
+			Promise.all(selectedBanks.map((bank) => useCases.getSessionHistory(bank.certificationId))),
+			Promise.all(
+				selectedBanks.map((bank) =>
+					useCases.getQuestionProgressForCertification(bank.certificationId),
+				),
+			),
+			useCases.getSessionHistoryPage(getHistoryQuery()),
+		]);
+		if (sequence !== loadSequence) return;
+		const summary = deriveProgressSummary(selectedBanks, histories.flat(), progressRows.flat());
+		renderMetrics(summary, selectedBanks);
+		renderDomainChart(summary);
+		renderExamTrend(summary);
+		renderHistory(historyPage);
+		statusMessage.textContent = "Saved progress is up to date.";
+		updateUrl();
+	} catch (error) {
+		if (sequence !== loadSequence) return;
+		statusMessage.textContent = "Progress could not be loaded.";
+		errorMessage.textContent =
+			error instanceof Error
+				? `${error.message} Your quiz data remains in this browser; check storage availability and try again.`
+				: "Browser storage is unavailable. Your quiz data remains in this browser.";
+		errorMessage.hidden = false;
+	}
+}
+
+function applyQueryToFilters(): void {
+	const params = new URLSearchParams(location.search);
+	const certification = params.get("certification");
+	if (certification && data.banks.some((bank) => bank.certificationId === certification)) {
+		certificationFilter.value = certification;
+	}
+	const mode = params.get("mode");
+	if (mode && ["practice", "exam", "weak"].includes(mode)) modeFilter.value = mode;
+	const status = params.get("status");
+	if (status && ["in_progress", "completed", "expired", "abandoned"].includes(status)) {
+		statusFilter.value = status;
+	}
+	fromFilter.value = params.get("from") ?? "";
+	throughFilter.value = params.get("through") ?? "";
+	currentPage = Math.max(1, Number(params.get("page")) || 1);
+}
+
+for (const filter of [certificationFilter, modeFilter, statusFilter, fromFilter, throughFilter]) {
+	filter.addEventListener("change", () => {
+		currentPage = 1;
+		void load();
+	});
+}
+byId("history-previous").addEventListener("click", () => {
+	currentPage = Math.max(1, currentPage - 1);
+	void load();
+});
+byId("history-next").addEventListener("click", () => {
+	currentPage += 1;
+	void load();
+});
+window.addEventListener("popstate", () => {
+	applyQueryToFilters();
+	void load();
+});
+window.addEventListener("online", () => byId("progress-offline").setAttribute("hidden", ""));
+window.addEventListener("offline", () => byId("progress-offline").removeAttribute("hidden"));
+window.addEventListener("storage", (event) => {
+	if (event.key?.includes("practice-lab-v2")) void load();
+});
+if (typeof BroadcastChannel !== "undefined") {
+	const channel = new BroadcastChannel("practice-lab-progress");
+	channel.addEventListener("message", (event: MessageEvent<unknown>) => {
+		const message = event.data as { type?: unknown; certificationId?: unknown } | null;
+		if (
+			message?.type === "progress-changed" &&
+			typeof message.certificationId === "string" &&
+			(certificationFilter.value === "all" || certificationFilter.value === message.certificationId)
+		) {
+			void load();
+		}
+	});
+	window.addEventListener("pagehide", () => channel.close(), { once: true });
+}
+if (!navigator.onLine) byId("progress-offline").removeAttribute("hidden");
+applyQueryToFilters();
+void load();
+</script>
+
+<style>
+.progressPage {
+	margin: 0 auto;
+	max-width: 1280px;
+	padding: clamp(18px, 3vw, 36px);
+}
+
+.progressHeader,
+.progressFilterGrid,
+.progressMetricGrid,
+.progressVisualGrid {
+	display: grid;
+	gap: 16px;
+}
+
+.progressHeader {
+	align-items: center;
+	grid-template-columns: minmax(0, 1fr) auto;
+	margin-bottom: 20px;
+}
+
+.progressHeader h1 {
+	font-size: clamp(28px, 4vw, 38px);
+	margin: 0;
+}
+
+.progressHeader p {
+	margin: 6px 0 0;
+}
+
+.eyebrow {
+	color: var(--brand-strong);
+	font: 600 12px var(--font-mono);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.progressStatus,
+.progressOffline,
+.progressError {
+	border-radius: var(--radius-sm);
+	margin: 12px 0;
+	padding: 10px 12px;
+}
+
+.progressStatus {
+	background: var(--raised);
+	color: var(--muted);
+}
+
+.progressOffline {
+	background: var(--info-soft);
+	color: var(--ink);
+}
+
+.progressError {
+	background: var(--error-soft);
+	color: var(--error-ink);
+}
+
+.progressFilters,
+.progressDefinitions,
+.progressVisual,
+.progressHistory {
+	padding: 18px;
+}
+
+.progressFilters h2,
+.progressVisual h2,
+.progressHistory h2 {
+	font-size: 17px;
+	margin: 0 0 14px;
+}
+
+.progressFilterGrid {
+	grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+}
+
+.progressFilterGrid label {
+	display: grid;
+	font-size: 13px;
+	font-weight: 600;
+	gap: 6px;
+}
+
+.progressFilterGrid select,
+.progressFilterGrid input {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	color: var(--ink);
+	font: inherit;
+	min-height: 40px;
+	padding: 8px;
+}
+
+.progressMetrics {
+	margin: 24px 0;
+}
+
+.progressMetricGrid {
+	grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.progressMetric {
+	min-height: 116px;
+	padding: 16px;
+}
+
+.progressMetric h3 {
+	color: var(--muted);
+	font-size: 13px;
+	margin: 0 0 9px;
+}
+
+.progressMetric strong {
+	font-size: 25px;
+}
+
+.progressMetric p {
+	color: var(--muted);
+	font-size: 12px;
+	line-height: 1.5;
+	margin: 8px 0 0;
+}
+
+.progressDefinitions {
+	margin-bottom: 20px;
+}
+
+.progressDefinitions summary {
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.progressDefinitions ul {
+	color: var(--muted);
+	display: grid;
+	gap: 8px;
+	line-height: 1.55;
+	margin-bottom: 0;
+	padding-left: 20px;
+}
+
+.progressDefinitions strong {
+	color: var(--ink);
+}
+
+.progressVisualGrid {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	margin-bottom: 20px;
+}
+
+.progressBarList,
+.progressTrendGroup ol {
+	display: grid;
+	gap: 14px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.progressBarHeading {
+	align-items: baseline;
+	display: flex;
+	font-size: 12px;
+	gap: 10px;
+	justify-content: space-between;
+	margin-bottom: 5px;
+}
+
+.progressBarHeading strong {
+	white-space: nowrap;
+}
+
+.progressBarList progress {
+	height: 10px;
+	width: 100%;
+}
+
+.progressTrendGroup + .progressTrendGroup {
+	border-top: 1px solid var(--border);
+	margin-top: 16px;
+	padding-top: 14px;
+}
+
+.progressTrendGroup h3 {
+	font-size: 12px;
+	margin: 0 0 10px;
+}
+
+.progressTrendGroup li {
+	align-items: center;
+	display: grid;
+	font-size: 12px;
+	gap: 10px;
+	grid-template-columns: minmax(80px, auto) minmax(40px, 1fr) 40px;
+}
+
+.progressTrendGroup meter {
+	height: 12px;
+	width: 100%;
+}
+
+.progressTableWrap {
+	overflow-x: auto;
+}
+
+.progressHistory table {
+	border-collapse: collapse;
+	min-width: 750px;
+	text-align: left;
+	width: 100%;
+}
+
+.progressHistory th,
+.progressHistory td {
+	border-bottom: 1px solid var(--border);
+	font-size: 13px;
+	padding: 11px 8px;
+	vertical-align: middle;
+}
+
+.progressHistory th {
+	color: var(--muted);
+	font-size: 11px;
+	text-transform: uppercase;
+}
+
+.progressStatusTag {
+	background: var(--raised);
+	border-radius: var(--radius-full);
+	display: inline-block;
+	font-size: 11px;
+	padding: 4px 8px;
+}
+
+.progressHistory .progressEmpty {
+	color: var(--muted);
+	padding: 24px;
+	text-align: center;
+}
+
+.progressPagination {
+	align-items: center;
+	display: flex;
+	gap: 12px;
+	justify-content: flex-end;
+	margin-top: 16px;
+}
+
+.visuallyHidden {
+	clip: rect(0, 0, 0, 0);
+	clip-path: inset(50%);
+	height: 1px;
+	overflow: hidden;
+	position: absolute;
+	white-space: nowrap;
+	width: 1px;
+}
+
+@media (max-width: 760px) {
+	.progressHeader,
+	.progressVisualGrid {
+		grid-template-columns: 1fr;
+	}
+
+	.progressHeader .ghost {
+		justify-self: start;
+	}
+
+	.progressPage {
+		padding: 16px;
+	}
+}
+</style>

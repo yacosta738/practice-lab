@@ -29,6 +29,18 @@ export interface QuestionProvenance {
 	sourceLabel: string;
 	sourceUrl: string;
 	selectCount: number;
+	snapshot?: FrozenQuestionSnapshot;
+}
+
+export interface FrozenQuestionSnapshot {
+	question: string;
+	topic?: string;
+	domainName: string;
+	options: readonly { id: string; text: string }[];
+	correctOptionIds: readonly string[];
+	explanation: string;
+	whyNot?: string;
+	source: { label: string; url: string };
 }
 
 export interface ContentProvenance {
@@ -585,6 +597,25 @@ function validateContent(content: ContentProvenance): void {
 		) {
 			throw new ProgressValidationError("Frozen answer counts do not match the question.");
 		}
+		if (question.snapshot) {
+			assertUniqueIds(
+				question.snapshot.options.map(({ id }) => id),
+				`snapshot options for ${question.questionId}`,
+			);
+			if (
+				question.snapshot.options.length !== question.optionIds.length ||
+				question.snapshot.options.some(({ id }) => !question.optionIds.includes(id))
+			) {
+				throw new ProgressValidationError("A frozen question snapshot must match its option IDs.");
+			}
+			assertUniqueIds(
+				question.snapshot.correctOptionIds,
+				`correct options for ${question.questionId}`,
+			);
+			if (question.snapshot.correctOptionIds.some((id) => !question.optionIds.includes(id))) {
+				throw new ProgressValidationError("A correct option must belong to its frozen question.");
+			}
+		}
 	}
 }
 
@@ -618,6 +649,13 @@ function validateCheckpoint(content: ContentProvenance, checkpoint: SessionCheck
 			throw new ProgressValidationError("A checkpoint option must belong to its frozen question.");
 		}
 	}
+	for (const questionId of checkpoint.flaggedQuestionIds ?? []) {
+		if (!hasQuestion(content, questionId)) {
+			throw new ProgressValidationError(
+				"A flagged question must belong to the frozen session content.",
+			);
+		}
+	}
 }
 
 function checkpointsEqual(a: SessionCheckpoint, b: SessionCheckpoint): boolean {
@@ -625,7 +663,10 @@ function checkpointsEqual(a: SessionCheckpoint, b: SessionCheckpoint): boolean {
 		a.currentQuestionId !== b.currentQuestionId ||
 		a.deadlineAt !== b.deadlineAt ||
 		!stringArraysEqual([...a.checkedQuestionIds].sort(), [...b.checkedQuestionIds].sort()) ||
-		!stringArraysEqual([...a.flaggedQuestionIds].sort(), [...b.flaggedQuestionIds].sort())
+		!stringArraysEqual(
+			[...(a.flaggedQuestionIds ?? [])].sort(),
+			[...(b.flaggedQuestionIds ?? [])].sort(),
+		)
 	) {
 		return false;
 	}
@@ -655,6 +696,16 @@ function cloneContent(content: ContentProvenance): ContentProvenance {
 			optionTexts: [...question.optionTexts],
 			displayOptionIds: [...question.displayOptionIds],
 			correctOptionIds: [...question.correctOptionIds],
+			...(question.snapshot
+				? {
+						snapshot: {
+							...question.snapshot,
+							options: question.snapshot.options.map((option) => ({ ...option })),
+							correctOptionIds: [...question.snapshot.correctOptionIds],
+							source: { ...question.snapshot.source },
+						},
+					}
+				: {}),
 		})),
 	};
 }

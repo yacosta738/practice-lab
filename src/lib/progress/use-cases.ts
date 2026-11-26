@@ -15,9 +15,13 @@ import type {
 	RecordEvaluationInput,
 	SessionHistoryEntry,
 } from "./model";
-import type { ProgressRepository } from "./repository-port";
+import type {
+	ProgressRepository,
+	SessionHistoryPage,
+	SessionHistoryQuery,
+} from "./repository-port";
 
-export type CreateSessionCommand = Omit<CreateSessionInput, "startedAt">;
+export type CreateSessionCommand = Omit<CreateSessionInput, "startedAt"> & { startedAt?: number };
 export type CheckpointSessionCommand = Omit<CheckpointSessionInput, "updatedAt">;
 export type RecordEvaluationCommand = Omit<RecordEvaluationInput, "evaluatedAt">;
 
@@ -57,6 +61,9 @@ export interface ProgressUseCases {
 	getQuestionProgressForCertification(certificationId: string): Promise<QuestionProgress[]>;
 	getMetadata(key: string): Promise<unknown>;
 	getDataGenerationToken(certificationId: string): Promise<string>;
+	getSessionHistoryPage(query: SessionHistoryQuery): Promise<SessionHistoryPage>;
+
+	getSessionById(sessionId: string): Promise<SessionHistoryEntry | undefined>;
 	getQuestionProgress(
 		certificationId: string,
 		questionId: string,
@@ -77,7 +84,7 @@ export function createProgressUseCases(
 
 	return {
 		createSession(command) {
-			return repository.createSession({ ...command, startedAt: now() });
+			return repository.createSession({ ...command, startedAt: command.startedAt ?? now() });
 		},
 		replaceSession(command, previousSessionId, previousExpectedRevision) {
 			return repository.replaceSession(
@@ -141,6 +148,12 @@ export function createProgressUseCases(
 		},
 		getDataGenerationToken(certificationId) {
 			return repository.getDataGenerationToken(certificationId);
+		},
+		getSessionHistoryPage(query) {
+			return repository.getSessionHistoryPage(query);
+		},
+		getSessionById(sessionId) {
+			return repository.getSessionById(sessionId);
 		},
 		getQuestionProgress(certificationId, questionId) {
 			return repository.getQuestionProgress(certificationId, questionId);
