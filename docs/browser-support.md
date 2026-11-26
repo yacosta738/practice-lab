@@ -40,8 +40,8 @@ Compatibility thresholds reviewed on 2026-11-26:
 
 - [MDN: `light-dark()`](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/light-dark)
 - [MDN:
-`Array.prototype.toSorted()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/toSorted)
+  `Array.prototype.toSorted()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/toSorted)
   and [Can I Use](https://caniuse.com/mdn-javascript_builtins_array_tosorted)
 - [MDN:
-`Promise.withResolvers()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers)
+  `Promise.withResolvers()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers)
   and [Can I Use](https://caniuse.com/mdn-javascript_builtins_promise_withresolvers)

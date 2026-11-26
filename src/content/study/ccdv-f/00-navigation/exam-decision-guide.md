@@ -57,6 +57,7 @@ notes; it is not an official Anthropic answer key or a transcript of any externa
   both schema and business invariants.
 - **Avoid:** assuming a prompt alone makes generated JSON valid or safe to use.
 -
+
 **Review:** [Structured Output and Defensive Parsing](../structured-output-and-defensive-parsing/).
 
 ### High-volume work versus an interactive response
@@ -83,6 +84,7 @@ notes; it is not an official Anthropic answer key or a transcript of any externa
   treat retrieved text as data rather than privileged instructions.
 - **Avoid:** relying on wording or delimiters alone to stop prompt injection.
 -
+
 **Review:** [Prompt Injection and Data Trust Boundaries](../prompt-injection-and-data-trust-boundaries/)
 and [Defense in Depth for AI Tools](../defense-in-depth-for-ai-tools/).
 
@@ -92,6 +94,7 @@ and [Defense in Depth for AI Tools](../defense-in-depth-for-ai-tools/).
   representative evals and regression tests before release.
 - **Avoid:** changing temperature or swapping models as a substitute for diagnosing the failure.
 -
+
 **Review:** [Tracing and Failure Isolation](../tracing-and-failure-isolation/), [Evaluation Criteria and Grader Design](../evaluation-criteria-and-grader-design/),
 and [Regression Testing and Release Gates](../regression-testing-and-release-gates/).
 
@@ -112,6 +115,7 @@ and [Regression Testing and Release Gates](../regression-testing-and-release-gat
 - **Avoid:** adopting MCP as a default label or duplicating a protocol layer without a concrete
   reuse or interoperability need.
 -
+
 **Review:** [MCP Architecture: Tools, Resources, and Prompts](../mcp-architecture-tools-resources-and-prompts/)
 and [Skills vs Tools vs MCP vs Subagents](../skills-vs-tools-vs-mcp-vs-subagents/).
 

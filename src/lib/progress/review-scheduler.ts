@@ -16,8 +16,9 @@ export const REVIEW_SCHEDULER_POLICY = Object.freeze({
 });
 
 export interface ReviewClock {
-	now(): number;
 	timeZone?: string;
+
+	now(): number;
 }
 
 export const SYSTEM_REVIEW_CLOCK: ReviewClock = {

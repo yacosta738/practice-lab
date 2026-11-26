@@ -3,9 +3,9 @@ import {
 	assertUniqueNoteSlugs,
 	groupNotes,
 	noteSlug,
+	sectionIdForId,
 	type StudyEntry,
 	type StudyNoteMeta,
-	sectionIdForId,
 	toNoteMeta,
 } from "../../src/lib/study-groups";
 

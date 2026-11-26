@@ -130,8 +130,12 @@ export interface ProgressRepository {
 
 export interface StudyProgressRepository {
 	getDataGenerationToken(certificationId: string): Promise<string>;
+
 	getStudyProgressForCertification(certificationId: string): Promise<StudyProgressRecord[]>;
+
 	getLearningGoalForCertification(certificationId: string): Promise<LearningGoalRecord | undefined>;
+
 	saveStudyProgress(record: StudyProgressRecord, expectedGenerationToken: string): Promise<void>;
+
 	saveLearningGoal(record: LearningGoalRecord, expectedGenerationToken: string): Promise<void>;
 }

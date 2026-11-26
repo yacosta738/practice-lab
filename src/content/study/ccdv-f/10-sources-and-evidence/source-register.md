@@ -12,7 +12,8 @@ tags:
 ---
 
 > **Source of truth:** The certification exam blueprint is the official PDF (v1.0, July 2026).
-> API/Claude Code/MCP behavior should be validated against live documentation. The notes are original
+> API/Claude Code/MCP behavior should be validated against live documentation. The notes are
+> original
 > study synthesis.
 
 ## Evidence status convention

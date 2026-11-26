@@ -12,6 +12,7 @@ course_access: public-syllabi-only; private-lessons-not-accessed
 > **Independent preparation resource.** Not affiliated with, endorsed by, or produced by Anthropic.
 > These are 100 **original practice questions**, not leaked or reconstructed live exam items. They
 > were written using the
+>
 > public [CCDV-F Exam Guide v1.0](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view),
 > public course curricula and primary-source documentation. The authenticated Skilljar videos,
 > transcripts and lessons were not available for extraction.
@@ -1466,6 +1467,7 @@ The following reference list points to public, authoritative sources. It is not 
 the protected course lessons.
 
 -
+
 **guide:** [CCDV-F Exam Guide v1.0 (July 2026)](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view)
 -
 **patterns:** [Anthropic — Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)
@@ -1483,8 +1485,10 @@ the protected course lessons.
 **batches:** [Claude Platform — Batch processing](https://platform.claude.com/docs/en/build-with-claude/batch-processing)
 -
 **caching:** [Claude Platform — Prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)
+
 - **errors:** [Claude Platform — API errors](https://platform.claude.com/docs/en/api/errors)
 -
+
 **sdk:** [Claude Platform — TypeScript SDK](https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/typescript)
 -
 **structure:** [Claude Platform — Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)
@@ -1498,9 +1502,12 @@ the protected course lessons.
 **thinking:** [Claude Platform — Thinking](https://platform.claude.com/docs/en/build-with-claude/thinking)
 -
 **effort:** [Claude Platform — Effort](https://platform.claude.com/docs/en/build-with-claude/effort)
+
 - **pricing:** [Claude Platform — Pricing](https://platform.claude.com/docs/en/about-claude/pricing)
 -
+
 **models:** [Claude Platform — Optimizing for cost and intelligence](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)
+
 - **code:** [Claude Code — Features overview](https://code.claude.com/docs/en/features-overview)
 - **settings:** [Claude Code — Settings](https://code.claude.com/docs/en/settings)
 - **hooks:** [Claude Code — Hooks](https://code.claude.com/docs/en/hooks)
@@ -1508,10 +1515,13 @@ the protected course lessons.
 - **subagents:** [Claude Code — Subagents](https://code.claude.com/docs/en/sub-agents)
 - **mcp:** [MCP — TypeScript SDK concepts](https://ts.sdk.modelcontextprotocol.io/)
 -
+
 **mcpauth:** [MCP — Authorization specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization) —
 direct review was rate-limited; indexed excerpts only. See
 the [Source Register](../source-register/).
+
 -
+
 **evals:** [Claude Platform — Define success criteria and build evaluations](https://platform.claude.com/docs/en/test-and-evaluate/develop-tests)
 -
 **prompt:** [Claude Platform — Prompt engineering overview](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview)

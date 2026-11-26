@@ -192,9 +192,9 @@ const {
 
 @supports not (position-area: block-end) {
 	/* Without anchor positioning, keep the default centered popover placement.
-         DO NOT set `inset: auto` here — it would break UA centering.
-         The popover appears centered in the viewport, which is acceptable
-         for a tooltip that the user can dismiss with Escape or light dismiss. */
+           DO NOT set `inset: auto` here — it would break UA centering.
+           The popover appears centered in the viewport, which is acceptable
+           for a tooltip that the user can dismiss with Escape or light dismiss. */
 	.popover-tooltip:is(:popover-open, .\:popover-open) {
 		opacity: 1;
 	}
@@ -240,8 +240,8 @@ const {
 /* ===== Polyfill compatibility ===== */
 
 /* When @oddbird/popover-polyfill is active, :popover-open is not available.
-       The polyfill adds a `.\:popover-open` class. Using :is() ensures both
-       native and polyfilled states work. */
+         The polyfill adds a `.\:popover-open` class. Using :is() ensures both
+         native and polyfilled states work. */
 
 [popover]:is(:popover-open, .\:popover-open) {
 	display: block;

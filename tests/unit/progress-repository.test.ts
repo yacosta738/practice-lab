@@ -3,8 +3,8 @@ import { deleteDB, openDB } from "idb";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	type ContentProvenance,
-	type CreateSessionInput,
 	createProgressRepository,
+	type CreateSessionInput,
 	PROGRESS_DATABASE_NAME,
 	PROGRESS_DATABASE_VERSION,
 	type ProgressDatabaseSchema,
