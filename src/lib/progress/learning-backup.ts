@@ -535,8 +535,22 @@ function validateQuestionProgressShape(value: unknown): asserts value is Questio
 	assertExactKeys(
 		progress,
 		["certificationId", "questionId", "attemptCount", "correctCount", "legacyBaseline"],
-		["lastOutcome", "lastEvaluatedAt", "lastAttemptSessionId"],
+		["lastOutcome", "lastEvaluatedAt", "lastAttemptSessionId", "mastery"],
 	);
+	if (progress.mastery !== undefined) {
+		const mastery = asRecord(progress.mastery, "A question mastery evidence record is invalid.");
+		assertExactKeys(
+			mastery,
+			["policyVersion", "revision", "consecutiveCorrectSessions", "countedSessionIds"],
+			[
+				"streakStartedAt",
+				"lastCorrectAt",
+				"lastCorrectSessionId",
+				"lastIncorrectAt",
+				"lastDemotionReason",
+			],
+		);
+	}
 	if (progress.legacyBaseline !== null) {
 		const baseline = asRecord(progress.legacyBaseline, "A legacy progress baseline is invalid.");
 		assertExactKeys(baseline, ["attempts", "correct", "lastWrong"]);

@@ -321,6 +321,7 @@ class IndexedDbProgressRepository implements ProgressRepository, StudyProgressRe
 						...(current?.lastAttemptSessionId === undefined
 							? {}
 							: { lastAttemptSessionId: current.lastAttemptSessionId }),
+						...(current?.mastery === undefined ? {} : { mastery: current.mastery }),
 						legacyBaseline: { ...baseline },
 					});
 				}
@@ -1149,6 +1150,7 @@ class IndexedDbProgressRepository implements ProgressRepository, StudyProgressRe
 					...(current?.lastAttemptSessionId === undefined
 						? {}
 						: { lastAttemptSessionId: current.lastAttemptSessionId }),
+					...(current?.mastery === undefined ? {} : { mastery: current.mastery }),
 					legacyBaseline: { ...baseline },
 				};
 				await store.put(updated);

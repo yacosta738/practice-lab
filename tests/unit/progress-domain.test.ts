@@ -234,6 +234,16 @@ describe("progress domain rules", () => {
 				lastOutcome: "correct",
 				lastEvaluatedAt: 20,
 				lastAttemptSessionId: "00000000-0000-4000-8000-000000000003",
+				mastery: {
+					policyVersion: "mastery-v1",
+					revision: "question-v1",
+					consecutiveCorrectSessions: 1,
+					countedSessionIds: ["00000000-0000-4000-8000-000000000003"],
+					streakStartedAt: 20,
+					lastCorrectAt: 20,
+					lastCorrectSessionId: "00000000-0000-4000-8000-000000000003",
+					lastIncorrectAt: 10,
+				},
 				legacyBaseline: { attempts: 4, correct: 2, lastWrong: true },
 			},
 		]);

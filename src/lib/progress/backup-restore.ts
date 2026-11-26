@@ -1,5 +1,10 @@
 import { ProgressValidationError } from "./errors";
 import {
+	MASTERY_POLICY_VERSION,
+	masteryEvidenceEquals,
+	type QuestionMasteryEvidence,
+} from "./mastery";
+import {
 	type CertificationProgressRestoreSnapshot,
 	createQuestionAttempt,
 	type EvaluationOutcome,
@@ -250,6 +255,9 @@ function normalizeQuestionProgress(value: unknown, certificationId: string): Que
 			`The ${certificationId} question progress session ID is invalid.`,
 		);
 	}
+	if (progress.mastery !== undefined) {
+		validateMasteryEvidenceShape(progress.mastery, certificationId);
+	}
 	if (progress.legacyBaseline !== null) {
 		try {
 			validateLegacyBaseline(
@@ -264,6 +272,60 @@ function normalizeQuestionProgress(value: unknown, certificationId: string): Que
 	return progress as unknown as QuestionProgress;
 }
 
+function validateMasteryEvidenceShape(
+	value: unknown,
+	certificationId: string,
+): asserts value is QuestionMasteryEvidence {
+	const mastery = asRecord(
+		value,
+		`The ${certificationId} question mastery evidence record is invalid.`,
+	);
+	if (
+		mastery.policyVersion !== MASTERY_POLICY_VERSION ||
+		typeof mastery.revision !== "string" ||
+		mastery.revision.length === 0 ||
+		!isCounter(mastery.consecutiveCorrectSessions) ||
+		!Array.isArray(mastery.countedSessionIds) ||
+		!mastery.countedSessionIds.every((id) => typeof id === "string" && id.length > 0)
+	) {
+		throw new ProgressValidationError(
+			`The ${certificationId} question mastery evidence has invalid fields.`,
+		);
+	}
+	if (mastery.streakStartedAt !== undefined && !isTimestamp(mastery.streakStartedAt)) {
+		throw new ProgressValidationError(
+			`The ${certificationId} question mastery streakStartedAt is invalid.`,
+		);
+	}
+	if (mastery.lastCorrectAt !== undefined && !isTimestamp(mastery.lastCorrectAt)) {
+		throw new ProgressValidationError(
+			`The ${certificationId} question mastery lastCorrectAt is invalid.`,
+		);
+	}
+	if (
+		mastery.lastCorrectSessionId !== undefined &&
+		(typeof mastery.lastCorrectSessionId !== "string" || mastery.lastCorrectSessionId.length === 0)
+	) {
+		throw new ProgressValidationError(
+			`The ${certificationId} question mastery lastCorrectSessionId is invalid.`,
+		);
+	}
+	if (mastery.lastIncorrectAt !== undefined && !isTimestamp(mastery.lastIncorrectAt)) {
+		throw new ProgressValidationError(
+			`The ${certificationId} question mastery lastIncorrectAt is invalid.`,
+		);
+	}
+	if (
+		mastery.lastDemotionReason !== undefined &&
+		mastery.lastDemotionReason !== "wrong-answer" &&
+		mastery.lastDemotionReason !== "revision-changed"
+	) {
+		throw new ProgressValidationError(
+			`The ${certificationId} question mastery lastDemotionReason is invalid.`,
+		);
+	}
+}
+
 function sameQuestionProgress(a: QuestionProgress, b: QuestionProgress): boolean {
 	return (
 		a.certificationId === b.certificationId &&
@@ -273,6 +335,7 @@ function sameQuestionProgress(a: QuestionProgress, b: QuestionProgress): boolean
 		a.lastOutcome === b.lastOutcome &&
 		a.lastEvaluatedAt === b.lastEvaluatedAt &&
 		a.lastAttemptSessionId === b.lastAttemptSessionId &&
+		(a.mastery === undefined || masteryEvidenceEquals(a.mastery, b.mastery)) &&
 		(a.legacyBaseline === null
 			? b.legacyBaseline === null
 			: b.legacyBaseline !== null &&

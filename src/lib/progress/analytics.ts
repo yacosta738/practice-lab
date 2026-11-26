@@ -1,9 +1,21 @@
-import type {
-	ProgressSession,
-	ProgressSummaryData,
-	QuestionAttempt,
-	QuestionProgress,
-	SessionHistoryEntry,
+import {
+	addAssessmentToMasteryCounts,
+	assessQuestionMastery,
+	createEmptyMasteryCounts,
+	type DomainMasterySnapshot,
+	generateReviewRecommendations,
+	MASTERY_POLICY,
+	type MasteryCounts,
+	type QuestionMasteryAssessment,
+	type ReviewRecommendation,
+} from "./mastery";
+import {
+	type ProgressSession,
+	type ProgressSummaryData,
+	projectQuestionAttempts,
+	type QuestionAttempt,
+	type QuestionProgress,
+	type SessionHistoryEntry,
 } from "./model";
 
 export interface ProgressBankQuestion {
@@ -12,12 +24,16 @@ export interface ProgressBankQuestion {
 	questionId: string;
 	domainId: string;
 	domainName: string;
+	revision?: string;
+	domainWeight?: number;
+	blueprintSource?: "official" | "derived";
 }
 
 export interface ProgressBank {
 	certificationId: string;
 	certificationSubtitle: string;
 	questions: readonly ProgressBankQuestion[];
+	blueprintSource?: "official" | "derived";
 }
 
 export interface ProgressSummary {
@@ -27,6 +43,10 @@ export interface ProgressSummary {
 	completedMockExams: number;
 	lastResult?: SessionResult;
 	domains: DomainAccuracy[];
+	domainBreakdown: DomainMasterySnapshot[];
+	mastery: MasteryCounts;
+	recommendations: ReviewRecommendation[];
+	policy: typeof MASTERY_POLICY;
 	examTrend: ExamTrendPoint[];
 	legacy: { attempts: number; correct: number };
 }
@@ -49,6 +69,12 @@ export interface DomainAccuracy {
 	domainName: string;
 	correct: number;
 	attempts: number;
+	coverage: { evaluated: number; eligible: number };
+	recentAccuracy: { correct: number; attempts: number };
+	mastery: MasteryCounts;
+	examWeight?: number;
+	blueprintSource?: "official" | "derived";
+	hasSufficientEvidence: boolean;
 }
 
 export interface ExamTrendPoint {
@@ -60,7 +86,12 @@ export interface ExamTrendPoint {
 	bankRevision: string;
 }
 
-const RECENT_ATTEMPT_LIMIT = 10;
+export interface DeriveProgressSummaryOptions {
+	now?: number;
+	basePath?: string;
+}
+
+const RECENT_ATTEMPT_LIMIT = MASTERY_POLICY.recentWindowSize;
 const EXAM_TREND_LIMIT = 24;
 
 export function deriveProgressSummary(
@@ -68,11 +99,30 @@ export function deriveProgressSummary(
 	history: readonly SessionHistoryEntry[],
 	questionProgress: readonly QuestionProgress[],
 	projection?: Pick<ProgressSummaryData, "recentAttempts" | "completedMockExams">,
+	options: DeriveProgressSummaryOptions = {},
 ): ProgressSummary {
+	const now = options.now ?? Date.now();
+	const basePath = options.basePath ?? "";
+
 	const eligibleQuestions = new Map<string, ProgressBankQuestion>();
+	const domainEligibleCounts = new Map<string, { meta: ProgressBankQuestion; eligible: number }>();
+
 	for (const bank of banks) {
-		for (const question of bank.questions) {
+		for (const rawQuestion of bank.questions) {
+			const question: ProgressBankQuestion = {
+				...rawQuestion,
+				...(rawQuestion.blueprintSource === undefined && bank.blueprintSource !== undefined
+					? { blueprintSource: bank.blueprintSource }
+					: {}),
+			};
 			eligibleQuestions.set(questionKey(question.certificationId, question.questionId), question);
+			const dKey = domainKey(question);
+			const existingDomain = domainEligibleCounts.get(dKey);
+			if (existingDomain) {
+				existingDomain.eligible += 1;
+			} else {
+				domainEligibleCounts.set(dKey, { meta: question, eligible: 1 });
+			}
 		}
 	}
 
@@ -85,6 +135,20 @@ export function deriveProgressSummary(
 		attemptsBySession.set(session.id, matchingAttempts);
 		for (const attempt of matchingAttempts) attempts.push({ session, attempt });
 	}
+
+	const effectiveProgress = projection
+		? questionProgress
+		: projectQuestionAttempts(
+				attempts.map(({ attempt }) => attempt),
+				questionProgress,
+			);
+	const progressByKey = new Map(
+		effectiveProgress.map((progress) => [
+			questionKey(progress.certificationId, progress.questionId),
+			progress,
+		]),
+	);
+
 	const legacyProgress = questionProgress.filter((progress) => progress.legacyBaseline !== null);
 	const legacy = legacyProgress.reduce(
 		(total, progress) => ({
@@ -93,56 +157,149 @@ export function deriveProgressSummary(
 		}),
 		{ attempts: 0, correct: 0 },
 	);
+
 	const evaluatedQuestions = new Set<string>();
-	const domains = new Map<string, DomainAccuracy>();
+	const domainTotals = new Map<string, { correct: number; attempts: number; evaluated: number }>();
 	let projectedCorrect = 0;
 	let projectedAttempts = 0;
+
 	if (projection) {
 		for (const progress of questionProgress) {
 			const baseline = progress.legacyBaseline;
 			projectedCorrect += progress.correctCount + (baseline?.correct ?? 0);
 			projectedAttempts += progress.attemptCount + (baseline?.attempts ?? 0);
-			const question = eligibleQuestions.get(
-				questionKey(progress.certificationId, progress.questionId),
-			);
+			const qKey = questionKey(progress.certificationId, progress.questionId);
+			const question = eligibleQuestions.get(qKey);
 			const questionAttempts = progress.attemptCount + (baseline?.attempts ?? 0);
 			if (!question || questionAttempts === 0) continue;
-			evaluatedQuestions.add(questionKey(progress.certificationId, progress.questionId));
-			addDomainAttempts(
-				domains,
+			const isNewlyEvaluated = !evaluatedQuestions.has(qKey);
+			evaluatedQuestions.add(qKey);
+			addDomainTotals(
+				domainTotals,
 				question,
 				progress.correctCount + (baseline?.correct ?? 0),
 				questionAttempts,
+				isNewlyEvaluated ? 1 : 0,
 			);
 		}
 	} else {
 		for (const { attempt } of attempts) {
-			const question = eligibleQuestions.get(
-				questionKey(attempt.certificationId, attempt.questionId),
-			);
+			const qKey = questionKey(attempt.certificationId, attempt.questionId);
+			const question = eligibleQuestions.get(qKey);
 			if (!question) continue;
-			evaluatedQuestions.add(questionKey(attempt.certificationId, attempt.questionId));
-			addDomainAttempt(domains, question, attempt.outcome === "correct");
+			const isNewlyEvaluated = !evaluatedQuestions.has(qKey);
+			evaluatedQuestions.add(qKey);
+			addDomainTotals(
+				domainTotals,
+				question,
+				attempt.outcome === "correct" ? 1 : 0,
+				1,
+				isNewlyEvaluated ? 1 : 0,
+			);
 		}
 		for (const progress of legacyProgress) {
-			const key = questionKey(progress.certificationId, progress.questionId);
-			const question = eligibleQuestions.get(key);
+			const qKey = questionKey(progress.certificationId, progress.questionId);
+			const question = eligibleQuestions.get(qKey);
 			if (!question || !progress.legacyBaseline?.attempts) continue;
-			evaluatedQuestions.add(key);
-			addDomainAttempts(
-				domains,
+			const isNewlyEvaluated = !evaluatedQuestions.has(qKey);
+			evaluatedQuestions.add(qKey);
+			addDomainTotals(
+				domainTotals,
 				question,
 				progress.legacyBaseline.correct,
 				progress.legacyBaseline.attempts,
+				isNewlyEvaluated ? 1 : 0,
 			);
 		}
 	}
 
-	const recentAttempts = projection
+	const recentAttemptsSource = projection
 		? projection.recentAttempts
 		: attempts.map(({ attempt }) => attempt);
-	const recent = [...recentAttempts].sort(compareAttemptNewestFirst).slice(0, RECENT_ATTEMPT_LIMIT);
+	const recent = [...recentAttemptsSource]
+		.sort(compareAttemptNewestFirst)
+		.slice(0, RECENT_ATTEMPT_LIMIT);
 	const recentCorrect = recent.filter((attempt) => attempt.outcome === "correct").length;
+
+	const recentByDomain = new Map<string, { correct: number; attempts: number }>();
+	for (const attempt of recent) {
+		const question = eligibleQuestions.get(
+			questionKey(attempt.certificationId, attempt.questionId),
+		);
+		if (!question) continue;
+		const dKey = domainKey(question);
+		const current = recentByDomain.get(dKey) ?? { correct: 0, attempts: 0 };
+		current.attempts += 1;
+		if (attempt.outcome === "correct") current.correct += 1;
+		recentByDomain.set(dKey, current);
+	}
+
+	const overallMastery = createEmptyMasteryCounts();
+	const masteryByDomain = new Map<string, MasteryCounts>();
+	const assessments: QuestionMasteryAssessment[] = [];
+
+	for (const [qKey, question] of eligibleQuestions.entries()) {
+		const progress = progressByKey.get(qKey);
+		const assessment = assessQuestionMastery(question, progress, now);
+		assessments.push(assessment);
+		addAssessmentToMasteryCounts(overallMastery, assessment);
+
+		const dKey = domainKey(question);
+		const domainMastery = masteryByDomain.get(dKey) ?? createEmptyMasteryCounts();
+		addAssessmentToMasteryCounts(domainMastery, assessment);
+		masteryByDomain.set(dKey, domainMastery);
+	}
+
+	const domainBreakdown: DomainMasterySnapshot[] = [...domainEligibleCounts.entries()]
+		.map(([dKey, { meta, eligible }]) => {
+			const totals = domainTotals.get(dKey) ?? { correct: 0, attempts: 0, evaluated: 0 };
+			const domainRecent = recentByDomain.get(dKey) ?? { correct: 0, attempts: 0 };
+			const mastery = masteryByDomain.get(dKey) ?? createEmptyMasteryCounts();
+			return {
+				certificationId: meta.certificationId,
+				certificationSubtitle: meta.certificationSubtitle,
+				domainId: meta.domainId,
+				domainName: meta.domainName,
+				...(meta.domainWeight !== undefined ? { examWeight: meta.domainWeight } : {}),
+				...(meta.blueprintSource !== undefined ? { blueprintSource: meta.blueprintSource } : {}),
+				coverage: { evaluated: totals.evaluated, eligible },
+				accuracy: { correct: totals.correct, attempts: totals.attempts },
+				recentAccuracy: domainRecent,
+				mastery,
+				hasSufficientEvidence: totals.attempts >= MASTERY_POLICY.weakDomainMinAttempts,
+			};
+		})
+		.sort(
+			(a, b) =>
+				a.certificationSubtitle.localeCompare(b.certificationSubtitle) ||
+				a.domainId.localeCompare(b.domainId),
+		);
+
+	const domains: DomainAccuracy[] = domainBreakdown
+		.filter((domain) => domain.accuracy.attempts > 0)
+		.map((domain) => ({
+			certificationId: domain.certificationId,
+			certificationSubtitle: domain.certificationSubtitle,
+			domainId: domain.domainId,
+			domainName: domain.domainName,
+			correct: domain.accuracy.correct,
+			attempts: domain.accuracy.attempts,
+			coverage: domain.coverage,
+			recentAccuracy: domain.recentAccuracy,
+			mastery: domain.mastery,
+			...(domain.examWeight !== undefined ? { examWeight: domain.examWeight } : {}),
+			...(domain.blueprintSource !== undefined ? { blueprintSource: domain.blueprintSource } : {}),
+			hasSufficientEvidence: domain.hasSufficientEvidence,
+		}));
+
+	const recommendations = generateReviewRecommendations({
+		assessments,
+		questionsByKey: eligibleQuestions,
+		progressByKey,
+		domains: domainBreakdown,
+		basePath,
+	});
+
 	const sessions = history.map(({ session }) => session);
 	const completedMockExams =
 		projection?.completedMockExams ??
@@ -181,11 +338,11 @@ export function deriveProgressSummary(
 		recentAccuracy: { correct: recentCorrect, attempts: recent.length },
 		completedMockExams,
 		...(results[0] ? { lastResult: results[0] } : {}),
-		domains: [...domains.values()].sort(
-			(a, b) =>
-				a.certificationSubtitle.localeCompare(b.certificationSubtitle) ||
-				a.domainId.localeCompare(b.domainId),
-		),
+		domains,
+		domainBreakdown,
+		mastery: overallMastery,
+		recommendations,
+		policy: MASTERY_POLICY,
 		examTrend,
 		legacy,
 	};
@@ -204,43 +361,19 @@ function resultFor(session: ProgressSession, attempts: readonly QuestionAttempt[
 	};
 }
 
-function addDomainAttempt(
-	domains: Map<string, DomainAccuracy>,
-	question: ProgressBankQuestion,
-	isCorrect: boolean,
-): void {
-	const key = domainKey(question);
-	const current = domains.get(key) ?? {
-		certificationId: question.certificationId,
-		certificationSubtitle: question.certificationSubtitle,
-		domainId: question.domainId,
-		domainName: question.domainName,
-		correct: 0,
-		attempts: 0,
-	};
-	current.attempts += 1;
-	if (isCorrect) current.correct += 1;
-	domains.set(key, current);
-}
-
-function addDomainAttempts(
-	domains: Map<string, DomainAccuracy>,
+function addDomainTotals(
+	totals: Map<string, { correct: number; attempts: number; evaluated: number }>,
 	question: ProgressBankQuestion,
 	correct: number,
 	attempts: number,
+	evaluatedIncrement: number,
 ): void {
 	const key = domainKey(question);
-	const current = domains.get(key) ?? {
-		certificationId: question.certificationId,
-		certificationSubtitle: question.certificationSubtitle,
-		domainId: question.domainId,
-		domainName: question.domainName,
-		correct: 0,
-		attempts: 0,
-	};
+	const current = totals.get(key) ?? { correct: 0, attempts: 0, evaluated: 0 };
 	current.correct += correct;
 	current.attempts += attempts;
-	domains.set(key, current);
+	current.evaluated += evaluatedIncrement;
+	totals.set(key, current);
 }
 
 function compareAttemptNewestFirst(a: QuestionAttempt, b: QuestionAttempt): number {

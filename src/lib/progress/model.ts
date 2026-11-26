@@ -1,4 +1,9 @@
 import { ProgressConflictError, ProgressValidationError } from "./errors";
+import {
+	applyAttemptToMasteryEvidence,
+	compareAttemptsChronologically,
+	type QuestionMasteryEvidence,
+} from "./mastery";
 
 export type SessionMode = "practice" | "exam" | "weak";
 export type SessionStatus = "in_progress" | "completed" | "expired" | "abandoned";
@@ -194,6 +199,7 @@ export interface QuestionProgress {
 	lastOutcome?: EvaluationOutcome;
 	lastEvaluatedAt?: number;
 	lastAttemptSessionId?: string;
+	mastery?: QuestionMasteryEvidence;
 	legacyBaseline: QuestionProgressBaseline | null;
 }
 
@@ -417,6 +423,11 @@ export function applyAttemptToProgress(
 		(attempt.evaluatedAt === current.lastEvaluatedAt &&
 			attempt.sessionId.localeCompare(current.lastAttemptSessionId ?? "") >= 0);
 
+	const mastery =
+		isLatest || current?.mastery === undefined
+			? applyAttemptToMasteryEvidence(current?.mastery, attempt)
+			: current.mastery;
+
 	return {
 		certificationId: attempt.certificationId,
 		questionId: attempt.questionId,
@@ -433,6 +444,7 @@ export function applyAttemptToProgress(
 					lastEvaluatedAt: current?.lastEvaluatedAt,
 					lastAttemptSessionId: current?.lastAttemptSessionId,
 				}),
+		mastery,
 		legacyBaseline: current?.legacyBaseline ?? null,
 	};
 }
@@ -459,9 +471,7 @@ export function projectQuestionAttempts(
 		});
 	}
 
-	const sortedAttempts = [...attempts].sort(
-		(a, b) => a.evaluatedAt - b.evaluatedAt || a.sessionId.localeCompare(b.sessionId),
-	);
+	const sortedAttempts = [...attempts].sort(compareAttemptsChronologically);
 	for (const attempt of sortedAttempts) {
 		const key = progressKey(attempt.certificationId, attempt.questionId);
 		projected.set(
