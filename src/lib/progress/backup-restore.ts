@@ -17,6 +17,12 @@ import {
 	validateLegacyBaseline,
 	validateSession,
 } from "./model";
+import {
+	isValidCalendarDate,
+	needsReviewScheduleUpgrade,
+	type QuestionReviewSchedule,
+	reviewScheduleEquals,
+} from "./review-scheduler";
 
 const MAX_BACKUP_SIZE = 50 * 1024 * 1024;
 const EXPORT_FORMATS = new Set(["practice-lab-progress-export", "practice-lab-progress-recovery"]);
@@ -165,7 +171,16 @@ function validateCertificationSnapshot(
 		seenQuestionIds.add(progress.questionId);
 	}
 
-	const projected = projectQuestionAttempts(attempts, questionProgress);
+	const timeZoneByQuestion = new Map<string, string>();
+	for (const progress of questionProgress) {
+		if (progress.reviewSchedule?.scheduledInTimeZone) {
+			timeZoneByQuestion.set(
+				`${progress.certificationId}\u0000${progress.questionId}`,
+				progress.reviewSchedule.scheduledInTimeZone,
+			);
+		}
+	}
+	const projected = projectQuestionAttempts(attempts, questionProgress, { timeZoneByQuestion });
 	if (projected.length !== questionProgress.length) {
 		throw new ProgressValidationError(
 			`The ${certificationId} question progress projection is inconsistent.`,
@@ -258,6 +273,9 @@ function normalizeQuestionProgress(value: unknown, certificationId: string): Que
 	if (progress.mastery !== undefined) {
 		validateMasteryEvidenceShape(progress.mastery, certificationId);
 	}
+	if (progress.reviewSchedule !== undefined) {
+		validateReviewScheduleShape(progress.reviewSchedule, certificationId);
+	}
 	if (progress.legacyBaseline !== null) {
 		try {
 			validateLegacyBaseline(
@@ -326,6 +344,45 @@ function validateMasteryEvidenceShape(
 	}
 }
 
+function validateReviewScheduleShape(
+	value: unknown,
+	certificationId: string,
+): asserts value is QuestionReviewSchedule {
+	const schedule = asRecord(
+		value,
+		`The ${certificationId} question review schedule record is invalid.`,
+	);
+	if (
+		typeof schedule.policyVersion !== "string" ||
+		schedule.policyVersion.length === 0 ||
+		typeof schedule.revision !== "string" ||
+		schedule.revision.length === 0 ||
+		!isCounter(schedule.intervalDays) ||
+		schedule.intervalDays < 1 ||
+		!isCounter(schedule.stepIndex) ||
+		!isCounter(schedule.consecutiveCorrect) ||
+		!isOutcome(schedule.lastOutcome) ||
+		!isTimestamp(schedule.lastEvaluatedAt) ||
+		!isUuid(schedule.lastAttemptSessionId) ||
+		typeof schedule.dueDate !== "string" ||
+		!isValidCalendarDate(schedule.dueDate) ||
+		schedule.dueDateTimezone !== "floating-local"
+	) {
+		throw new ProgressValidationError(
+			`The ${certificationId} question review schedule has invalid fields.`,
+		);
+	}
+	if (
+		schedule.scheduledInTimeZone !== undefined &&
+		(typeof schedule.scheduledInTimeZone !== "string" ||
+			schedule.scheduledInTimeZone.trim().length === 0)
+	) {
+		throw new ProgressValidationError(
+			`The ${certificationId} question review schedule time zone is invalid.`,
+		);
+	}
+}
+
 function sameQuestionProgress(a: QuestionProgress, b: QuestionProgress): boolean {
 	return (
 		a.certificationId === b.certificationId &&
@@ -336,6 +393,9 @@ function sameQuestionProgress(a: QuestionProgress, b: QuestionProgress): boolean
 		a.lastEvaluatedAt === b.lastEvaluatedAt &&
 		a.lastAttemptSessionId === b.lastAttemptSessionId &&
 		(a.mastery === undefined || masteryEvidenceEquals(a.mastery, b.mastery)) &&
+		(a.reviewSchedule === undefined ||
+			needsReviewScheduleUpgrade(a.reviewSchedule) ||
+			reviewScheduleEquals(a.reviewSchedule, b.reviewSchedule)) &&
 		(a.legacyBaseline === null
 			? b.legacyBaseline === null
 			: b.legacyBaseline !== null &&

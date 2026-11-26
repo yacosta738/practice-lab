@@ -14,6 +14,7 @@ import type {
 	StudyProgressRecord,
 } from "./model";
 import { UUID_PATTERN } from "./model";
+import { REVIEW_SCHEDULER_POLICY_VERSION } from "./review-scheduler";
 import { isValidLearningGoalRecord, isValidStudyProgressRecord } from "./study-domain";
 
 export const LEARNING_BACKUP_FORMAT = "practice-lab-learning-backup";
@@ -23,6 +24,7 @@ export const MAX_LEARNING_BACKUP_RECORDS = 250_000;
 export interface LearningBackup {
 	format: typeof LEARNING_BACKUP_FORMAT;
 	schemaVersion: 2;
+	schedulerPolicyVersion?: string;
 	exportedAt: number;
 	sourceOrigin: string;
 	data: LearningDataRestoreData;
@@ -60,6 +62,7 @@ export async function createLearningBackup(
 	const payload: Omit<LearningBackup, "integrity"> = {
 		format: LEARNING_BACKUP_FORMAT,
 		schemaVersion: 2,
+		schedulerPolicyVersion: REVIEW_SCHEDULER_POLICY_VERSION,
 		exportedAt,
 		sourceOrigin,
 		data,
@@ -100,19 +103,26 @@ export async function parseLearningBackup(
 		throw new ProgressValidationError("The selected file is not valid JSON.");
 	}
 	const backup = asRecord(parsed, "The selected file must contain a learning backup object.");
-	assertExactKeys(backup, [
-		"format",
-		"schemaVersion",
-		"exportedAt",
-		"sourceOrigin",
-		"data",
-		"integrity",
-	]);
+	assertExactKeys(
+		backup,
+		["format", "schemaVersion", "exportedAt", "sourceOrigin", "data", "integrity"],
+		["schedulerPolicyVersion"],
+	);
 	if (backup.format !== LEARNING_BACKUP_FORMAT) {
 		throw new ProgressValidationError("This file is not a Practice Lab learning data backup.");
 	}
 	if (backup.schemaVersion !== 1 && backup.schemaVersion !== 2) {
 		throw new ProgressValidationError("This learning backup version is not supported.");
+	}
+	if (
+		backup.schedulerPolicyVersion !== undefined &&
+		(typeof backup.schedulerPolicyVersion !== "string" ||
+			backup.schedulerPolicyVersion.trim().length === 0 ||
+			backup.schedulerPolicyVersion.length > 64)
+	) {
+		throw new ProgressValidationError(
+			"The learning backup has an invalid scheduler policy version.",
+		);
 	}
 	if (!isTimestamp(backup.exportedAt)) {
 		throw new ProgressValidationError("The learning backup has an invalid export timestamp.");
@@ -192,6 +202,9 @@ export async function parseLearningBackup(
 	const sourcePayload = {
 		format: LEARNING_BACKUP_FORMAT,
 		schemaVersion: backup.schemaVersion,
+		...(backup.schedulerPolicyVersion === undefined
+			? {}
+			: { schedulerPolicyVersion: backup.schedulerPolicyVersion as string }),
 		exportedAt: backup.exportedAt as number,
 		sourceOrigin: backup.sourceOrigin as string,
 		data: dataRecord,
@@ -205,6 +218,7 @@ export async function parseLearningBackup(
 	const payload: Omit<LearningBackup, "integrity"> = {
 		format: LEARNING_BACKUP_FORMAT,
 		schemaVersion: 2,
+		schedulerPolicyVersion: REVIEW_SCHEDULER_POLICY_VERSION,
 		exportedAt: backup.exportedAt as number,
 		sourceOrigin: backup.sourceOrigin as string,
 		data,
@@ -535,7 +549,7 @@ function validateQuestionProgressShape(value: unknown): asserts value is Questio
 	assertExactKeys(
 		progress,
 		["certificationId", "questionId", "attemptCount", "correctCount", "legacyBaseline"],
-		["lastOutcome", "lastEvaluatedAt", "lastAttemptSessionId", "mastery"],
+		["lastOutcome", "lastEvaluatedAt", "lastAttemptSessionId", "mastery", "reviewSchedule"],
 	);
 	if (progress.mastery !== undefined) {
 		const mastery = asRecord(progress.mastery, "A question mastery evidence record is invalid.");
@@ -549,6 +563,28 @@ function validateQuestionProgressShape(value: unknown): asserts value is Questio
 				"lastIncorrectAt",
 				"lastDemotionReason",
 			],
+		);
+	}
+	if (progress.reviewSchedule !== undefined) {
+		const schedule = asRecord(
+			progress.reviewSchedule,
+			"A question review schedule record is invalid.",
+		);
+		assertExactKeys(
+			schedule,
+			[
+				"policyVersion",
+				"revision",
+				"intervalDays",
+				"stepIndex",
+				"consecutiveCorrect",
+				"lastOutcome",
+				"lastEvaluatedAt",
+				"lastAttemptSessionId",
+				"dueDate",
+				"dueDateTimezone",
+			],
+			["scheduledInTimeZone"],
 		);
 	}
 	if (progress.legacyBaseline !== null) {

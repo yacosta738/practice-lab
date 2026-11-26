@@ -223,6 +223,7 @@ describe("progress domain rules", () => {
 				attempt("00000000-0000-4000-8000-000000000003", "correct", 20),
 			],
 			[legacy],
+			{ timeZone: "UTC" },
 		);
 
 		expect(projected).toEqual([
@@ -243,6 +244,19 @@ describe("progress domain rules", () => {
 					lastCorrectAt: 20,
 					lastCorrectSessionId: "00000000-0000-4000-8000-000000000003",
 					lastIncorrectAt: 10,
+				},
+				reviewSchedule: {
+					policyVersion: "review-v1",
+					revision: "question-v1",
+					intervalDays: 1,
+					stepIndex: 0,
+					consecutiveCorrect: 1,
+					lastOutcome: "correct",
+					lastEvaluatedAt: 20,
+					lastAttemptSessionId: "00000000-0000-4000-8000-000000000003",
+					dueDate: "1970-01-02",
+					dueDateTimezone: "floating-local",
+					scheduledInTimeZone: "UTC",
 				},
 				legacyBaseline: { attempts: 4, correct: 2, lastWrong: true },
 			},

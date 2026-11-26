@@ -82,6 +82,7 @@ describe("quiz bootstrap", () => {
 		const progressState: BrowserProgressState = {
 			generationToken: "generation-one",
 			stats: {},
+			questionProgress: [],
 			history: [],
 			migrationPending: false,
 			migrationWarnings: [],

@@ -63,7 +63,7 @@ export interface ShuffledQuestionOptions {
 
 export interface QuizSession {
 	progressId?: string;
-	mode: "practice" | "exam" | "weak";
+	mode: "practice" | "exam" | "weak" | "review";
 	ids: string[];
 	currentIndex: number;
 	answers: Record<string, number[]>; // questionId -> selected option indices
