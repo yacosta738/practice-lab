@@ -11,7 +11,7 @@ internet connection to load.
 ## Available Certifications
 
 | Certification | Description                               | Bank | Domains | Mock exam |
-|---------------|-------------------------------------------|------|---------|-----------|
+| ------------- | ----------------------------------------- | ---- | ------- | --------- |
 | **CCDV-F**    | Claude Developer Foundations              | 199  | 8       | 53        |
 | **CCDV-P**    | Claude Certified Developer — Professional | 70   | 8       | 70        |
 | **CCAO-F**    | Claude Certified Associate — Foundations  | 109  | 7       | 50        |
@@ -199,7 +199,7 @@ Each question follows this structure:
 ## Commands
 
 | Command           | Action                                   |
-|-------------------|------------------------------------------|
+| ----------------- | ---------------------------------------- |
 | `pnpm install`    | Install dependencies                     |
 | `pnpm dev`        | Start dev server at `localhost:4321`     |
 | `pnpm build`      | Generate production build in `./dist/`   |

@@ -26,8 +26,8 @@ import type {
 import { REVIEW_SCHEDULER_POLICY_VERSION } from "./review-scheduler";
 import {
 	type CheckpointSessionCommand,
-	createProgressUseCases,
 	type CreateSessionCommand,
+	createProgressUseCases,
 	type RecordEvaluationCommand,
 } from "./use-cases";
 
