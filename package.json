@@ -28,7 +28,6 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:a11y": "playwright test",
-		"test:vercel-smoke": "playwright test --config=playwright.vercel.config.ts",
 		"sync:study": "node scripts/sync-study.mjs",
 		"prepare": "lefthook install"
 	},

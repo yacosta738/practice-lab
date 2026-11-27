@@ -52,13 +52,13 @@ Issue: [#62 — accessible question navigator and study-answer exclusion](https:
 - `pnpm check:study-links`: all 125 generated study pages under `/practice-lab/` passed.
 - Targeted focus/navigation tests: 9 passed, including focus after answer selection, flag toggling,
   question navigation, feedback, and both-theme focus distinction.
-- `VERCEL_SMOKE_BASE_URL=<pinned-preview> pnpm test:vercel-smoke`: attempted against the original PR
-  #63 deployment, 0/5 passed. The protected preview returned the Vercel sign-in page instead of
-  application content; this was not a smoke test of PR #66's implementation preview.
-- The same 5 smoke tests were attempted
+- Historical `VERCEL_SMOKE_BASE_URL=<pinned-preview> pnpm test:vercel-smoke` attempt against the
+  original PR #63 deployment: 0/5 passed. The protected preview returned the Vercel sign-in page
+  instead of application content; this was not a smoke test of PR #66's implementation preview.
+- The same 5 smoke tests were historically attempted
   against [PR #66's Vercel preview](https://project-lab-git-fix-issue-62-review-followup-yuniel-acosta.vercel.app),
   0/5 passed because it returned “Log in to Vercel”. The deployment's application routes could not
-  be verified without access.
+  be verified without access. The standalone Vercel smoke suite has since been removed.
 - The successful local visual-evidence run captured after-state screens in light/dark themes at
   1440×900, 768×1024, and 390×844. The before-state could not be captured locally due to preview
   protection; CI can access it when `VERCEL_AUTOMATION_BYPASS_SECRET` is configured.
@@ -80,7 +80,6 @@ Issue: [#62 — accessible question navigator and study-answer exclusion](https:
 
 ## Remaining verification
 
-- Configure Vercel preview access, then rerun the smoke suite against PR #66's preview.
 - Configure the Vercel bypass secret to capture the pinned before-state in CI; until then, only
   after-state screenshots are available in the artifact.
 - Complete and record manual 200% zoom/reflow and screen-reader verification (for example, VoiceOver
