@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.8.0](https://github.com/yacosta738/practice-lab/compare/v0.7.0...v0.8.0) (2026-11-27)
+
+
+### Features
+
+* **ccdv-f:** add original gap practice questions ([#86](https://github.com/yacosta738/practice-lab/issues/86)) ([c026d05](https://github.com/yacosta738/practice-lab/commit/c026d05ca624a9553597a74b361cfc278aa25cd2))
+* **certification:** add CCDV-P and expand CCAO-F banks ([a63ecef](https://github.com/yacosta738/practice-lab/commit/a63ecef9df9227490e6964fe957cabe594cd0e88))
+* **certification:** expand CCAO-F and add CCDV-P banks ([#100](https://github.com/yacosta738/practice-lab/issues/100)) ([e1a09dd](https://github.com/yacosta738/practice-lab/commit/e1a09ddad30f62f64e9736eeb53e30c3a175770d))
+* **feedback:** add community feedback foundation with Tally and GitHub Issues ([#89](https://github.com/yacosta738/practice-lab/issues/89)) ([3d2fa14](https://github.com/yacosta738/practice-lab/commit/3d2fa14e03745838058347472f389f85a90cda64))
+* improve progress workflows and certification content ([#101](https://github.com/yacosta738/practice-lab/issues/101)) ([150329d](https://github.com/yacosta738/practice-lab/commit/150329dc20afc7fc638a71c9ce4ce1c2a103879a))
+* **markdown:** enhance option parsing and support indented continuation text ([825cb13](https://github.com/yacosta738/practice-lab/commit/825cb13f1d170ab268b644d8011a493a0d9c0c52))
+* open external Markdown links in new tabs ([#85](https://github.com/yacosta738/practice-lab/issues/85)) ([8f04a98](https://github.com/yacosta738/practice-lab/commit/8f04a9891b9ecef570125525daf771788ad2058b))
+* **progress:** add IndexedDB persistence foundation ([#83](https://github.com/yacosta738/practice-lab/issues/83)) ([fcc1de4](https://github.com/yacosta738/practice-lab/commit/fcc1de4f020c5cc07dd8ffe3013095f02e6b903a)), closes [#76](https://github.com/yacosta738/practice-lab/issues/76)
+* **progress:** add local backup, restore and data management ([#88](https://github.com/yacosta738/practice-lab/issues/88)) ([8f1e816](https://github.com/yacosta738/practice-lab/commit/8f1e816ac1afe4f94116ce9c775419fcc9a6c9f5))
+* **progress:** add migration, history, and JSON restore ([#87](https://github.com/yacosta738/practice-lab/issues/87)) ([4d4881f](https://github.com/yacosta738/practice-lab/commit/4d4881f9020904bb20d0ba6ba9471a5d31f3ea4b))
+* **progress:** add My Progress dashboard ([#91](https://github.com/yacosta738/practice-lab/issues/91)) ([2ab2be7](https://github.com/yacosta738/practice-lab/commit/2ab2be7e0dc00871fdd746099b6d2fa73a68a795))
+* **progress:** add versioned review scheduling and due review queue ([#99](https://github.com/yacosta738/practice-lab/issues/99)) ([0edef68](https://github.com/yacosta738/practice-lab/commit/0edef684977dbcdfdc79576d31b2ffe701c7f29f))
+* **progress:** introduce explainable mastery and review recommendations ([#98](https://github.com/yacosta738/practice-lab/issues/98)) ([a8a01e9](https://github.com/yacosta738/practice-lab/commit/a8a01e9558de540ceadc72d74c2a4e49fe3894de))
+* **progress:** track study notes and certification goals ([#96](https://github.com/yacosta738/practice-lab/issues/96)) ([a4d29d0](https://github.com/yacosta738/practice-lab/commit/a4d29d0d0bba13ab45fd3cac40e065a51edd60d4))
+* **study:** add CCAO-F and CCDV-P libraries ([9740121](https://github.com/yacosta738/practice-lab/commit/9740121f5b226ce0706bf30c7994ddeb579bbb5d))
+
+
+### Bug Fixes
+
+* clean up course markdown and feedback confirmation ([#92](https://github.com/yacosta738/practice-lab/issues/92)) ([328a367](https://github.com/yacosta738/practice-lab/commit/328a367a8de3ec4125b9cc51cc3f04a409f27d13))
+* **progress:** address remaining issue 79 review findings ([#94](https://github.com/yacosta738/practice-lab/issues/94)) ([dd0fdb9](https://github.com/yacosta738/practice-lab/commit/dd0fdb9a881fb9f4d62daba8c3e92f8778f67a2a))
+* **progress:** harden backup restore validation ([#90](https://github.com/yacosta738/practice-lab/issues/90)) ([158aedc](https://github.com/yacosta738/practice-lab/commit/158aedc04b3e264e31fd8989e32ce4195cc8bf88))
+* **seo:** address audit findings and security headers ([#102](https://github.com/yacosta738/practice-lab/issues/102)) ([1bf9baf](https://github.com/yacosta738/practice-lab/commit/1bf9baf09973f0558d0a99262b88d93790fed202))
+* **seo:** align metadata with production domain ([#95](https://github.com/yacosta738/practice-lab/issues/95)) ([1946acb](https://github.com/yacosta738/practice-lab/commit/1946acb89a93c255f00493bab904642f7f7b03f3))
+
 ## [0.7.0](https://github.com/yacosta738/practice-lab/compare/v0.6.0...v0.7.0) (2026-11-25)
 
 ### Features
