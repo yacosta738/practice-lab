@@ -200,7 +200,9 @@ test("all sitemap URLs have self-canonicals and pass the audit thresholds", asyn
 			if (canonical !== new URL(path, "https://yacosta738.github.io").href) {
 				pageFindings.push({ path, type: "canonical", canonical });
 			}
-			if (width > 985) {
+			if (!decodedDescription.trim()) {
+				pageFindings.push({ path, type: "missing-description" });
+			} else if (width > 985) {
 				pageFindings.push({ path, type: "description", width });
 			}
 			return pageFindings;
