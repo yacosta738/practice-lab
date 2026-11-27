@@ -190,6 +190,34 @@ test.describe("iPhone mock exam with legacy progress", () => {
 	});
 });
 
+test("downloads a data backup while legacy progress migration is pending", async ({ page }) => {
+	const legacy = {
+		stats: {
+			"removed-question-id": { attempts: 5, correct: 3, lastWrong: true },
+		},
+		session: null,
+	};
+
+	await page.goto(CERTIFICATION);
+	await page.evaluate(({ key, value }) => localStorage.setItem(key, JSON.stringify(value)), {
+		key: LEGACY_KEY,
+		value: legacy,
+	});
+	await page.reload();
+
+	const migrationNotice = page.getByText("Legacy progress is ready to import", { exact: false });
+	await expect(migrationNotice).toBeVisible();
+	const practiceButton = page.getByRole("button", { name: "Practice mode" });
+	await expect(practiceButton).toBeDisabled();
+
+	const backupDownload = page.waitForEvent("download", { timeout: 5_000 });
+	await page.getByRole("button", { name: "Download data backup" }).click();
+	const download = await backupDownload;
+	expect(download.suggestedFilename()).toBe("practice-lab-ccdv-f-backup-v1.json");
+	await expect(migrationNotice).toBeVisible();
+	await expect(practiceButton).toBeDisabled();
+});
+
 test("migrates legacy aggregates atomically and keeps a downloadable backup", async ({ page }) => {
 	const legacy = {
 		stats: {

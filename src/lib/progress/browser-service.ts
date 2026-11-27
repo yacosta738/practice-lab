@@ -779,19 +779,18 @@ export class BrowserProgressService {
 	private onStorageChange = async (event: StorageEvent): Promise<void> => {
 		if (event.key !== this.storageKey || event.newValue === this.originalLegacyValue) return;
 		this.legacyWriteDetected = true;
-		this.notifyInvalidation("Legacy progress changed in an older tab. Import is paused.");
 		try {
 			const importSuppressed = await this.useCases.getMetadata(
 				suppressedLegacyImportKey(this.options.certificationId),
 			);
 			if (importSuppressed === true) {
 				this.legacyWriteDetected = false;
-				this.notifyInvalidation("Legacy progress changes are suppressed after a reset.");
 				return;
 			}
 		} catch {
 			// If suppression cannot be verified, preserve the legacy reconciliation safeguard.
 		}
+		this.notifyInvalidation("Legacy progress changed in an older tab. Import is paused.");
 	};
 }
 

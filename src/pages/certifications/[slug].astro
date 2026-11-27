@@ -1225,7 +1225,11 @@ document.addEventListener("click", (event: MouseEvent) => {
 		if (checking) return;
 		if (persistenceError || (invalidationMessage && !progressState.legacyWriteDetected)) return;
 		const examFlowActive = activeSession?.mode === "exam" || session?.mode === "exam";
-		if (progressState.migrationPending && action !== "start-exam" && !examFlowActive) {
+		if (
+			progressState.migrationPending &&
+			!["start-exam", "download-backup"].includes(action) &&
+			!examFlowActive
+		) {
 			return;
 		}
 		if (

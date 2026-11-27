@@ -356,16 +356,21 @@ describe("global learning data repository operations", () => {
 			newValue: "changed-by-legacy-tab",
 		} as StorageEvent;
 		const suppressedService = new BrowserProgressService(options("ccdv-f"));
+		const suppressedInvalidations: string[] = [];
+		suppressedService.onInvalidation((message) => suppressedInvalidations.push(message));
 		await (
 			suppressedService as unknown as {
 				onStorageChange(event: StorageEvent): Promise<void>;
 			}
 		).onStorageChange(changedStorage);
+		expect(suppressedInvalidations).toEqual([]);
 		expect(
 			(suppressedService as unknown as { legacyWriteDetected: boolean }).legacyWriteDetected,
 		).toBe(false);
 
 		const unsuppressedService = new BrowserProgressService(options("ccao-f"));
+		const unsuppressedInvalidations: string[] = [];
+		unsuppressedService.onInvalidation((message) => unsuppressedInvalidations.push(message));
 		await (
 			unsuppressedService as unknown as {
 				onStorageChange(event: StorageEvent): Promise<void>;
@@ -377,6 +382,9 @@ describe("global learning data repository operations", () => {
 		expect(
 			(unsuppressedService as unknown as { legacyWriteDetected: boolean }).legacyWriteDetected,
 		).toBe(true);
+		expect(unsuppressedInvalidations).toEqual([
+			"Legacy progress changed in an older tab. Import is paused.",
+		]);
 	});
 
 	it("rejects legacy migration after an old-tab write even when storage returns to the original value", async () => {
