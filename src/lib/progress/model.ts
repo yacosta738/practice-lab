@@ -9,6 +9,7 @@ import {
 	needsReviewScheduleUpgrade,
 	type QuestionReviewSchedule,
 } from "./review-scheduler";
+import { safeSourceUrl } from "./safe-source-url";
 
 export type SessionMode = "practice" | "exam" | "weak" | "review";
 export type SessionStatus = "in_progress" | "completed" | "expired" | "abandoned";
@@ -71,6 +72,7 @@ export interface LegacySessionProvenance {
 	version: 2;
 	limitations: readonly string[];
 	evaluatedQuestionIds: readonly string[];
+	scoreEvidence?: "validated-saved-options" | "insufficient";
 }
 
 export interface ProgressSession {
@@ -87,6 +89,11 @@ export interface ProgressSession {
 	checkpoint: SessionCheckpoint;
 	legacy?: LegacySessionProvenance;
 }
+
+export type ProgressSessionSummary = Pick<
+	ProgressSession,
+	"id" | "certificationId" | "mode" | "status" | "revision" | "startedAt" | "finishedAt"
+>;
 
 export interface CreateSessionInput {
 	id: string;
@@ -188,6 +195,72 @@ export interface QuestionAttempt {
 	scoreEarned: number;
 	scorePossible: number;
 	evaluatedAt: number;
+}
+
+export interface QuestionEvaluationResult {
+	outcome: Exclude<EvaluationOutcome, "partial">;
+	scoreEarned: number;
+	scorePossible: number;
+}
+
+export function evaluateQuestionAnswer(
+	question: QuestionProvenance,
+	selectedOptionIds: readonly string[],
+): QuestionEvaluationResult {
+	assertUniqueIds(selectedOptionIds, "selectedOptionIds");
+	if (selectedOptionIds.some((id) => !question.optionIds.includes(id))) {
+		throw new ProgressValidationError("An evaluated option is not part of the frozen question.");
+	}
+	const correct =
+		selectedOptionIds.length === question.correctOptionIds.length &&
+		question.correctOptionIds.every((id) => selectedOptionIds.includes(id));
+	return {
+		outcome: correct ? "correct" : "incorrect",
+		scoreEarned: correct ? 1 : 0,
+		scorePossible: 1,
+	};
+}
+
+export const SESSION_SCORE_SOURCE = {
+	Recorded: "recorded",
+	Reconstructed: "reconstructed",
+	Unavailable: "unavailable",
+} as const;
+
+export type SessionScoreSource = (typeof SESSION_SCORE_SOURCE)[keyof typeof SESSION_SCORE_SOURCE];
+
+export interface SessionScore {
+	correct: number | null;
+	questions: number;
+	scoreSource: SessionScoreSource;
+}
+
+export function deriveSessionScore(
+	session: ProgressSession,
+	attempts: readonly QuestionAttempt[],
+): SessionScore {
+	const questions = session.content.questions.length;
+	if (session.status === "in_progress") {
+		return { correct: null, questions, scoreSource: SESSION_SCORE_SOURCE.Unavailable };
+	}
+	if (session.legacy) {
+		if (
+			session.legacy.scoreEvidence !== "validated-saved-options" ||
+			(session.status !== "completed" && session.status !== "expired")
+		) {
+			return { correct: null, questions, scoreSource: SESSION_SCORE_SOURCE.Unavailable };
+		}
+		const correct = session.content.questions.filter((question) => {
+			const selected = session.checkpoint.selectedOptionIdsByQuestion[question.questionId] ?? [];
+			return evaluateQuestionAnswer(question, selected).outcome === "correct";
+		}).length;
+		return { correct, questions, scoreSource: SESSION_SCORE_SOURCE.Reconstructed };
+	}
+	return {
+		correct: attempts.filter((attempt) => attempt.outcome === "correct").length,
+		questions,
+		scoreSource: SESSION_SCORE_SOURCE.Recorded,
+	};
 }
 
 export interface QuestionProgressBaseline {
@@ -380,15 +453,21 @@ export function createQuestionAttempt(
 	if (!question) {
 		throw new ProgressValidationError("The question is not part of this session's frozen content.");
 	}
-	assertUniqueIds(input.selectedOptionIds, "selectedOptionIds");
-	if (input.selectedOptionIds.some((id) => !question.optionIds.includes(id))) {
-		throw new ProgressValidationError("An evaluated option is not part of the frozen question.");
-	}
+	const evaluation = evaluateQuestionAnswer(question, input.selectedOptionIds);
 	assertTimestamp(input.evaluatedAt, "evaluatedAt");
 	assertFiniteNonNegative(input.scoreEarned, "scoreEarned");
 	assertFiniteNonNegative(input.scorePossible, "scorePossible");
 	if (input.scoreEarned > input.scorePossible) {
 		throw new ProgressValidationError("scoreEarned cannot exceed scorePossible.");
+	}
+	if (
+		input.outcome !== evaluation.outcome ||
+		input.scoreEarned !== evaluation.scoreEarned ||
+		input.scorePossible !== evaluation.scorePossible
+	) {
+		throw new ProgressValidationError(
+			"The evaluation result does not match the frozen answer and scoring policy.",
+		);
 	}
 
 	return {
@@ -398,9 +477,9 @@ export function createQuestionAttempt(
 		domainId: question.domainId,
 		questionRevision: question.revision,
 		selectedOptionIds: [...input.selectedOptionIds].sort(),
-		outcome: input.outcome,
-		scoreEarned: input.scoreEarned,
-		scorePossible: input.scorePossible,
+		outcome: evaluation.outcome,
+		scoreEarned: evaluation.scoreEarned,
+		scorePossible: evaluation.scorePossible,
 		evaluatedAt: input.evaluatedAt,
 	};
 }
@@ -565,6 +644,13 @@ export function validateSession(session: ProgressSession): void {
 	if (session.legacy) {
 		assertId(session.legacy.sourceStorageKey, "legacy.sourceStorageKey");
 		assertUniqueIds(session.legacy.evaluatedQuestionIds, "legacy.evaluatedQuestionIds");
+		if (
+			session.legacy.scoreEvidence !== undefined &&
+			session.legacy.scoreEvidence !== "validated-saved-options" &&
+			session.legacy.scoreEvidence !== "insufficient"
+		) {
+			throw new ProgressValidationError("Legacy score evidence is invalid.");
+		}
 		for (const limitation of session.legacy.limitations)
 			assertId(limitation, "legacy.limitations item");
 	}
@@ -643,6 +729,9 @@ function validateContent(content: ContentProvenance): void {
 		if (typeof question.sourceUrl !== "string") {
 			throw new ProgressValidationError("question.sourceUrl must be a string.");
 		}
+		if (question.sourceUrl.length > 0 && !safeSourceUrl(question.sourceUrl)) {
+			throw new ProgressValidationError("The question source URL must use HTTP or HTTPS.");
+		}
 		if (!Number.isSafeInteger(question.selectCount) || question.selectCount < 1) {
 			throw new ProgressValidationError("question.selectCount must be a positive integer.");
 		}
@@ -653,6 +742,14 @@ function validateContent(content: ContentProvenance): void {
 			throw new ProgressValidationError("Frozen answer counts do not match the question.");
 		}
 		if (question.snapshot) {
+			if (
+				typeof question.snapshot.source?.url !== "string" ||
+				(question.snapshot.source.url.length > 0 && !safeSourceUrl(question.snapshot.source.url))
+			) {
+				throw new ProgressValidationError(
+					"A frozen snapshot source URL must use an HTTP or HTTPS URL.",
+				);
+			}
 			assertUniqueIds(
 				question.snapshot.options.map(({ id }) => id),
 				`snapshot options for ${question.questionId}`,

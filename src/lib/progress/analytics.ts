@@ -10,12 +10,14 @@ import {
 	type ReviewRecommendation,
 } from "./mastery";
 import {
+	deriveSessionScore,
 	type ProgressSession,
 	type ProgressSummaryData,
 	projectQuestionAttempts,
 	type QuestionAttempt,
 	type QuestionProgress,
 	type SessionHistoryEntry,
+	type SessionScoreSource,
 } from "./model";
 import { buildReviewQueue, type ReviewQueueSummary } from "./review-scheduler";
 
@@ -59,8 +61,9 @@ export interface SessionResult {
 	mode: ProgressSession["mode"];
 	status: ProgressSession["status"];
 	finishedAt: number;
-	correct: number;
+	correct: number | null;
 	questions: number;
+	scoreSource: SessionScoreSource;
 	bankRevision: string;
 }
 
@@ -85,6 +88,7 @@ export interface ExamTrendPoint {
 	finishedAt: number;
 	correct: number;
 	questions: number;
+	scoreSource: Exclude<SessionScoreSource, "unavailable">;
 	bankRevision: string;
 }
 
@@ -321,14 +325,16 @@ export function deriveProgressSummary(
 			(session) =>
 				session.mode === "exam" && (session.status === "completed" || session.status === "expired"),
 		)
-		.map((session) => {
+		.flatMap((session) => {
 			const result = resultFor(session, attemptsBySession.get(session.id) ?? []);
+			if (result.scoreSource === "unavailable" || result.correct === null) return [];
 			return {
 				sessionId: session.id,
 				certificationId: session.certificationId,
 				finishedAt: result.finishedAt,
 				correct: result.correct,
 				questions: result.questions,
+				scoreSource: result.scoreSource,
 				bankRevision: session.content.bankRevision,
 			};
 		})
@@ -358,14 +364,14 @@ export function deriveProgressSummary(
 }
 
 function resultFor(session: ProgressSession, attempts: readonly QuestionAttempt[]): SessionResult {
+	const score = deriveSessionScore(session, attempts);
 	return {
 		sessionId: session.id,
 		certificationId: session.certificationId,
 		mode: session.mode,
 		status: session.status,
 		finishedAt: session.finishedAt ?? session.updatedAt,
-		correct: attempts.filter((attempt) => attempt.outcome === "correct").length,
-		questions: session.content.questions.length,
+		...score,
 		bankRevision: session.content.bankRevision,
 	};
 }

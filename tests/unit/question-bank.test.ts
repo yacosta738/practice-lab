@@ -157,34 +157,74 @@ for (const bank of banks) {
 	validateBank(bank);
 }
 
+const ccdvpReviewedSourceUrls = new Set([
+	"https://www.anthropic.com/engineering/building-effective-agents",
+	"https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview",
+	"https://platform.claude.com/docs/en/agents-and-tools/tool-use/programmatic-tool-calling",
+	"https://platform.claude.com/docs/en/build-with-claude/streaming",
+	"https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons",
+	"https://platform.claude.com/docs/en/build-with-claude/structured-outputs",
+	"https://platform.claude.com/docs/en/build-with-claude/citations",
+	"https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+	"https://platform.claude.com/docs/en/build-with-claude/batch-processing",
+	"https://platform.claude.com/docs/en/api/rate-limits",
+	"https://platform.claude.com/docs/en/api/errors",
+	"https://platform.claude.com/docs/en/test-and-evaluate/develop-tests",
+	"https://modelcontextprotocol.io/specification/2026-07-28/basic/security_best_practices",
+	"https://modelcontextprotocol.io/specification/2026-07-28/basic/transports",
+	"https://code.claude.com/docs/en/settings",
+	"https://code.claude.com/docs/en/managed-settings",
+	"https://code.claude.com/docs/en/hooks",
+	"https://code.claude.com/docs/en/sub-agents",
+	"https://code.claude.com/docs/en/skills",
+	"https://docs.voyageai.com/docs/embeddings",
+	"https://docs.voyageai.com/docs/faq",
+	"https://opentelemetry.io/docs/concepts/signals/traces/",
+	"https://opentelemetry.io/docs/concepts/signals/metrics/",
+	"https://sre.google/sre-book/monitoring-distributed-systems/",
+	"https://sre.google/sre-book/effective-troubleshooting/",
+]);
+
 describe("CCDV-P practice bank", () => {
-	it("matches its derived domain counts and reviewed multi-answer IDs", () => {
+	it("matches the exact question total and derived domain counts", () => {
 		const domainCounts = Object.fromEntries(
 			Object.keys(ccdvpConfig.domains).map((domainId) => [
 				domainId,
 				ccdvpQuestions.filter((question) => question.domain === domainId).length,
 			]),
 		);
-		const multiAnswerIds = ccdvpQuestions
-			.filter((question) => question.selectCount === 2)
-			.map((question) => question.id);
-		const questionIds = ccdvpQuestions.map((question) => question.id);
 
-		expect(domainCounts).toEqual(ccdvpConfig.examBlueprint);
-		expect(multiAnswerIds).toEqual(["PDF-1.3", "PDF-3.4", "PDF-4.3", "PDF-6.2", "PDF-7.3"]);
-		expect(questionIds).toHaveLength(70);
-		expect(questionIds).toContain("PDF-3.5");
+		expect(ccdvpQuestions).toHaveLength(ccdvpConfig.totalQuestions);
 		expect(ccdvpConfig.totalQuestions).toBe(70);
+		expect(domainCounts).toEqual(ccdvpConfig.examBlueprint);
 	});
 
-	it("names Voyage before applying its provider-specific embedding input modes", () => {
-		const question = ccdvpQuestions.find((candidate) => candidate.id === "PDF-3.5");
-		expect(question?.question).toMatch(/Voyage.*text embeddings API/i);
-		const correctOption = question?.options[question.correctAnswers[0]] ?? "";
-		expect(correctOption).toMatch(/input_type.*query/i);
-		expect(question?.explanation).toMatch(
-			/provider-specific rather than a universal embedding rule/i,
-		);
+	it("uses stable domain-sequenced IDs and reviewed technical sources", () => {
+		const nextSequence: Record<string, number> = {};
+
+		for (const question of ccdvpQuestions) {
+			const match = question.id.match(/^CCDV-P-(D[1-8])-(\d{3})$/);
+			expect(match).not.toBeNull();
+			expect(match?.[1]).toBe(question.domain);
+
+			const sequence = (nextSequence[question.domain] ?? 0) + 1;
+			expect(match?.[2]).toBe(String(sequence).padStart(3, "0"));
+			nextSequence[question.domain] = sequence;
+
+			expect(ccdvpReviewedSourceUrls.has(question.source.url)).toBe(true);
+			expect(question.source.label).not.toMatch(
+				/Matthew Purcell|Full Practice Exam Question Set|LinkedIn|CC BY-NC|adapted/i,
+			);
+		}
+	});
+
+	it("declares the required number for each multiple-answer item", () => {
+		for (const question of ccdvpQuestions) {
+			if (question.correctAnswers.length > 1) {
+				expect(question.selectCount).toBe(question.correctAnswers.length);
+				expect(question.question).toMatch(/select two/i);
+			}
+		}
 	});
 
 	it("keeps official weights separate from the derived mock blueprint", () => {
@@ -194,25 +234,6 @@ describe("CCDV-P practice bank", () => {
 			),
 		).toEqual({ D1: 17, D2: 20, D3: 12, D4: 10, D5: 12, D6: 8, D7: 11, D8: 10 });
 		expect(ccdvpConfig.blueprintSource).toBe("derived");
-	});
-
-	it("links its attribution to the CC BY-NC 4.0 license", () => {
-		expect(ccdvpQuestions[0].source.label).toContain("Matthew Purcell");
-		expect(ccdvpQuestions[0].source.label).toContain("Full Practice Exam Question Set");
-		expect(ccdvpQuestions[0].source.label).toContain("CC BY-NC 4.0");
-		expect(ccdvpQuestions[0].source.label).toMatch(/adapt/i);
-		expect(ccdvpQuestions[0].source.url).toBe(
-			"https://www.linkedin.com/posts/purcellmatthew_ccdv-p-claude-certified-developer-professional-activity-7530737595782438912-kSDX",
-		);
-	});
-
-	it("does not trust uploader-selected sensitivity labels to protect uploads", () => {
-		const question = ccdvpQuestions.find((candidate) => candidate.id === "PDF-7.1");
-		expect(question).toBeDefined();
-		const correctOption = question?.options[question.correctAnswers[0]] ?? "";
-		expect(correctOption).toMatch(/in-house service by default/i);
-		expect(correctOption).toMatch(/publisher-controlled.*classification/i);
-		expect(correctOption).toMatch(/non-confidential/i);
 	});
 });
 

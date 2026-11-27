@@ -1,4 +1,6 @@
-type SanitizerConstructor = new (options: { allowDataAttributes: boolean }) => unknown;
+import { safeSourceUrl } from "./progress/safe-source-url";
+
+type SanitizerConstructor = new (options: { dataAttributes: boolean }) => unknown;
 
 type SetHTMLCapableElement = HTMLElement & {
 	setHTML?: (html: string, options: { sanitizer: unknown }) => void;
@@ -22,13 +24,23 @@ export function renderQuizContent(
 	if (typeof element.setHTML === "function" && sanitizerConstructor) {
 		try {
 			element.setHTML(content, {
-				sanitizer: new sanitizerConstructor({ allowDataAttributes: true }),
+				sanitizer: new sanitizerConstructor({ dataAttributes: true }),
 			});
 		} catch {
 			app.innerHTML = content;
 		}
 	} else {
 		app.innerHTML = content;
+	}
+	for (const link of app.querySelectorAll<HTMLAnchorElement>("a[data-source-link]")) {
+		const sourceUrl = safeSourceUrl(link.getAttribute("href") ?? "");
+		if (sourceUrl) {
+			link.href = sourceUrl;
+		} else {
+			link.removeAttribute("href");
+			link.removeAttribute("target");
+			link.removeAttribute("rel");
+		}
 	}
 
 	if (focusTarget) {

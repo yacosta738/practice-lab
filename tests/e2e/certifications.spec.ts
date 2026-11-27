@@ -82,8 +82,10 @@ test("exam guide note renders as text with native and fallback HTML renderers", 
 		await page.waitForLoadState("networkidle");
 
 		const lead = page.locator(".hero .lead");
-		await expect(lead).toContainText(note);
-		await expect(lead.locator("img[data-injected]")).toHaveCount(0);
+		const examGuideNote = page.locator("[data-exam-guide-note]");
+		await expect(examGuideNote).toContainText(note);
+		await expect(examGuideNote.locator("img[data-injected]")).toHaveCount(0);
+		await expect(lead).not.toContainText(note);
 		await expect(lead.locator("strong")).toContainText("Claude Developer Foundations");
 		if (renderer === "setHTML") {
 			expect(
@@ -104,6 +106,19 @@ test("exam guide note renders as text with native and fallback HTML renderers", 
 		await expect(firstOption).toBeVisible();
 		await expect(firstOption).toHaveAttribute("aria-pressed", "false");
 		await context.close();
+	}
+});
+
+test("certification exam notes are separate from practice summaries", async ({ page }) => {
+	for (const slug of ["ccdv-f", "ccdv-p", "ccao-f"]) {
+		await page.goto(`${BASE_PATH}/certifications/${slug}/`);
+		const lead = page.locator(".hero .lead");
+		const examGuideNote = page.locator("[data-exam-guide-note]");
+
+		await expect(lead).toBeVisible();
+		await expect(lead).not.toContainText(/mapped to/i);
+		await expect(examGuideNote).toBeVisible();
+		await expect(examGuideNote).not.toContainText(/mapped to/i);
 	}
 });
 

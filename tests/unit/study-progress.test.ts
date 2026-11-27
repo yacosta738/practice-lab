@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ProgressConflictError } from "../../src/lib/progress/errors";
 import type { LearningGoalRecord, StudyProgressRecord } from "../../src/lib/progress/model";
 import type { StudyProgressRepository } from "../../src/lib/progress/repository-port";
 import {
@@ -34,9 +35,40 @@ function progressRecord(overrides: Partial<StudyProgressRecord> = {}): StudyProg
 class MemoryStudyRepository implements StudyProgressRepository {
 	readonly records: StudyProgressRecord[] = [];
 	readonly goals = new Map<string, LearningGoalRecord>();
+	private readonly generationTokens = new Map<string, string>();
+	private pendingUpdate?: {
+		started: () => void;
+		wait: Promise<void>;
+	};
 
 	async getDataGenerationToken(certificationId: string): Promise<string> {
-		return `generation:${certificationId}`;
+		return this.currentGenerationToken(certificationId);
+	}
+
+	pauseNextUpdate(): { started: Promise<void>; release: () => void } {
+		let notifyStarted = () => {};
+		let release = () => {};
+		const started = new Promise<void>((resolve) => {
+			notifyStarted = resolve;
+		});
+		const wait = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		this.pendingUpdate = { started: notifyStarted, wait };
+		return { started, release };
+	}
+
+	resetCertificationProgress(certificationId: string): void {
+		this.records.splice(
+			0,
+			this.records.length,
+			...this.records.filter((record) => record.certificationId !== certificationId),
+		);
+		this.goals.delete(certificationId);
+		this.generationTokens.set(
+			certificationId,
+			`${this.currentGenerationToken(certificationId)}:reset`,
+		);
 	}
 
 	async getStudyProgressForCertification(certificationId: string): Promise<StudyProgressRecord[]> {
@@ -49,25 +81,47 @@ class MemoryStudyRepository implements StudyProgressRepository {
 		return this.goals.get(certificationId);
 	}
 
-	async saveStudyProgress(
-		record: StudyProgressRecord,
+	async updateStudyProgress(
+		certificationId: string,
+		noteIds: readonly string[],
 		expectedGenerationToken: string,
-	): Promise<void> {
-		expect(expectedGenerationToken).toBe(`generation:${record.certificationId}`);
+		update: (existing: StudyProgressRecord | undefined) => StudyProgressRecord,
+	): Promise<StudyProgressRecord> {
+		const pendingUpdate = this.pendingUpdate;
+		this.pendingUpdate = undefined;
+		if (pendingUpdate) {
+			pendingUpdate.started();
+			await pendingUpdate.wait;
+		}
+		if (expectedGenerationToken !== this.currentGenerationToken(certificationId)) {
+			throw new ProgressConflictError("Progress changed in another tab. Reload before continuing.");
+		}
+		const existing = this.records.find(
+			(record) => record.certificationId === certificationId && noteIds.includes(record.noteId),
+		);
+		const record = update(existing);
+		if (record === existing) return record;
 		const index = this.records.findIndex(
 			(existing) =>
 				existing.certificationId === record.certificationId && existing.noteId === record.noteId,
 		);
 		if (index === -1) this.records.push(record);
 		else this.records[index] = record;
+		return record;
 	}
 
 	async saveLearningGoal(
 		record: LearningGoalRecord,
 		expectedGenerationToken: string,
 	): Promise<void> {
-		expect(expectedGenerationToken).toBe(`generation:${record.certificationId}`);
+		if (expectedGenerationToken !== this.currentGenerationToken(record.certificationId)) {
+			throw new ProgressConflictError("Progress changed in another tab. Reload before continuing.");
+		}
 		this.goals.set(record.certificationId, record);
+	}
+
+	private currentGenerationToken(certificationId: string): string {
+		return this.generationTokens.get(certificationId) ?? `generation:${certificationId}`;
 	}
 }
 
@@ -106,6 +160,25 @@ describe("study progress domain", () => {
 describe("StudyProgressService", () => {
 	afterEach(() => {
 		vi.unstubAllGlobals();
+	});
+
+	it("preserves concurrent changes to separate study progress fields", async () => {
+		vi.stubGlobal("BroadcastChannel", undefined);
+		const repository = new MemoryStudyRepository();
+		const service = new StudyProgressService(repository, () => 100);
+		await service.initialize(note.certificationId);
+
+		await Promise.all([
+			service.setBookmarked(note, true),
+			service.saveReadingPosition(note, "section-two"),
+		]);
+
+		expect(repository.records).toHaveLength(1);
+		expect(repository.records[0]).toMatchObject({
+			bookmarked: true,
+			readingPositionAnchor: "section-two",
+		});
+		service.close();
 	});
 
 	it("records visits and checkpoints as in progress until explicit completion, then supports undo", async () => {
@@ -185,6 +258,49 @@ describe("StudyProgressService", () => {
 			targetNoteCount: null,
 		});
 		service.close();
+	});
+
+	it("rejects pending and new writes until state is reloaded after a reset", async () => {
+		const repository = new MemoryStudyRepository();
+		const service = new StudyProgressService(repository);
+		const sender = new BroadcastChannel("practice-lab-progress");
+		await service.initialize(note.certificationId);
+		const update = repository.pauseNextUpdate();
+		const pending = service.saveReadingPosition(note, "section-two");
+		await update.started;
+
+		const nextReset = new Promise<StudyProgressChangeKind>((resolve) => {
+			let unsubscribe = () => {};
+			unsubscribe = service.onChange((kind) => {
+				if (kind !== "reset") return;
+				unsubscribe();
+				resolve(kind);
+			});
+		});
+		repository.resetCertificationProgress(note.certificationId);
+		sender.postMessage({
+			type: "progress-changed",
+			certificationId: note.certificationId,
+			generationToken: `generation:${note.certificationId}:reset`,
+		});
+
+		try {
+			await expect(nextReset).resolves.toBe("reset");
+			update.release();
+			await expect(pending).rejects.toBeInstanceOf(ProgressConflictError);
+			expect(repository.records).toHaveLength(0);
+			await expect(service.setBookmarked(note, true)).rejects.toThrow(
+				/Initialize the note certification/,
+			);
+
+			await service.initialize(note.certificationId);
+			await service.setBookmarked(note, true);
+			expect(repository.records).toMatchObject([{ bookmarked: true }]);
+		} finally {
+			update.release();
+			sender.close();
+			service.close();
+		}
 	});
 
 	it("distinguishes quiz updates from study edits and generation-token resets", async () => {

@@ -90,7 +90,7 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 
 <script>
 import { parseProgressBackup } from "../../lib/progress/backup-restore";
-import type { BrowserProgressService } from "../../lib/progress/browser-service";
+import { type BrowserProgressService, progressToStats } from "../../lib/progress/browser-service";
 import { computeQuestionRevision } from "../../lib/progress/legacy-migration";
 import type {
 	EvaluationOutcome,
@@ -107,6 +107,7 @@ import {
 	shuffle,
 	shuffleQuestionOptions,
 } from "../../lib/quiz-engine";
+import { renderQuizQuestionNavigator } from "../../lib/quiz-question-navigator";
 import { delegateQuizActions, renderQuizContent, setQuizFocusMode } from "../../lib/quiz-renderer";
 import type {
 	DomainInfo,
@@ -421,17 +422,17 @@ document.addEventListener("click", (event: MouseEvent) => {
 			.checkForExternalChanges(active?.id, active?.revision)
 			.catch((error) => setPersistenceError(error, () => window.location.reload()));
 	});
-	const activeEntry = progressState.history.find(
-		({ session: item }) => item.status === "in_progress",
-	);
-	if (activeEntry) applyProgressSession(activeEntry.session, { trackActive: true });
+	if (progressState.currentSession?.status === "in_progress") {
+		applyProgressSession(progressState.currentSession, { trackActive: true });
+	}
 	const requestedResultId = new URLSearchParams(window.location.search).get("result");
 	if (requestedResultId) {
-		const previous = progressState.history.find(
-			({ session: item }) => item.id === requestedResultId,
-		);
-		if (previous) {
-			applyProgressSession(previous.session, { trackActive: false });
+		const previous = await progressService.getSession(requestedResultId);
+		if (
+			previous?.certificationId === cfg.slug &&
+			(previous.status === "completed" || previous.status === "expired")
+		) {
+			applyProgressSession(previous, { trackActive: false });
 		}
 	}
 
@@ -672,11 +673,9 @@ document.addEventListener("click", (event: MouseEvent) => {
 				return `<div class="domainRow"><span><strong>${d}</strong> ${esc(domainConfig.name)}<br><span class="muted small">${bpLabel} ${domainConfig.weight}%</span></span><strong>${done.length}/${list.length}</strong></div>`;
 			})
 			.join("");
-		const historyItems = progressState.history
-			.filter(({ session: item }) => item.status === "completed" || item.status === "expired")
-			.slice(0, 5)
+		const historyItems = progressState.recentSessions
 			.map(
-				({ session: item }) =>
+				(item) =>
 					`<button class="ghost small" data-action="review-result" data-id="${esc(item.id)}">${esc(item.mode)} · ${new Date(item.startedAt).toLocaleDateString()} · ${item.status}</button>`,
 			)
 			.join("");
@@ -731,11 +730,16 @@ document.addEventListener("click", (event: MouseEvent) => {
 			? `<p class="sessionNotice" role="status">Your ${sessionModeLabel(activeSession.mode)} is saved. ${activeSession.mode === "exam" ? "The timer continues while you are away." : "Your answers are ready to resume."}</p>`
 			: "";
 
+		const examGuideNote = cfg.examGuideNote
+			? `<p class="examGuideNote" data-exam-guide-note>${esc(cfg.examGuideNote)}</p>`
+			: "";
+
 		setAppHTML(`
 			<div class="hero">
 				<span class="eyebrow">${esc(cfg.subtitle)} · ${esc(cfg.title)}</span>
 				<h1>Know the platform.<br>Ship with confidence.</h1>
-			<p class="lead">${qs.length} source-linked practice questions across the ${Object.keys(cfg.domains).length} domains${cfg.examGuideNote ? ` mapped to ${esc(cfg.examGuideNote)} for the <strong>${esc(cfg.title)}</strong> certification` : ` for the <strong>${esc(cfg.title)}</strong> certification`}. Learn by doing, then test your readiness.</p>
+				<p class="lead">${qs.length} source-linked practice questions across the ${Object.keys(cfg.domains).length} domains for the <strong>${esc(cfg.title)}</strong> certification. Learn by doing, then test your readiness.</p>
+				${examGuideNote}
 				<div class="readinessBar">
 					<div class="readinessMeta"><span>Last attempt correct · ${mastered} of ${qs.length} questions</span><strong class="mono">${readinessPct}%</strong></div>
 					<progress class="progress" value="${mastered}" max="${qs.length}" aria-label="Questions with last attempt correct"></progress>
@@ -768,7 +772,7 @@ document.addEventListener("click", (event: MouseEvent) => {
 				${historyItems ? `<h3 style="margin-top:25px">Recent results</h3><div class="actions">${historyItems}</div>` : ""}
 			</section>
 			<p class="alert section">Independent study material. Practice scores are not equivalent to official exam scores.</p>
- 		<p class="small muted section">This bank includes practice questions from <strong>Cert Pro Quest</strong> by Matthew Purcell. These are community-created practice questions and are not official exam content.</p>
+			<p class="small muted section">Practice questions may have different sources; consult the source link shown with each question. They are not official exam content.</p>
 		`);
 	}
 
@@ -827,7 +831,7 @@ document.addEventListener("click", (event: MouseEvent) => {
 			<p>${esc(x.explanation)}</p>
 			${x.whyNot ? `<p class="small muted">Why not the others: ${esc(x.whyNot)}</p>` : ""}
 			<div class="feedbackLinks">
-				${src.url ? `<a href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">Study source: ${esc(src.label)} ↗</a>` : `<span class="small muted">Study source: ${esc(src.label)}</span>`}
+				${src.url ? `<a data-source-link href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">Study source: ${esc(src.label)} ↗</a>` : `<span class="small muted">Study source: ${esc(src.label)}</span>`}
 				${domainStudyLink ? `<a href="${esc(domainStudyLink)}" data-action="go-to-site-home">Read ${x.domain} study notes →</a>` : ""}
 				<button type="button" class="pl-feedback-link" data-pl-open-feedback data-feedback-type="question" data-feedback-cert="${esc(cfg.slug)}" data-feedback-domain="${esc(x.domain)}" data-feedback-question="${esc(x.id)}" data-feedback-version="${esc(questionVersion)}" data-feedback-category="incorrect-explanation" aria-haspopup="dialog" aria-controls="pl-feedback-dialog">Question this explanation</button>
 			</div>
@@ -879,42 +883,17 @@ document.addEventListener("click", (event: MouseEvent) => {
 				}
 			</div>`;
 
-		const grid = currentSession.ids
-			.map((qid, k) => {
-				const isCurrent = k === currentSession.currentIndex;
-				const isAnswered = answered(qid);
-				const isFlagged = currentSession.flags.includes(qid);
-				const stateLabel = `${isAnswered ? "answered" : "unanswered"}, ${isFlagged ? "flagged for review" : "not flagged for review"}${isCurrent ? ", current question" : ""}`;
-				const stateMarks = `${isAnswered ? "✓" : "—"}${isFlagged ? " ⚑" : ""}${isCurrent ? " ●" : ""}`;
-
-				return `<button class="qchip${isCurrent ? " current" : ""}${isAnswered ? " answered" : ""}${isFlagged ? " flagged" : ""}" data-action="jump" data-value="${k}" aria-label="Question ${k + 1}, ${stateLabel}"${isCurrent ? ' aria-current="step"' : ""}><span class="qchipNumber">${k + 1}</span><span class="qchipMarks" aria-hidden="true">${stateMarks}</span></button>`;
-			})
-			.join("");
-
-		const legend = `<ul class="qchipLegend">
-			<li><span aria-hidden="true">✓</span> Answered</li>
-			<li><span aria-hidden="true">—</span> Unanswered</li>
-			<li><span aria-hidden="true">⚑</span> Flagged for review</li>
-			<li><span aria-hidden="true">●</span> Current question</li>
-		</ul>`;
-		const navigatorContent = `<p class="small muted">Jump to any question.</p>
-			${legend}
-			<div class="small muted">${progress}/${currentSession.ids.length} answered · ${currentSession.flags.length} flagged</div>
-			<div class="qgrid" role="region" aria-label="Question list" tabindex="0">${grid}</div>
-			<button class="ghost" data-action="finish">Submit mock exam</button>`;
-		const side = isExam
-			? `<details class="panel side examNavigator" ${examNavigatorExpanded ? "open" : ""}>
-				<summary><span>Question navigator</span><span class="small muted">${progress}/${currentSession.ids.length} answered</span></summary>
-				${navigatorContent}
-			</details>`
-			: `<aside class="panel side">
-				<h3>Study session</h3>
-				<p class="small muted">Immediate rationale and primary-source references after each answer.</p>
-				${legend}
-				<div class="small muted">${progress}/${currentSession.ids.length} answered</div>
-				<div class="qgrid" role="region" aria-label="Question list" tabindex="0">${grid}</div>
-				<button class="ghost" data-action="home">Pause & go home</button>
-			</aside>`;
+		const side = renderQuizQuestionNavigator({
+			isExam,
+			expanded: examNavigatorExpanded,
+			answeredCount: progress,
+			flaggedCount: currentSession.flags.length,
+			questions: currentSession.ids.map((qid, index) => ({
+				isCurrent: index === currentSession.currentIndex,
+				isAnswered: answered(qid),
+				isFlagged: currentSession.flags.includes(qid),
+			})),
+		});
 
 		setAppHTML(`<div class="split"><div>${main}</div>${side}</div>`, focusTarget);
 	}
@@ -1073,7 +1052,7 @@ document.addEventListener("click", (event: MouseEvent) => {
 				<p>${esc(q.explanation)}</p>
 				${q.whyNot ? `<p class="small muted">Why not the others: ${esc(q.whyNot)}</p>` : ""}
 				<div class="pl-review-meta">
-					${q.source.url ? `<a href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">${esc(q.source.label)} ↗</a>` : `<span class="small muted">${esc(q.source.label)}</span>`}
+					${q.source.url ? `<a data-source-link href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">${esc(q.source.label)} ↗</a>` : `<span class="small muted">${esc(q.source.label)}</span>`}
 					<button type="button" class="pl-feedback-link" data-pl-open-feedback data-feedback-type="question" data-feedback-cert="${esc(cfg.slug)}" data-feedback-domain="${esc(q.domain)}" data-feedback-question="${esc(q.id)}" data-feedback-version="${esc(q.contentVersion || "1")}" aria-haspopup="dialog" aria-controls="pl-feedback-dialog">Report an issue (${esc(q.id)})</button>
 				</div>
 			</details>`;
@@ -1192,8 +1171,11 @@ document.addEventListener("click", (event: MouseEvent) => {
 				session.progress.status = result.session.status;
 			}
 			session.checked[id] = true;
-			progressState = await progressService.readState();
-			saved.stats = progressState.stats;
+			progressState = {
+				...progressState,
+				questionProgress: await progressService.getQuestionProgressForCertification(),
+			};
+			saved.stats = progressToStats(progressState.questionProgress);
 			persistenceError = null;
 			retryPersistence = null;
 			question("feedback");
@@ -1287,12 +1269,17 @@ document.addEventListener("click", (event: MouseEvent) => {
 				return;
 			}
 			if (action === "review-result") {
-				const entry = progressState.history.find(({ session: item }) => item.id === el.dataset.id);
-				if (!entry) throw new Error("This saved result is no longer available.");
-				applyProgressSession(entry.session, { trackActive: false });
+				const resultSession = await progressService.getSession(el.dataset.id ?? "");
+				if (
+					resultSession?.certificationId !== cfg.slug ||
+					(resultSession.status !== "completed" && resultSession.status !== "expired")
+				) {
+					throw new Error("This saved result is no longer available.");
+				}
+				applyProgressSession(resultSession, { trackActive: false });
 				const url = new URL(window.location.href);
 				url.searchParams.delete("resume");
-				url.searchParams.set("result", entry.session.id);
+				url.searchParams.set("result", resultSession.id);
 				history.replaceState(null, "", url);
 				return results();
 			}

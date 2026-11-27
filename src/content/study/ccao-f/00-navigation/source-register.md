@@ -48,6 +48,28 @@ Retrieval date for all sources below: **2026-11-26**. Official web pages were ac
 public HTTPS retrieval and text extraction, except where noted. Product, plan, model, privacy, and
 policy details may change after retrieval.
 
+## Source-driven gap analysis
+
+The project-wide CCDV-F competency matrix
+(`src/content/study/ccdv-f/00-navigation/exam-blueprint-and-coverage.md`) assesses all 25 official
+CCDV-F competencies against existing Practice Lab material. It records
+foundational coverage and limits; it does not establish CCAO-F coverage. The CCAO-F notes below were
+compared with those existing syntheses and with the current seven-domain CCAO-F guide. The additions
+focus on Associate-level product use and workflow judgment rather than duplicating Developer-level
+implementation notes.
+
+| CCAO-F domain and note | Existing Practice Lab overlap | Gap that justifies this note | Evidence and limit |
+|---|---|---|---|
+| D1 — `src/content/study/ccao-f/11-prompting-and-task-execution/prompt-design-and-task-decomposition.md` | CCDV-F prompt-engineering and requirements material covers prompt structure and software acceptance criteria. | A concise user-facing task brief, when to decompose a request, and how to revise one instruction from an observed gap are needed for Associate-level prompting tasks. | Prompting best-practice excerpt and CCAO-F guide excerpts; the complete guide was not extracted. |
+| D2 — `src/content/study/ccao-f/12-output-evaluation-and-validation/validate-claims-and-curate-outputs.md` | CCDV-F structured-output and source-validation notes cover schema and technical evidence. | The CCAO-F objective needs a decision process for checking completeness, exact claim support, uncertainty, bias, and human review before using a result. | Anthropic prompting guidance and source-review material; product examples are partial and not a complete evaluation standard. |
+| D3 — `src/content/study/ccao-f/13-product-and-model-selection/select-products-models-and-context.md` | CCDV-F model-selection and context notes cover API/model trade-offs and engineering context. | The Associate guide needs a product-surface comparison that separates account instructions, Project knowledge, API context, and Claude Code context without relying on volatile model rankings. | Models, context, and personalization pages were partially reviewed; capabilities and plan access change. |
+| D4 — `src/content/study/ccao-f/14-workflow-integration-and-solution-design/design-integrated-workflows.md` | CCDV-F application-design and lifecycle notes cover integrations and deployment. | The note adds a user/workflow-first choice among Research, connectors, and Artifacts, with permissions, review ownership, and evidence-based outcome claims. | Research article was content-reviewed; connector and Artifact pages were partial. No productivity figure is asserted. |
+| D5 — `src/content/study/ccao-f/15-configuration-and-knowledge-management/organize-instructions-knowledge-and-skills.md` | CCDV-F Claude Code notes cover developer settings, hooks, and Skills. | Associate users need to choose the correct account, Project, connector, or Skill scope and maintain source ownership, freshness, and plan prerequisites. | Projects, personalization, Skills, and connector sources have mixed partial/full review; the Project-instruction plan availability discrepancy remains unresolved. |
+| D6 — `src/content/study/ccao-f/16-governance-risk-and-responsible-use/apply-governance-privacy-and-fairness.md` | CCDV-F security notes cover trust boundaries, credentials, and technical safeguards. | CCAO-F requires separate checks for permitted use, access authorization, product-specific privacy, and possible proxy bias in a consequential workflow. | Anthropic privacy and Usage Policy sources are partial or product-specific; this note is study guidance, not legal advice. |
+| D7 — `src/content/study/ccao-f/17-troubleshooting-and-optimization/diagnose-output-and-improve-workflows.md` | CCDV-F debugging notes cover API errors, traces, and technical recovery. | The note gives Associate users a repeatable way to distinguish prompt, source, context, feature-access, and workflow causes, then test one bounded change. | Prompting and model-selection pages were partially reviewed; current product behavior and performance claims require rechecking. |
+
+The table identifies overlap rather than treating a linked CCDV-F note as a duplicate CCAO-F deliverable. The additions were retained because they address product-level decisions and user workflows that the existing Developer-focused notes do not cover as a single Associate-facing synthesis.
+
 ## Official sources inspected
 
 ### Exam guide

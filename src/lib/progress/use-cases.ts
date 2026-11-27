@@ -9,6 +9,7 @@ import type {
 	LegacyProgressMigrationResult,
 	LegacyRecordsBackup,
 	ProgressSession,
+	ProgressSessionSummary,
 	ProgressSummaryData,
 	QuestionAttempt,
 	QuestionProgress,
@@ -73,6 +74,13 @@ export interface ProgressUseCases {
 	): Promise<Record<string, string>>;
 
 	getSession(sessionId: string): Promise<ProgressSession | undefined>;
+
+	getActiveSession(certificationId: string): Promise<ProgressSession | undefined>;
+
+	getRecentSessionSummaries(
+		certificationId: string,
+		limit: number,
+	): Promise<ProgressSessionSummary[]>;
 
 	getQuestionProgressForCertification(certificationId: string): Promise<QuestionProgress[]>;
 
@@ -164,6 +172,12 @@ export function createProgressUseCases(
 		},
 		getSession(sessionId) {
 			return repository.getSession(sessionId);
+		},
+		getActiveSession(certificationId) {
+			return repository.getActiveSession(certificationId);
+		},
+		getRecentSessionSummaries(certificationId, limit) {
+			return repository.getRecentSessionSummaries(certificationId, limit);
 		},
 		getQuestionProgressForCertification(certificationId) {
 			return repository.getQuestionProgressForCertification(certificationId);

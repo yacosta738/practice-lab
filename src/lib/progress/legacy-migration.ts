@@ -236,6 +236,9 @@ function readLegacySession(
 		version: 2 as const,
 		limitations,
 		evaluatedQuestionIds: checkedQuestionIds,
+		scoreEvidence: savedShuffledOptions
+			? ("validated-saved-options" as const)
+			: ("insufficient" as const),
 	};
 	const input: CreateSessionInput = {
 		id: (context.idFactory ?? (() => globalThis.crypto.randomUUID()))(),

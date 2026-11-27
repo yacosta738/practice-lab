@@ -101,6 +101,47 @@ describe("progress backup restore", () => {
 		});
 	});
 
+	it("rejects imported attempts whose scores disagree with frozen answers", () => {
+		const inconsistent = progressBackup();
+		inconsistent.certifications[0].sessionHistory[0].attempts[0].scoreEarned = 0;
+
+		expect(() => parseProgressBackup(JSON.stringify(inconsistent), ["ccdv-f"])).toThrow(
+			/evaluation result|score/i,
+		);
+	});
+
+	it.each([
+		"javascript:alert(1)",
+		"data:text/html,unsafe",
+		"file:///tmp/source",
+		"/relative/source",
+	])("rejects imported source URL %s", (sourceUrl) => {
+		const unsafe = progressBackup();
+		unsafe.certifications[0].sessionHistory[0].session.content.questions[0].sourceUrl = sourceUrl;
+
+		expect(() => parseProgressBackup(JSON.stringify(unsafe), ["ccdv-f"])).toThrow(/source URL/i);
+	});
+
+	it("rejects unsafe URLs in imported frozen question snapshots", () => {
+		const unsafe = progressBackup();
+		const question = unsafe.certifications[0].sessionHistory[0].session.content.questions[0];
+		Object.assign(question, {
+			snapshot: {
+				question: "Question text",
+				domainName: "Domain A",
+				options: [
+					{ id: "option-a", text: "Correct" },
+					{ id: "option-b", text: "Incorrect" },
+				],
+				correctOptionIds: ["option-a"],
+				explanation: "Explanation",
+				source: { label: "Guide", url: "javascript:alert(1)" },
+			},
+		});
+
+		expect(() => parseProgressBackup(JSON.stringify(unsafe), ["ccdv-f"])).toThrow(/source URL/i);
+	});
+
 	it("accepts recovery exports and rejects unsupported versions or certifications", () => {
 		const recovery = {
 			...progressBackup(),

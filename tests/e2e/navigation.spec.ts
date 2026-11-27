@@ -46,7 +46,7 @@ test("study library navigation reaches a note from the home page", async ({ page
 	await expect(
 		page.getByRole("heading", { name: /Study notes, organised by certification/i }),
 	).toBeVisible();
-	await page.getByRole("link", { name: "Open the study library" }).click();
+	await page.getByRole("link", { name: /CCDV-F Claude Developer/ }).click();
 	await expect(page).toHaveURL(new RegExp(`${BASE_PATH}/study/ccdv-f/?$`));
 	await expect(page.getByRole("heading", { name: "Claude Developer Foundations" })).toBeVisible();
 	await page.getByRole("link", { name: "Workflows versus Agents" }).click();

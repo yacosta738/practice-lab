@@ -83,7 +83,7 @@ describe("quiz bootstrap", () => {
 			generationToken: "generation-one",
 			stats: {},
 			questionProgress: [],
-			history: [],
+			recentSessions: [],
 			migrationPending: false,
 			migrationWarnings: [],
 			backupReady: false,
