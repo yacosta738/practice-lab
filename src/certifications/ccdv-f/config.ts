@@ -36,6 +36,6 @@ export const config: CertificationConfig = {
 	passingScore: 720,
 	totalQuestions: 53,
 	examMinutes: 120,
-	examGuideNote: "the published exam objectives",
+	examGuideNote: "The Practice Lab bank follows the published exam objectives.",
 	blueprintSource: "official",
 };

@@ -34,6 +34,8 @@ import type {
 	QuestionProvenance,
 	SessionHistoryEntry,
 } from "../../lib/progress/model";
+import { deriveSessionScore } from "../../lib/progress/model";
+import { safeSourceUrl } from "../../lib/progress/safe-source-url";
 import { createProgressUseCases } from "../../lib/progress/use-cases";
 
 const repository = createProgressRepository();
@@ -61,15 +63,6 @@ function formatDate(timestamp: number): string {
 		dateStyle: "full",
 		timeStyle: "short",
 	}).format(timestamp);
-}
-
-function safeSourceUrl(value: string): string | undefined {
-	try {
-		const url = new URL(value);
-		return url.protocol === "https:" || url.protocol === "http:" ? url.href : undefined;
-	} catch {
-		return undefined;
-	}
 }
 
 function getFrozenSnapshot(question: QuestionProvenance): FrozenQuestionSnapshot | undefined {
@@ -101,8 +94,13 @@ function getFrozenSnapshot(question: QuestionProvenance): FrozenQuestionSnapshot
 
 function renderReview(entry: SessionHistoryEntry): void {
 	const { session } = entry;
-	const correct = entry.attempts.filter((attempt) => attempt.outcome === "correct").length;
-	const total = session.content.questions.length;
+	const score = deriveSessionScore(session, entry.attempts);
+	const scoreLabel =
+		session.status === "in_progress"
+			? "Not submitted"
+			: score.correct === null || score.scoreSource === "unavailable"
+				? "Score unavailable"
+				: `${score.correct} of ${score.questions} questions correct · ${score.scoreSource}`;
 	summary.innerHTML = `
 			<section class="panel reviewSummary" aria-labelledby="review-summary-title">
 				<h2 id="review-summary-title">${session.mode === "exam" ? "Mock exam" : session.mode === "weak" ? "Missed-question review" : session.mode === "review" ? "Spaced review" : "Practice"} · ${escapeHtml(session.certificationId)}</h2>
@@ -110,7 +108,7 @@ function renderReview(entry: SessionHistoryEntry): void {
 					<div><dt>Status</dt><dd>${escapeHtml(session.status.replaceAll("_", " "))}</dd></div>
 					<div><dt>Started</dt><dd>${formatDate(session.startedAt)}</dd></div>
 					<div><dt>Finished</dt><dd>${session.finishedAt ? formatDate(session.finishedAt) : "In progress"}</dd></div>
-					<div><dt>Score</dt><dd>${session.status === "in_progress" ? "Not submitted" : `${correct} of ${total} questions correct`}</dd></div>
+					<div><dt>Score</dt><dd>${scoreLabel}</dd></div>
 					<div><dt>Bank revision</dt><dd><code>${escapeHtml(session.content.bankRevision)}</code></dd></div>
 				</dl>
 			</section>`;

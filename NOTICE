@@ -37,28 +37,20 @@ does not grant permission to reuse SkillCertPro questions or cheat-sheet text.
 No SkillCertPro material is included in the repository; 680 such candidates
 remain unpublished while redistribution rights are unverified.
 
-CCDV-P Practice Questions
--------------------------
+CCDV-P Original Practice Questions
+----------------------------------
 
-The CCDV-P bank contains 70 adapted questions from Matthew Purcell's *Claude
-Certified Developer – Professional: Full Practice Exam Question Set*, published
-2026-11-24:
-
-- [Matthew Purcell's source post](https://www.linkedin.com/posts/purcellmatthew_ccdv-p-claude-certified-developer-professional-activity-7530737595782438912-kSDX)
-- [Creative Commons Attribution-NonCommercial 4.0 International](https://creativecommons.org/licenses/by-nc/4.0/)
-- Editorial status: all items were reviewed; wording and explanations were
-  adapted, and technical corrections were made. These are community practice
-  questions, not official Anthropic exam items.
-
-The CC BY-NC 4.0 license applies to these adapted CCDV-P questions. This content
-is published for noncommercial personal study only. Reassess the license before
-any commercial use or if the project's use changes.
+The CCDV-P bank contains 70 original Practice Lab questions based on public
+technical documentation and original study synthesis. Each question links to
+the sources used. The questions are not adapted from a third-party bank or from
+live exam items.
 
 License Scope
 -------------
 
 The MIT license included in this repository covers the application's own code
 only. It does not grant rights over third-party practice content. The Cert Pro
-Quest items retain their source terms, the CCAO-F TestApp additions are included
-under the maintainer-confirmed reuse permission above, and the CCDV-P items are
-subject to CC BY-NC 4.0. No rights are claimed for content that is not included.
+Quest items retain their source terms, and the CCAO-F TestApp additions are
+included under the maintainer-confirmed reuse permission above. The CCDV-P
+questions are original, source-linked Practice Lab content. No rights are
+claimed over external source material.

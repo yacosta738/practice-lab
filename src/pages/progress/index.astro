@@ -379,7 +379,12 @@ import { base } from "../../lib/base";
 import type { ProgressBank } from "../../lib/progress/analytics";
 import { deriveProgressSummary } from "../../lib/progress/analytics";
 import { createProgressRepository } from "../../lib/progress/indexeddb-repository";
-import type { SessionMode, SessionStatus } from "../../lib/progress/model";
+import {
+	deriveSessionScore,
+	type SessionMode,
+	type SessionScoreSource,
+	type SessionStatus,
+} from "../../lib/progress/model";
 import type { SessionHistoryPage, SessionHistoryQuery } from "../../lib/progress/repository-port";
 import { createProgressUseCases } from "../../lib/progress/use-cases";
 
@@ -469,6 +474,17 @@ function updateUrl(): void {
 	history.replaceState(null, "", `${location.pathname}${query ? `?${query}` : ""}`);
 }
 
+function sessionScoreLabel(score: ReturnType<typeof deriveSessionScore>): string {
+	if (score.correct === null || score.scoreSource === "unavailable") return "Score unavailable";
+	return `${score.correct}/${score.questions} · ${score.scoreSource}`;
+}
+
+function scoreSourceDescription(scoreSource: SessionScoreSource): string {
+	if (scoreSource === "recorded") return "Recorded from saved attempts";
+	if (scoreSource === "reconstructed") return "Reconstructed from saved legacy answers";
+	return "Score unavailable because saved answer evidence is incomplete";
+}
+
 function renderMetrics(
 	summary: ReturnType<typeof deriveProgressSummary>,
 	banks: ProgressBank[],
@@ -491,13 +507,17 @@ function renderMetrics(
 	} else {
 		importedNotice.hidden = true;
 	}
+	const lastResultScore = lastResult ? sessionScoreLabel(lastResult) : "—";
+	const lastResultDetails = lastResult
+		? `${escapeHtml(labels[lastResult.certificationId]?.subtitle ?? lastResult.certificationId)} · ${formatDate(lastResult.finishedAt)} · ${scoreSourceDescription(lastResult.scoreSource)}`
+		: "No finished sessions yet";
 	const masteredPct = percentage(summary.mastery.mastered, summary.mastery.total);
 	byId("progress-metrics").innerHTML = `
 			<article class="progressMetric panel"><h3>Bank coverage</h3><strong>${coverage ?? 0}%</strong><p>${summary.coverage.evaluated} of ${summary.coverage.eligible} questions evaluated</p></article>
 			<article class="progressMetric panel"><h3>Overall accuracy</h3><strong>${accuracy === undefined ? "—" : `${accuracy}%`}</strong><p>${summary.accuracy.correct} correct of ${summary.accuracy.attempts} attempts</p></article>
 			<article class="progressMetric panel"><h3>Recent accuracy</h3><strong>${recent === undefined ? "—" : `${recent}%`}</strong><p>${summary.recentAccuracy.correct} correct of ${summary.recentAccuracy.attempts} recent attempts</p></article>
 			<article class="progressMetric panel"><h3>Completed mock exams</h3><strong>${summary.completedMockExams}</strong><p>Completed exam sessions</p></article>
-			<article class="progressMetric panel"><h3>Last result</h3><strong>${lastResult ? `${lastResult.correct}/${lastResult.questions}` : "—"}</strong><p>${lastResult ? `${escapeHtml(labels[lastResult.certificationId]?.subtitle ?? lastResult.certificationId)} · ${formatDate(lastResult.finishedAt)}` : "No finished sessions yet"}</p></article>
+			<article class="progressMetric panel"><h3>Last result</h3><strong>${lastResultScore}</strong><p>${lastResultDetails}</p></article>
 			<article class="progressMetric panel"><h3>Durable mastery</h3><strong>${masteredPct ?? 0}%</strong><p>${summary.mastery.mastered} mastered · ${summary.mastery.proficient} proficient of ${summary.mastery.total}</p></article>
 		`;
 }
@@ -730,7 +750,7 @@ function renderExamTrend(summary: ReturnType<typeof deriveProgressSummary>): voi
 				.map((point) => {
 					const rate = percentage(point.correct, point.questions) ?? 0;
 					const label = `${formatDate(point.finishedAt)}: ${point.correct} of ${point.questions} correct (${rate}%)`;
-					return `<li><span>${formatDate(point.finishedAt)}</span><meter min="0" max="100" value="${rate}" aria-label="${escapeHtml(label)}">${rate}%</meter><strong>${rate}%</strong></li>`;
+					return `<li><span>${formatDate(point.finishedAt)}</span><meter min="0" max="100" value="${rate}" aria-label="${escapeHtml(`${label}, ${point.scoreSource}`)}">${rate}%</meter><strong>${rate}%</strong><span class="small muted">${point.scoreSource}</span></li>`;
 				})
 				.join("");
 			return `<section class="progressTrendGroup"><h3>${title}</h3><ol>${rows}</ol></section>`;
@@ -764,11 +784,10 @@ function renderHistory(page: SessionHistoryPage): void {
 	tbody.innerHTML = page.entries
 		.map(({ session, attempts }) => {
 			const label = data.certificationLabels[session.certificationId];
-			const questions = session.content.questions.length;
-			const correct = attempts.filter((attempt) => attempt.outcome === "correct").length;
+			const score = deriveSessionScore(session, attempts);
 			const finishedAt = session.finishedAt;
 			const duration = formatDuration(session.startedAt, finishedAt);
-			const result = session.status === "in_progress" ? "—" : `${correct}/${questions}`;
+			const result = session.status === "in_progress" ? "—" : sessionScoreLabel(score);
 			const isActive = session.status === "in_progress";
 			const actionLabel = isActive ? "Resume" : "Review";
 			const actionUrl = isActive
@@ -909,230 +928,9 @@ void load();
 </script>
 
 <script>
-import type { ProgressBank } from "../../lib/progress/analytics";
-import { createProgressRepository } from "../../lib/progress/indexeddb-repository";
-import type { LearningGoalRecord, StudyProgressRecord } from "../../lib/progress/model";
-import {
-	getStudyStatus,
-	resolveStudyRecord,
-	type StudyNoteReference,
-	summarizeStudyProgress,
-} from "../../lib/progress/study-domain";
-import { StudyProgressService } from "../../lib/progress/study-service";
+import { initializeStudyDashboard } from "../../lib/progress/study-dashboard";
 
-interface DashboardStudyNote extends StudyNoteReference {
-	title: string;
-	href: string;
-}
-
-interface StudyDashboardData {
-	banks: ProgressBank[];
-	studyNotes: DashboardStudyNote[];
-}
-
-const data = JSON.parse(
-	document.getElementById("progress-client-data")?.textContent ?? "{}",
-) as StudyDashboardData;
-const repository = createProgressRepository();
-const service = new StudyProgressService(repository);
-const certificationSelect = document.getElementById("study-certification") as HTMLSelectElement;
-const status = document.getElementById("study-progress-status") as HTMLParagraphElement;
-const error = document.getElementById("study-progress-error") as HTMLParagraphElement;
-const overview = document.getElementById("study-progress-overview") as HTMLDivElement;
-const goalForm = document.getElementById("study-goals-form") as HTMLFormElement;
-const targetDate = document.getElementById("study-target-date") as HTMLInputElement;
-const targetQuestions = document.getElementById("study-target-questions") as HTMLInputElement;
-const targetNotes = document.getElementById("study-target-notes") as HTMLInputElement;
-const legacyDateNotice = document.getElementById(
-	"study-legacy-date-notice",
-) as HTMLParagraphElement;
-const goalStatus = document.getElementById("study-goals-status") as HTMLParagraphElement;
-let records: StudyProgressRecord[] = [];
-let goal: LearningGoalRecord | undefined;
-let loadSequence = 0;
-let studyRefreshTimer: number | undefined;
-
-function escapeHtml(value: string): string {
-	return value.replace(
-		/[&<>"']/g,
-		(character) =>
-			({
-				"&": "&amp;",
-				"<": "&lt;",
-				">": "&gt;",
-				'"': "&quot;",
-				"'": "&#39;",
-			})[character] ?? character,
-	);
-}
-
-function linkFor(note: DashboardStudyNote, record: StudyProgressRecord | undefined): string {
-	const anchor =
-		record?.contentRevision === note.revision ? record.readingPositionAnchor : undefined;
-	return `${note.href}${anchor ? `#${encodeURIComponent(anchor)}` : ""}`;
-}
-
-function renderNoteLinks(
-	recordsForNotes: Array<{ note: DashboardStudyNote; record: StudyProgressRecord }>,
-): string {
-	if (recordsForNotes.length === 0) return '<p class="small muted">None yet.</p>';
-	return `<ul class="progressStudyNoteList">${recordsForNotes
-		.map(({ note, record }) => {
-			const state = getStudyStatus(record, note.revision);
-			const label =
-				state === "completed"
-					? "Completed"
-					: state === "in_progress"
-						? "In progress"
-						: "Not started";
-			return `<li><a href="${escapeHtml(linkFor(note, record))}">${escapeHtml(note.title)}</a><span>${label}</span></li>`;
-		})
-		.join("")}</ul>`;
-}
-
-function renderOverview(
-	certificationId: string,
-	notes: DashboardStudyNote[],
-	practiceCount: number,
-): void {
-	const counts = summarizeStudyProgress(notes, records);
-	const noteRecords = notes.flatMap((note) => {
-		const record = resolveStudyRecord(note, records);
-		return record ? [{ note, record }] : [];
-	});
-	const recent = noteRecords
-		.filter(({ record }) => record.lastOpenedAt !== undefined)
-		.toSorted((a, b) => (b.record.lastOpenedAt ?? 0) - (a.record.lastOpenedAt ?? 0))
-		.slice(0, 8);
-	const bookmarks = noteRecords.filter(({ record }) => record.bookmarked);
-	const targetDateText = goal?.targetDate
-		? `<p>Exam target date: <strong>${escapeHtml(goal.targetDate)}</strong> (floating local calendar date).</p>`
-		: "";
-	const questionGoal =
-		goal?.targetQuestionCount === null || goal?.targetQuestionCount === undefined
-			? "No question target set."
-			: `${Math.min(practiceCount, goal.targetQuestionCount)} of ${goal.targetQuestionCount} distinct current-bank questions practiced.`;
-	const noteGoal =
-		goal?.targetNoteCount === null || goal?.targetNoteCount === undefined
-			? "No note target set."
-			: `${Math.min(counts.completed, goal.targetNoteCount)} of ${goal.targetNoteCount} notes completed.`;
-	const archived = counts.archived.length
-		? `<details class="progressStudyArchive"><summary>Archived note history (${counts.archived.length})</summary><ul>${counts.archived.map((record) => `<li><span>${escapeHtml(record.noteId)}</span><span>${record.status.replaceAll("_", " ")}${record.bookmarked ? " · bookmarked" : ""}</span></li>`).join("")}</ul></details>`
-		: '<p class="small muted">No archived note records.</p>';
-
-	overview.innerHTML = `
-			<section class="progressStudyCompletion" aria-label="Study-note completion">
-				<strong>${counts.completed} of ${counts.eligible} notes completed</strong>
-				<progress max="${Math.max(1, counts.eligible)}" value="${counts.completed}" aria-label="${counts.completed} of ${counts.eligible} eligible study notes completed"></progress>
-				<p>${counts.inProgress} in progress · ${counts.bookmarked} bookmarks</p>
-			</section>
-			<section class="progressStudyGoalsSummary" aria-label="Goal progress">
-				<h3>Goal progress</h3>
-				<p>${questionGoal}</p><p>${noteGoal}</p>${targetDateText}
-			</section>
-			<section><h3>Recently opened notes</h3>${renderNoteLinks(recent)}</section>
-			<section><h3>Bookmarks</h3>${renderNoteLinks(bookmarks)}</section>
-			${archived}
-			${notes.length === 0 ? `<p class="small muted">No eligible study notes are currently published for ${escapeHtml(certificationId)}; saved records remain in archived history.</p>` : ""}
-		`;
-}
-
-function scheduleStudyRefresh(): void {
-	if (studyRefreshTimer !== undefined) window.clearTimeout(studyRefreshTimer);
-	studyRefreshTimer = window.setTimeout(() => {
-		studyRefreshTimer = undefined;
-		void loadStudyProgress();
-	}, 300);
-}
-
-async function loadStudyProgress(): Promise<void> {
-	const sequence = ++loadSequence;
-	const certificationId = certificationSelect.value;
-	const notes = data.studyNotes.filter((note) => note.certificationId === certificationId);
-	status.textContent = "Loading study progress…";
-	error.hidden = true;
-	try {
-		await service.initialize(certificationId);
-		const [loadedRecords, loadedGoal] = await Promise.all([
-			service.getProgress(certificationId),
-			service.getGoal(certificationId),
-		]);
-		if (sequence !== loadSequence) return;
-		records = loadedRecords;
-		goal = loadedGoal;
-		let practiceCount = 0;
-		if (goal?.targetQuestionCount !== null && goal?.targetQuestionCount !== undefined) {
-			const progressData = await repository.getProgressSummaryData([certificationId]);
-			if (sequence !== loadSequence) return;
-			const bankQuestions = new Set(
-				(data.banks.find((bank) => bank.certificationId === certificationId)?.questions ?? []).map(
-					(question) => question.questionId,
-				),
-			);
-			practiceCount = progressData.questionProgress.filter(
-				(progress) => bankQuestions.has(progress.questionId) && progress.attemptCount > 0,
-			).length;
-		}
-		targetDate.value = goal?.targetDate ?? "";
-		targetQuestions.value = goal?.targetQuestionCount?.toString() ?? "";
-		targetNotes.value = goal?.targetNoteCount?.toString() ?? "";
-		legacyDateNotice.hidden = goal?.legacyTargetDate === undefined;
-		legacyDateNotice.textContent =
-			goal?.legacyTargetDate === undefined
-				? ""
-				: "An older timestamped target is retained in backups but cannot safely be converted to a local calendar date. Choose a new date to replace it.";
-		renderOverview(certificationId, notes, practiceCount);
-		status.textContent = "Study progress is up to date.";
-	} catch (cause) {
-		if (sequence !== loadSequence) return;
-		status.textContent = "Study progress could not be loaded.";
-		error.hidden = false;
-		error.textContent = cause instanceof Error ? cause.message : "Browser storage is unavailable.";
-	}
-}
-
-goalForm.addEventListener("submit", (event) => {
-	event.preventDefault();
-	if (!goalForm.reportValidity()) return;
-	const certificationId = certificationSelect.value;
-	const input = {
-		targetDate: targetDate.value || null,
-		targetQuestionCount: targetQuestions.value === "" ? null : Number(targetQuestions.value),
-		targetNoteCount: targetNotes.value === "" ? null : Number(targetNotes.value),
-	};
-	goalStatus.textContent = "Saving goals…";
-	void service
-		.saveGoals(certificationId, input)
-		.then(() => {
-			goalStatus.textContent = "Goals saved in this browser.";
-			return loadStudyProgress();
-		})
-		.catch((cause: unknown) => {
-			goalStatus.textContent = "Goals could not be saved.";
-			error.hidden = false;
-			error.textContent =
-				cause instanceof Error ? cause.message : "Browser storage is unavailable.";
-		});
-});
-
-certificationSelect.addEventListener("change", () => {
-	goalStatus.textContent = "";
-	void loadStudyProgress();
-});
-service.onChange((kind) => {
-	if (kind === "practice" && goal?.targetQuestionCount == null) return;
-	scheduleStudyRefresh();
-});
-window.addEventListener(
-	"pagehide",
-	() => {
-		if (studyRefreshTimer !== undefined) window.clearTimeout(studyRefreshTimer);
-		service.close();
-		void repository.close();
-	},
-	{ once: true },
-);
-void loadStudyProgress();
+initializeStudyDashboard();
 </script>
 
 <style>

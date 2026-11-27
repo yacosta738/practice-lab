@@ -120,6 +120,22 @@ function entry(session: ProgressSession, attempts: QuestionAttempt[] = []): Sess
 	return { session, attempts };
 }
 
+function addLegacyScoreEvidence(
+	session: ProgressSession,
+	scoreEvidence: "validated-saved-options" | "insufficient",
+	evaluatedQuestionIds: string[],
+): ProgressSession {
+	return Object.assign(session, {
+		legacy: {
+			sourceStorageKey: "ccdv-f-practice-lab-v2",
+			version: 2 as const,
+			limitations: [],
+			evaluatedQuestionIds,
+			scoreEvidence,
+		},
+	});
+}
+
 describe("progress analytics", () => {
 	it("keeps certification IDs separate, counts eligible coverage, and includes legacy baselines", () => {
 		const olderExam = makeSession("exam-1", "ccdv-f", "exam", "completed", 100, [
@@ -161,7 +177,12 @@ describe("progress analytics", () => {
 		expect(summary.accuracy).toEqual({ correct: 4, attempts: 8 });
 		expect(summary.recentAccuracy).toEqual({ correct: 2, attempts: 4 });
 		expect(summary.completedMockExams).toBe(1);
-		expect(summary.lastResult).toMatchObject({ sessionId: "exam-2", correct: 0, questions: 2 });
+		expect(summary.lastResult).toMatchObject({
+			sessionId: "exam-2",
+			correct: 0,
+			questions: 2,
+			scoreSource: "recorded",
+		});
 		expect(summary.domains).toHaveLength(2);
 		expect(summary.domains.map(({ certificationId }) => certificationId)).toEqual([
 			"ccao-f",
@@ -171,6 +192,62 @@ describe("progress analytics", () => {
 			expect.objectContaining({ sessionId: "exam-1", correct: 1, questions: 2 }),
 			expect.objectContaining({ sessionId: "exam-2", correct: 0, questions: 2 }),
 		]);
+	});
+
+	it("reconstructs a legacy score from saved answers even when only some were checked", () => {
+		const session = addLegacyScoreEvidence(
+			makeSession("legacy-score", "ccdv-f", "exam", "completed", 900, [
+				"shared-question",
+				"question-b",
+			]),
+			"validated-saved-options",
+			["shared-question"],
+		);
+		session.checkpoint = {
+			...session.checkpoint,
+			selectedOptionIdsByQuestion: {
+				"shared-question": ["a"],
+				"question-b": ["b"],
+			},
+			checkedQuestionIds: ["shared-question"],
+		};
+
+		const summary = deriveProgressSummary([BANKS[0]], [entry(session)], []);
+
+		expect(summary.lastResult).toMatchObject({
+			sessionId: "legacy-score",
+			correct: 1,
+			questions: 2,
+			scoreSource: "reconstructed",
+		});
+		expect(summary.examTrend).toMatchObject([
+			expect.objectContaining({ sessionId: "legacy-score", correct: 1, questions: 2 }),
+		]);
+	});
+
+	it("marks legacy scores unavailable without validated saved options and omits them from trends", () => {
+		const session = addLegacyScoreEvidence(
+			makeSession("legacy-score-unavailable", "ccdv-f", "exam", "completed", 900, [
+				"shared-question",
+			]),
+			"insufficient",
+			["shared-question"],
+		);
+		session.checkpoint = {
+			...session.checkpoint,
+			selectedOptionIdsByQuestion: { "shared-question": ["a"] },
+			checkedQuestionIds: [],
+		};
+
+		const summary = deriveProgressSummary([BANKS[0]], [entry(session)], []);
+
+		expect(summary.lastResult).toMatchObject({
+			sessionId: "legacy-score-unavailable",
+			correct: null,
+			questions: 1,
+			scoreSource: "unavailable",
+		});
+		expect(summary.examTrend).toEqual([]);
 	});
 
 	it("returns explicit empty denominators and excludes active sessions from completed results", () => {

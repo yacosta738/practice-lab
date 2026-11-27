@@ -8,7 +8,6 @@ import {
 	PROGRESS_DATABASE_NAME,
 	PROGRESS_DATABASE_VERSION,
 	type ProgressDatabaseSchema,
-	type ProgressRepository,
 	type ProgressSession,
 	type ScoringProvenance,
 } from "../../src/lib/progress";
@@ -16,6 +15,7 @@ import { ProgressConflictError } from "../../src/lib/progress/errors";
 import type {
 	LegacyProgressBackup,
 	LegacyProgressMigrationInput,
+	StudyProgressRecord,
 } from "../../src/lib/progress/model";
 
 const CONTENT: ContentProvenance = {
@@ -47,7 +47,7 @@ const SCORING: ScoringProvenance = {
 	domainWeights: { "domain-a": 100 },
 };
 
-let repository: ProgressRepository;
+let repository: ReturnType<typeof createProgressRepository>;
 
 function sessionInput(
 	id: string,
@@ -76,6 +76,82 @@ afterEach(async () => {
 });
 
 describe("IndexedDB progress repository", () => {
+	it("returns the active session and a bounded, ordered set of recent results", async () => {
+		const statuses = [
+			"completed",
+			"abandoned",
+			"expired",
+			"completed",
+			"expired",
+			"abandoned",
+			"completed",
+			"expired",
+		] as const;
+		const terminalIds: string[] = [];
+
+		for (const [index, status] of statuses.entries()) {
+			const id = `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
+			const session = await repository.createSession(sessionInput(id, "ccdv-f", (index + 1) * 100));
+			await repository.finalizeSession(
+				session.id,
+				session.revision,
+				status,
+				(index + 1) * 100 + 50,
+			);
+			if (status !== "abandoned") terminalIds.push(id);
+		}
+
+		const activeId = "00000000-0000-4000-8000-000000000009";
+		await repository.createSession(sessionInput(activeId, "ccdv-f", 900));
+		const otherCertification = await repository.createSession(
+			sessionInput("00000000-0000-4000-8000-000000000010", "ccar-f", 1000),
+		);
+		await repository.finalizeSession(
+			otherCertification.id,
+			otherCertification.revision,
+			"completed",
+			1050,
+		);
+
+		expect(await repository.getActiveSession("ccdv-f")).toMatchObject({ id: activeId });
+		expect((await repository.getRecentSessionSummaries("ccdv-f", 5)).map(({ id }) => id)).toEqual(
+			terminalIds.slice(-5).reverse(),
+		);
+		expect((await repository.getRecentSessionSummaries("ccdv-f", 3)).map(({ id }) => id)).toEqual(
+			terminalIds.slice(-3).reverse(),
+		);
+	});
+
+	it("merges concurrent study mutations inside IndexedDB transactions", async () => {
+		const certificationId = "ccdv-f";
+		const noteId = "ccdv-f/D1/agent-loop";
+		const generationToken = await repository.getDataGenerationToken(certificationId);
+		const initial: StudyProgressRecord = {
+			certificationId,
+			noteId,
+			status: "not_started",
+			bookmarked: false,
+			updatedAt: 1,
+		};
+
+		await Promise.all([
+			repository.updateStudyProgress(certificationId, [noteId], generationToken, (existing) => ({
+				...(existing ?? initial),
+				bookmarked: true,
+				updatedAt: 2,
+			})),
+			repository.updateStudyProgress(certificationId, [noteId], generationToken, (existing) => ({
+				...(existing ?? initial),
+				readingPositionAnchor: "section-two",
+				updatedAt: 3,
+			})),
+		]);
+
+		const records = await repository.getStudyProgressForCertification(certificationId);
+		expect(records).toHaveLength(1);
+		expect(records[0]).toMatchObject({ bookmarked: true, readingPositionAnchor: "section-two" });
+	});
+
 	it("restores an exported snapshot atomically and rejects stale generation tokens", async () => {
 		const sessionId = "00000000-0000-4000-8000-000000000001";
 		const session = await repository.createSession(sessionInput(sessionId));

@@ -12,6 +12,7 @@ import type {
 	LegacyProgressMigrationResult,
 	LegacyRecordsBackup,
 	ProgressSession,
+	ProgressSessionSummary,
 	ProgressSummaryData,
 	QuestionAttempt,
 	QuestionProgress,
@@ -102,6 +103,13 @@ export interface ProgressRepository {
 
 	getSession(sessionId: string): Promise<ProgressSession | undefined>;
 
+	getActiveSession(certificationId: string): Promise<ProgressSession | undefined>;
+
+	getRecentSessionSummaries(
+		certificationId: string,
+		limit: number,
+	): Promise<ProgressSessionSummary[]>;
+
 	getQuestionProgressForCertification(certificationId: string): Promise<QuestionProgress[]>;
 
 	getSessionHistoryPage(query: SessionHistoryQuery): Promise<SessionHistoryPage>;
@@ -135,7 +143,12 @@ export interface StudyProgressRepository {
 
 	getLearningGoalForCertification(certificationId: string): Promise<LearningGoalRecord | undefined>;
 
-	saveStudyProgress(record: StudyProgressRecord, expectedGenerationToken: string): Promise<void>;
+	updateStudyProgress(
+		certificationId: string,
+		noteIds: readonly string[],
+		expectedGenerationToken: string,
+		update: (existing: StudyProgressRecord | undefined) => StudyProgressRecord,
+	): Promise<StudyProgressRecord>;
 
 	saveLearningGoal(record: LearningGoalRecord, expectedGenerationToken: string): Promise<void>;
 }

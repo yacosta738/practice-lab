@@ -3,6 +3,40 @@ import { readCertificationProgress } from "./progress-helpers";
 
 const CERTIFICATION = "/practice-lab/certifications/ccdv-f/";
 
+declare global {
+	interface Window {
+		__questionAttemptReadCount?: () => number;
+	}
+}
+
+test("routine quiz state refreshes do not load question attempt history", async ({ page }) => {
+	await page.addInitScript(() => {
+		let questionAttemptReads = 0;
+		const originalIndexGetAll = IDBIndex.prototype.getAll;
+		IDBIndex.prototype.getAll = function (
+			query?: IDBValidKey | IDBKeyRange | null,
+			count?: number,
+		) {
+			if (this.objectStore.name === "questionAttempts") questionAttemptReads += 1;
+			return originalIndexGetAll.call(this, query, count);
+		};
+		window.__questionAttemptReadCount = () => questionAttemptReads;
+	});
+
+	await page.goto(`${CERTIFICATION}?mode=practice`);
+	await expect(page.getByRole("button", { name: /Practice mode/ })).toBeVisible();
+	const readsBefore = await page.evaluate(() => window.__questionAttemptReadCount?.() ?? -1);
+	await page.evaluate(async () => {
+		const service = window.practiceLabProgressService;
+		if (!service) throw new Error("The browser progress service is unavailable.");
+		await service.readState();
+	});
+	const readsAfter = await page.evaluate(() => window.__questionAttemptReadCount?.() ?? -1);
+
+	expect(readsBefore).toBeGreaterThanOrEqual(0);
+	expect(readsAfter).toBe(readsBefore);
+});
+
 test("reviewing an older result keeps the active mock exam available to resume", async ({
 	page,
 }) => {
@@ -142,4 +176,108 @@ test("reviewing an older result keeps the active mock exam available to resume",
 	expect(
 		stateAfterResume.sessions.find((session) => session.id === completedSessionId)?.status,
 	).toBe("completed");
+});
+
+test("labels migrated score provenance and omits unavailable scores from the exam trend", async ({
+	page,
+}) => {
+	await page.goto(`${CERTIFICATION}?mode=practice`);
+	await expect(page.getByRole("button", { name: /Practice mode/ })).toBeVisible();
+	const sessionIds = await page.evaluate(async () => {
+		const service = window.practiceLabProgressService;
+		if (!service) throw new Error("The browser progress service is unavailable.");
+		await service.initialize();
+		const createLegacyExam = async (
+			scoreEvidence: "validated-saved-options" | "insufficient",
+			startedAt: number,
+		) => {
+			const optionIds = ["option-a", "option-b"];
+			const session = await service.createSession({
+				id: globalThis.crypto.randomUUID(),
+				certificationId: "ccdv-f",
+				mode: "exam",
+				startedAt,
+				scoring: {
+					revision: "score-provenance-test",
+					passingScore: 70,
+					totalQuestions: 2,
+					domainWeights: { D1: 100 },
+				},
+				content: {
+					bankRevision: "score-provenance-test",
+					questions: ["question-a", "question-b"].map((questionId) => ({
+						questionId,
+						revision: "score-provenance-test",
+						contentHash: "score-provenance-test",
+						domainId: "D1",
+						optionIds,
+						optionTexts: ["Correct", "Incorrect"],
+						displayOptionIds: optionIds,
+						correctOptionIds: ["option-a"],
+						questionText: `${questionId}?`,
+						domainName: "Domain 1",
+						explanation: "The first option is correct.",
+						sourceLabel: "Guide",
+						sourceUrl: "https://example.test/guide",
+						selectCount: 1,
+					})),
+				},
+				checkpoint: {
+					currentQuestionId: null,
+					deadlineAt: null,
+					selectedOptionIdsByQuestion: {
+						"question-a": ["option-a"],
+						"question-b": ["option-b"],
+					},
+					checkedQuestionIds: ["question-a"],
+					flaggedQuestionIds: [],
+				},
+				legacy: {
+					sourceStorageKey: "ccdv-f-practice-lab-v2",
+					version: 2,
+					limitations: [],
+					evaluatedQuestionIds: ["question-a"],
+					scoreEvidence,
+				},
+			});
+			const completed = await service.finalizeSession(session.id, session.revision, "completed");
+			if (completed.finishedAt === undefined) {
+				throw new Error("Expected a finished timestamp for the legacy score fixture.");
+			}
+			return { id: session.id, finishedAt: completed.finishedAt };
+		};
+
+		const reconstructed = await createLegacyExam("validated-saved-options", 100);
+		await new Promise<void>((resolve) => {
+			const waitForNextTimestamp = () => {
+				if (Date.now() > reconstructed.finishedAt) {
+					resolve();
+					return;
+				}
+				window.setTimeout(waitForNextTimestamp, 0);
+			};
+			waitForNextTimestamp();
+		});
+		const unavailable = await createLegacyExam("insufficient", 200);
+		return {
+			reconstructed: reconstructed.id,
+			unavailable: unavailable.id,
+		};
+	});
+
+	await page.goto("/practice-lab/progress/");
+	await expect(page.locator("#history-rows")).toContainText("1/2 · reconstructed");
+	await expect(page.locator("#history-rows")).toContainText("Score unavailable");
+	await expect(
+		page.locator("#progress-metrics article").filter({ hasText: "Last result" }),
+	).toHaveText(/Score unavailable/);
+	await expect(page.locator("#exam-trend")).toContainText("reconstructed");
+	await expect(page.locator("#exam-trend")).not.toContainText("unavailable");
+
+	await page.goto(`/practice-lab/progress/session/?session=${sessionIds.reconstructed}`);
+	await expect(page.locator("#review-summary")).toContainText(
+		"1 of 2 questions correct · reconstructed",
+	);
+	await page.goto(`/practice-lab/progress/session/?session=${sessionIds.unavailable}`);
+	await expect(page.locator("#review-summary")).toContainText("Score unavailable");
 });
