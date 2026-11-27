@@ -39,6 +39,6 @@ export const config: CertificationConfig = {
 	totalQuestions: 70,
 	examMinutes: 120,
 	examGuideNote:
-		"the live exam (70 items: 60 scored and 10 unscored; scaled passing score: 720 on a 100–1,000 scale), while this 70-item Practice Lab mock scores every question",
+		"The live exam has 70 items (60 scored and 10 unscored) in 120 minutes, with a scaled passing score of 720 on a 100–1,000 scale. This 70-item Practice Lab mock scores every question.",
 	blueprintSource: "derived",
 };

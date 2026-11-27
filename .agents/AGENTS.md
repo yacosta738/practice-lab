@@ -64,3 +64,9 @@ Consult these guides before working on related tasks:
 - [Adding or managing content](https://docs.astro.build/en/guides/content-collections/)
 - [Adding styles or using Tailwind](https://docs.astro.build/en/guides/styling/)
 - [Supporting multiple languages](https://docs.astro.build/en/guides/internationalization/)
+
+
+- Do not add optional AI-generated attribution to commits.
+- Preserve legitimate human co-authors and existing trailers.
+- Respect repository-specific attribution requirements.
+- Do not bypass or disable configured Git hooks.

@@ -45,11 +45,9 @@ The CCAO-F bank also includes 49 adapted questions from the TestApp author's sep
 Claude-generated practice set. The maintainer confirmed reuse permission; the author's name was not
 provided. No SkillCertPro questions or cheat-sheet text are included.
 
-The CCDV-P bank includes 70 adapted questions from Matthew Purcell's _Claude Certified Developer —
-Professional: Full Practice Exam Question Set_, licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
-They are published here for noncommercial personal study and are not official exam items. The
-application's MIT license does not apply to third-party content. See [`NOTICE`](NOTICE) for
-attribution, modifications, and licensing boundaries.
+The CCDV-P bank contains 70 original Practice Lab questions based on public technical documentation
+and the study notes. Each question links to the sources used. The questions are not adapted from a
+third-party bank or from live exam items; see [`NOTICE`](NOTICE) for content boundaries.
 
 ## Stack
 

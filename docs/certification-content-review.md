@@ -253,6 +253,6 @@ Retrieval date is 2026-11-26 unless noted. Public search excerpts are not equiva
 ## Publication boundaries
 
 - The repository's MIT license covers application code only, not third-party question content.
-- CCDV-P additions attribute Matthew Purcell, identify CC BY-NC 4.0 and adaptations, and are published for noncommercial personal study. Reassess if use becomes commercial.
+- CCDV-P practice questions are now original, source-linked Practice Lab scenarios. The historical candidate review above documents prior editorial research; it is not the active question bank, and no candidate question text or answer key is shipped in the application.
 - CCAO-F TestApp additions carry maintainer-confirmed reuse permission; no broader license is claimed, and the author name was not provided.
 - No SkillCertPro question or cheat-sheet text is included. All 680 SkillCertPro candidates remain on hold pending rights confirmation and resolution of the publisher's previous-exam-question claim.

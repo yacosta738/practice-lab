@@ -58,6 +58,7 @@ export type {
 	LearningDataSnapshot,
 	LearningGoalRecord,
 	ProgressSession,
+	ProgressSessionSummary,
 	ProgressSummaryData,
 	QuestionAttempt,
 	QuestionProgress,

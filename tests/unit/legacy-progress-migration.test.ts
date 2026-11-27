@@ -124,8 +124,25 @@ describe("legacy progress migration", () => {
 		expect(plan.session?.status).toBe("expired");
 		expect(plan.session?.finishedAt).toBe(900);
 		expect(plan.session?.evaluations).toEqual([]);
-		expect(plan.session?.input.legacy?.evaluatedQuestionIds).toEqual(["known-question"]);
+		expect(plan.session?.input.legacy).toMatchObject({
+			evaluatedQuestionIds: ["known-question"],
+			scoreEvidence: "validated-saved-options",
+		});
 		expect(plan.warnings.some((warning) => warning.includes("wording or rationale"))).toBe(true);
+	});
+
+	it("marks legacy scores unavailable when the saved option permutation is missing", () => {
+		const plan = createPlan(
+			legacyRecord({
+				session: {
+					submitted: true,
+					finished: 900,
+					shuffledOptions: undefined,
+				},
+			}),
+		);
+
+		expect(plan.session?.input.legacy).toMatchObject({ scoreEvidence: "insufficient" });
 	});
 
 	it("expires overdue exams using only unanswered evaluated answers", () => {

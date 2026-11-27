@@ -19,9 +19,9 @@ import type {
 	LegacyProgressMigrationResult,
 	LegacyRecordsBackup,
 	ProgressSession,
+	ProgressSessionSummary,
 	QuestionAttempt,
 	QuestionProgress,
-	SessionHistoryEntry,
 } from "./model";
 import { REVIEW_SCHEDULER_POLICY_VERSION } from "./review-scheduler";
 import {
@@ -32,6 +32,7 @@ import {
 } from "./use-cases";
 
 const GLOBAL_BACKUP_FORMAT = "practice-lab-legacy-export";
+const RECENT_SESSION_LIMIT = 5;
 
 declare global {
 	interface Window {
@@ -50,7 +51,7 @@ export interface BrowserProgressState {
 	generationToken: string;
 	stats: Record<string, { attempts: number; correct: number; lastWrong: boolean }>;
 	questionProgress: QuestionProgress[];
-	history: SessionHistoryEntry[];
+	recentSessions: ProgressSessionSummary[];
 	currentSession?: ProgressSession;
 	migrationPending: boolean;
 	migrationWarnings: readonly string[];
@@ -72,7 +73,8 @@ export class BrowserProgressService {
 	private readonly useCases = createProgressUseCases(this.repository);
 	private readonly storageKey: string;
 	private readonly questionsById = new Map<string, Question>();
-	private observedSessionRevisions = new Map<string, number>();
+	private observedActiveSession?: Pick<ProgressSession, "id" | "revision">;
+	private observedRecentSessions: ProgressSessionSummary[] = [];
 	private generationToken = "";
 	private originalLegacyValue: string | null = null;
 	private pendingMigrationPlan?: LegacyMigrationPlan;
@@ -147,23 +149,22 @@ export class BrowserProgressService {
 
 	async readState(): Promise<BrowserProgressState> {
 		this.assertInitialized();
-		const [history, progress] = await Promise.all([
-			this.useCases.getSessionHistory(this.options.certificationId),
+		const [currentSession, recentSessions, progress] = await Promise.all([
+			this.useCases.getActiveSession(this.options.certificationId),
+			this.useCases.getRecentSessionSummaries(this.options.certificationId, RECENT_SESSION_LIMIT),
 			this.useCases.getQuestionProgressForCertification(this.options.certificationId),
 		]);
 		const stats = progressToStats(progress);
-		this.observedSessionRevisions = new Map(
-			history.map(({ session }) => [session.id, session.revision]),
-		);
-		const currentSession =
-			history.find(({ session }) => session.status === "in_progress") ??
-			history.find(({ session }) => session.status === "completed" || session.status === "expired");
+		this.observedActiveSession = currentSession
+			? { id: currentSession.id, revision: currentSession.revision }
+			: undefined;
+		this.observedRecentSessions = recentSessions;
 		return {
 			generationToken: this.generationToken,
 			stats,
 			questionProgress: progress,
-			history,
-			...(currentSession ? { currentSession: currentSession.session } : {}),
+			recentSessions,
+			...(currentSession ? { currentSession } : {}),
 			migrationPending: this.pendingMigrationPlan !== undefined,
 			migrationWarnings: this.migrationWarnings,
 			backupReady: this.backupReady,
@@ -319,7 +320,11 @@ export class BrowserProgressService {
 		this.pendingMigrationPlan = undefined;
 		this.backupReady = false;
 		this.broadcastInvalidation();
-		return this.readState();
+		const state = await this.readState();
+		if (result.importedSessionId && !state.currentSession) {
+			state.currentSession = await this.useCases.getSession(result.importedSessionId);
+		}
+		return state;
 	}
 
 	async createSession(command: CreateSessionCommand): Promise<ProgressSession> {
@@ -328,7 +333,7 @@ export class BrowserProgressService {
 			...command,
 			expectedGenerationToken: this.generationToken,
 		});
-		this.observedSessionRevisions.set(session.id, session.revision);
+		this.observeSession(session);
 		this.broadcastInvalidation();
 		return session;
 	}
@@ -465,8 +470,7 @@ export class BrowserProgressService {
 			previousSessionId,
 			previousExpectedRevision,
 		);
-		this.observedSessionRevisions.set(previousSessionId, previousExpectedRevision + 1);
-		this.observedSessionRevisions.set(session.id, session.revision);
+		this.observeSession(session);
 		this.broadcastInvalidation();
 		return session;
 	}
@@ -477,7 +481,7 @@ export class BrowserProgressService {
 			...command,
 			expectedGenerationToken: this.generationToken,
 		});
-		this.observedSessionRevisions.set(session.id, session.revision);
+		this.observeSession(session);
 		this.broadcastInvalidation();
 		return session;
 	}
@@ -491,7 +495,7 @@ export class BrowserProgressService {
 			expectedGenerationToken: this.generationToken,
 		});
 		const session = await this.useCases.getSession(command.sessionId);
-		if (session) this.observedSessionRevisions.set(session.id, session.revision);
+		if (session) this.observeSession(session);
 		this.broadcastInvalidation();
 		return { attempt, ...(session ? { session } : {}) };
 	}
@@ -510,7 +514,7 @@ export class BrowserProgressService {
 			this.generationToken,
 			evaluations,
 		);
-		this.observedSessionRevisions.set(session.id, session.revision);
+		this.observeSession(session);
 		this.broadcastInvalidation();
 		return session;
 	}
@@ -580,27 +584,42 @@ export class BrowserProgressService {
 		return this.useCases.getSession(sessionId);
 	}
 
+	async getQuestionProgressForCertification(): Promise<QuestionProgress[]> {
+		this.assertInitialized();
+		return this.useCases.getQuestionProgressForCertification(this.options.certificationId);
+	}
+
 	async checkForExternalChanges(sessionId?: string, revision?: number): Promise<boolean> {
 		this.assertInitialized();
-		const [token, history] = await Promise.all([
+		const [token, currentSession, recentSessions] = await Promise.all([
 			this.useCases.getDataGenerationToken(this.options.certificationId),
-			this.useCases.getSessionHistory(this.options.certificationId),
+			this.useCases.getActiveSession(this.options.certificationId),
+			this.useCases.getRecentSessionSummaries(this.options.certificationId, RECENT_SESSION_LIMIT),
 		]);
 		if (token !== this.generationToken) {
 			this.notifyInvalidation("Progress was reset or imported in another tab. Reload to continue.");
 			return true;
 		}
-		const sessionsChanged =
-			history.length !== this.observedSessionRevisions.size ||
-			history.some(
-				({ session }) => this.observedSessionRevisions.get(session.id) !== session.revision,
+		const activeChanged =
+			currentSession?.id !== this.observedActiveSession?.id ||
+			currentSession?.revision !== this.observedActiveSession?.revision;
+		const recentChanged =
+			recentSessions.length !== this.observedRecentSessions.length ||
+			recentSessions.some(
+				(session, index) =>
+					session.id !== this.observedRecentSessions[index]?.id ||
+					session.revision !== this.observedRecentSessions[index]?.revision,
 			);
+		const sessionsChanged = activeChanged || recentChanged;
 		if (sessionsChanged) {
 			this.notifyInvalidation("Quiz history changed in another tab. Reload to continue.");
 			return true;
 		}
 		if (sessionId) {
-			const current = history.find(({ session }) => session.id === sessionId)?.session;
+			const current =
+				currentSession?.id === sessionId
+					? currentSession
+					: await this.useCases.getSession(sessionId);
 			if (!current || current.revision !== revision) {
 				this.notifyInvalidation("This session changed in another tab. Reload to continue.");
 				return true;
@@ -642,6 +661,31 @@ export class BrowserProgressService {
 		if (!this.initialized) throw new Error("The progress service has not been initialized.");
 	}
 
+	private observeSession(session: ProgressSession): void {
+		if (session.status === "in_progress") {
+			this.observedActiveSession = { id: session.id, revision: session.revision };
+			return;
+		}
+
+		if (this.observedActiveSession?.id === session.id) this.observedActiveSession = undefined;
+		if (session.status === "abandoned") return;
+		const summary: ProgressSessionSummary = {
+			id: session.id,
+			certificationId: session.certificationId,
+			mode: session.mode,
+			status: session.status,
+			revision: session.revision,
+			startedAt: session.startedAt,
+			...(session.finishedAt === undefined ? {} : { finishedAt: session.finishedAt }),
+		};
+		this.observedRecentSessions = [
+			summary,
+			...this.observedRecentSessions.filter(({ id }) => id !== session.id),
+		]
+			.sort((a, b) => b.startedAt - a.startedAt || a.id.localeCompare(b.id))
+			.slice(0, RECENT_SESSION_LIMIT);
+	}
+
 	private assertWritable(): void {
 		this.assertInitialized();
 		if (this.pendingMigrationPlan) {
@@ -658,8 +702,7 @@ export class BrowserProgressService {
 
 	private async expireOverdueSession(): Promise<void> {
 		if (this.pendingMigrationPlan || this.legacyWriteDetected) return;
-		const state = await this.readState();
-		const session = state.currentSession;
+		const session = await this.useCases.getActiveSession(this.options.certificationId);
 		if (
 			session?.status !== "in_progress" ||
 			session.mode !== "exam" ||

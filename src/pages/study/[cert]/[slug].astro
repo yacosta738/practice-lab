@@ -321,7 +321,15 @@ async function start(): Promise<void> {
 		await service.openNote(note);
 		await renderProgress();
 		service.onChange((kind) => {
-			if (kind !== "practice") void renderProgress().catch(showError);
+			if (kind === "reset") {
+				if (checkpointTimer !== undefined) window.clearTimeout(checkpointTimer);
+				checkpointTimer = undefined;
+				pendingAnchor = undefined;
+				lastSavedAnchor = undefined;
+				void service.initialize(note.certificationId).then(renderProgress).catch(showError);
+				return;
+			}
+			if (kind === "study") void renderProgress().catch(showError);
 		});
 		trackReadingPosition();
 	} catch (cause) {

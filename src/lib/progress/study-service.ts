@@ -9,7 +9,6 @@ import {
 	isValidReadingAnchor,
 	isValidStudyProgressRecord,
 	MAX_STUDY_GOAL_COUNT,
-	resolveStudyRecord,
 	type StudyNoteReference,
 } from "./study-domain";
 
@@ -26,6 +25,7 @@ export class StudyProgressService {
 	private readonly listeners = new Set<StudyProgressChangeListener>();
 	private readonly channel?: BroadcastChannel;
 	private generationToken = "";
+	private generationEpoch = 0;
 	private certificationId = "";
 
 	constructor(
@@ -41,8 +41,11 @@ export class StudyProgressService {
 	async initialize(certificationId: string): Promise<void> {
 		if (this.certificationId === certificationId && this.generationToken.length > 0) return;
 		this.certificationId = certificationId;
+		const generationEpoch = this.generationEpoch;
 		const generationToken = await this.repository.getDataGenerationToken(certificationId);
-		if (this.certificationId === certificationId) this.generationToken = generationToken;
+		if (this.certificationId === certificationId && generationEpoch === this.generationEpoch) {
+			this.generationToken = generationToken;
+		}
 	}
 
 	getProgress(certificationId: string): Promise<StudyProgressRecord[]> {
@@ -54,20 +57,21 @@ export class StudyProgressService {
 	}
 
 	async openNote(note: StudyNoteReference): Promise<StudyProgressRecord> {
-		const existing = resolveStudyRecord(note, await this.getProgress(note.certificationId));
-		const revisionChanged =
-			existing?.contentRevision !== undefined && existing.contentRevision !== note.revision;
-		const currentStatus = getStudyStatus(existing, note.revision);
-		const status = currentStatus === "completed" ? "completed" : "in_progress";
-		return this.saveNote(note, {
-			...(existing ?? {}),
-			status,
-			lastOpenedAt: this.now(),
-			...(revisionChanged ? { readingPositionAnchor: undefined } : {}),
-			...(status === "completed" && existing?.completedRevision === undefined
-				? { completedRevision: note.revision }
-				: {}),
-			contentRevision: note.revision,
+		return this.updateNote(note, (existing) => {
+			const revisionChanged =
+				existing.contentRevision !== undefined && existing.contentRevision !== note.revision;
+			const currentStatus = getStudyStatus(existing, note.revision);
+			const status = currentStatus === "completed" ? "completed" : "in_progress";
+			return {
+				...existing,
+				status,
+				lastOpenedAt: this.now(),
+				...(revisionChanged ? { readingPositionAnchor: undefined } : {}),
+				...(status === "completed" && existing.completedRevision === undefined
+					? { completedRevision: note.revision }
+					: {}),
+				contentRevision: note.revision,
+			};
 		});
 	}
 
@@ -90,15 +94,20 @@ export class StudyProgressService {
 		anchor: string,
 	): Promise<StudyProgressRecord | undefined> {
 		if (!isValidReadingAnchor(anchor)) return undefined;
-		const existing = resolveStudyRecord(note, await this.getProgress(note.certificationId));
-		if (existing?.readingPositionAnchor === anchor && existing.contentRevision === note.revision) {
-			return existing;
-		}
-		return this.saveNote(note, {
-			...(existing ?? {}),
-			status: existing?.status ?? "in_progress",
-			readingPositionAnchor: anchor,
-			contentRevision: note.revision,
+		return this.updateNote(note, (existing, saved) => {
+			if (
+				saved &&
+				existing.readingPositionAnchor === anchor &&
+				existing.contentRevision === note.revision
+			) {
+				return existing;
+			}
+			return {
+				...existing,
+				status: saved ? existing.status : "in_progress",
+				readingPositionAnchor: anchor,
+				contentRevision: note.revision,
+			};
 		});
 	}
 
@@ -108,6 +117,7 @@ export class StudyProgressService {
 				"Initialize the selected certification before saving study goals.",
 			);
 		}
+		const expectedGenerationToken = this.generationToken;
 		if (
 			(input.targetDate !== null && !isValidLocalCalendarDate(input.targetDate)) ||
 			!isGoalCount(input.targetQuestionCount) ||
@@ -131,7 +141,7 @@ export class StudyProgressService {
 		if (!isValidLearningGoalRecord(record)) {
 			throw new ProgressConflictError("The study goals are invalid.");
 		}
-		await this.repository.saveLearningGoal(record, this.generationToken);
+		await this.repository.saveLearningGoal(record, expectedGenerationToken);
 		this.broadcast(certificationId);
 		return record;
 	}
@@ -149,44 +159,44 @@ export class StudyProgressService {
 
 	private async updateNote(
 		note: StudyNoteReference,
-		update: (record: StudyProgressRecord) => StudyProgressRecord,
-	): Promise<StudyProgressRecord> {
-		const existing = resolveStudyRecord(note, await this.getProgress(note.certificationId));
-		return this.saveNote(
-			note,
-			update({
-				...(existing ?? {}),
-				status: existing?.status ?? "not_started",
-				bookmarked: existing?.bookmarked ?? false,
-				updatedAt: this.now(),
-				certificationId: note.certificationId,
-				noteId: note.noteId,
-			}),
-		);
-	}
-
-	private async saveNote(
-		note: StudyNoteReference,
-		updates: Partial<StudyProgressRecord>,
+		update: (
+			record: StudyProgressRecord,
+			saved: StudyProgressRecord | undefined,
+		) => StudyProgressRecord,
 	): Promise<StudyProgressRecord> {
 		if (note.certificationId !== this.certificationId || this.generationToken.length === 0) {
 			throw new ProgressConflictError(
 				"Initialize the note certification before saving study progress.",
 			);
 		}
-		const record: StudyProgressRecord = {
-			...updates,
-			certificationId: note.certificationId,
-			noteId: note.noteId,
-			status: updates.status ?? "not_started",
-			bookmarked: updates.bookmarked ?? false,
-			contentRevision: note.revision,
-			updatedAt: this.now(),
-		};
-		if (!isValidStudyProgressRecord(record)) {
-			throw new ProgressConflictError("The study progress record is invalid.");
-		}
-		await this.repository.saveStudyProgress(record, this.generationToken);
+		const expectedGenerationToken = this.generationToken;
+		const record = await this.repository.updateStudyProgress(
+			note.certificationId,
+			[note.noteId, ...note.aliases],
+			expectedGenerationToken,
+			(saved) => {
+				const current = saved ?? {
+					certificationId: note.certificationId,
+					noteId: note.noteId,
+					status: "not_started" as const,
+					bookmarked: false,
+					updatedAt: this.now(),
+				};
+				const updated = update(current, saved);
+				if (saved && updated === current) return saved;
+				const next: StudyProgressRecord = {
+					...updated,
+					certificationId: note.certificationId,
+					noteId: note.noteId,
+					contentRevision: note.revision,
+					updatedAt: this.now(),
+				};
+				if (!isValidStudyProgressRecord(next)) {
+					throw new ProgressConflictError("The study progress record is invalid.");
+				}
+				return next;
+			},
+		);
 		this.broadcast(note.certificationId);
 		return record;
 	}
@@ -206,7 +216,8 @@ export class StudyProgressService {
 			this.notifyListeners("practice");
 			return;
 		}
-		if (message.generationToken) this.generationToken = message.generationToken;
+		this.generationEpoch += 1;
+		this.generationToken = "";
 		this.notifyListeners("reset");
 	};
 

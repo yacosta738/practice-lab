@@ -99,6 +99,13 @@ describe("portable learning backups", () => {
 					},
 				],
 			},
+			legacy: {
+				sourceStorageKey: `${CERTIFICATION_ID}-practice-lab-v2`,
+				version: 2,
+				limitations: [],
+				evaluatedQuestionIds: ["question-one"],
+				scoreEvidence: "validated-saved-options",
+			},
 		});
 		const selectedOptionIds = ["option-b", "option-a"];
 		const attempt = createQuestionAttempt(session, {
@@ -159,6 +166,7 @@ describe("portable learning backups", () => {
 		const reparsed = await parseLearningBackup(JSON.stringify(restored), [CERTIFICATION_ID]);
 
 		expect(restored.data.sessions).toEqual([session]);
+		expect(restored.data.sessions[0]?.legacy?.scoreEvidence).toBe("validated-saved-options");
 		expect(restored.data.questionAttempts).toEqual([attempt]);
 		expect(reparsed.data.questionAttempts).toEqual(restored.data.questionAttempts);
 		expect(restored.data.legacyRecords).toEqual(legacyRecords);

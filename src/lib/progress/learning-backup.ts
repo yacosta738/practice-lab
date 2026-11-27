@@ -511,8 +511,9 @@ function validateSessionShape(value: unknown): asserts value is ProgressSession 
 				"sourceUrl",
 				"selectCount",
 			],
-			["topic", "whyNot"],
+			["topic", "whyNot", "snapshot"],
 		);
+		if (question.snapshot !== undefined) validateFrozenQuestionSnapshotShape(question.snapshot);
 	}
 	const checkpoint = asRecord(session.checkpoint, "A session checkpoint is invalid.");
 	assertExactKeys(checkpoint, [
@@ -524,7 +525,42 @@ function validateSessionShape(value: unknown): asserts value is ProgressSession 
 	]);
 	if (session.legacy !== undefined) {
 		const legacy = asRecord(session.legacy, "Legacy session provenance is invalid.");
-		assertExactKeys(legacy, ["sourceStorageKey", "version", "limitations", "evaluatedQuestionIds"]);
+		assertExactKeys(
+			legacy,
+			["sourceStorageKey", "version", "limitations", "evaluatedQuestionIds"],
+			["scoreEvidence"],
+		);
+	}
+}
+
+function validateFrozenQuestionSnapshotShape(value: unknown): void {
+	const snapshot = asRecord(value, "A frozen question content snapshot is invalid.");
+	assertExactKeys(
+		snapshot,
+		["question", "domainName", "options", "correctOptionIds", "explanation", "source"],
+		["topic", "whyNot"],
+	);
+	if (
+		typeof snapshot.question !== "string" ||
+		typeof snapshot.domainName !== "string" ||
+		typeof snapshot.explanation !== "string" ||
+		!Array.isArray(snapshot.options) ||
+		!Array.isArray(snapshot.correctOptionIds) ||
+		!snapshot.correctOptionIds.every((id) => typeof id === "string")
+	) {
+		throw new ProgressValidationError("A frozen question content snapshot is invalid.");
+	}
+	for (const rawOption of snapshot.options) {
+		const option = asRecord(rawOption, "A frozen question option is invalid.");
+		assertExactKeys(option, ["id", "text"]);
+		if (typeof option.id !== "string" || typeof option.text !== "string") {
+			throw new ProgressValidationError("A frozen question option is invalid.");
+		}
+	}
+	const source = asRecord(snapshot.source, "A frozen question source is invalid.");
+	assertExactKeys(source, ["label", "url"]);
+	if (typeof source.label !== "string" || typeof source.url !== "string") {
+		throw new ProgressValidationError("A frozen question source is invalid.");
 	}
 }
 

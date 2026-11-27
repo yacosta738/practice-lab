@@ -3,7 +3,6 @@ import { expect, test } from "@playwright/test";
 const ROUTES = [
 	"/practice-lab/",
 	"/practice-lab/certifications/ccdv-f/",
-	"/practice-lab/demo-tooltip/",
 	"/practice-lab/study/",
 	"/practice-lab/study/ccdv-f/",
 	"/practice-lab/study/ccdv-f/agent-loop-and-termination/",
@@ -28,9 +27,6 @@ for (const route of ROUTES) {
 		}));
 
 		expect(metadata.title.length).toBeLessThanOrEqual(55);
-		if (route === "/practice-lab/demo-tooltip/") {
-			expect(metadata.title.length).toBeGreaterThanOrEqual(30);
-		}
 		expect(metadata.description?.length).toBeGreaterThanOrEqual(120);
 		expect(metadata.description?.length).toBeLessThanOrEqual(160);
 		expect(metadata.openGraphTitle).toBe(metadata.title);

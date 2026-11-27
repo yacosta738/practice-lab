@@ -55,6 +55,17 @@ function session(id = "00000000-0000-4000-8000-000000000001"): ProgressSession {
 	});
 }
 
+function sessionWithContent(content: ContentProvenance): ProgressSession {
+	return createInitialSession({
+		id: "00000000-0000-4000-8000-000000000001",
+		certificationId: "ccdv-f",
+		mode: "practice",
+		startedAt: 1,
+		scoring: SCORING,
+		content,
+	});
+}
+
 function attempt(
 	sessionId: string,
 	outcome: QuestionAttempt["outcome"],
@@ -207,6 +218,73 @@ describe("progress domain rules", () => {
 		expect(() =>
 			createQuestionAttempt(session(), { ...input, selectedOptionIds: ["unknown-option"] }),
 		).toThrow(ProgressValidationError);
+	});
+
+	it("rejects evaluation results that disagree with the frozen answer key", () => {
+		const input = {
+			sessionId: "00000000-0000-4000-8000-000000000001",
+			questionId: "question-stable-id",
+			selectedOptionIds: ["option-b"],
+			outcome: "incorrect" as const,
+			scoreEarned: 0,
+			scorePossible: 1,
+			evaluatedAt: 10,
+		};
+
+		expect(() =>
+			createQuestionAttempt(session(), { ...input, outcome: "correct", scoreEarned: 1 }),
+		).toThrow(ProgressValidationError);
+		expect(() => createQuestionAttempt(session(), { ...input, scoreEarned: 0.5 })).toThrow(
+			ProgressValidationError,
+		);
+		expect(() => createQuestionAttempt(session(), { ...input, scorePossible: 2 })).toThrow(
+			ProgressValidationError,
+		);
+		expect(() =>
+			createQuestionAttempt(session(), { ...input, outcome: "partial", scoreEarned: 0.5 }),
+		).toThrow(ProgressValidationError);
+	});
+
+	it.each([
+		"javascript:alert(1)",
+		"data:text/html,unsafe",
+		"file:///tmp/source",
+		"/relative/source",
+	])("rejects unsafe frozen source URL %s", (sourceUrl) => {
+		const question = CONTENT.questions[0];
+		if (!question) throw new Error("Expected a frozen question fixture.");
+		expect(() =>
+			sessionWithContent({
+				...CONTENT,
+				questions: [{ ...question, sourceUrl }],
+			}),
+		).toThrow(/source URL/i);
+	});
+
+	it("rejects unsafe source URLs in nested frozen snapshots", () => {
+		const question = CONTENT.questions[0];
+		if (!question) throw new Error("Expected a frozen question fixture.");
+		expect(() =>
+			sessionWithContent({
+				...CONTENT,
+				questions: [
+					{
+						...question,
+						snapshot: {
+							question: question.questionText,
+							domainName: question.domainName,
+							options: question.optionIds.map((id, index) => ({
+								id,
+								text: question.optionTexts[index] ?? "",
+							})),
+							correctOptionIds: [...question.correctOptionIds],
+							explanation: question.explanation,
+							source: { label: question.sourceLabel, url: "javascript:alert(1)" },
+						},
+					},
+				],
+			}),
+		).toThrow(/source URL/i);
 	});
 
 	it("rebuilds attempt statistics without folding in or losing legacy baselines", () => {

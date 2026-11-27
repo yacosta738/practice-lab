@@ -26,6 +26,7 @@ import {
 	type LegacyProgressMigrationResult,
 	type LegacyRecordsBackup,
 	type ProgressSession,
+	type ProgressSessionSummary,
 	type ProgressSummaryData,
 	projectQuestionAttempts,
 	type QuestionAttempt,
@@ -48,6 +49,23 @@ import type { MetadataRecord, ProgressDatabaseSchema, ProgressStoreName } from "
 import { isValidLearningGoalRecord, isValidStudyProgressRecord } from "./study-domain";
 
 type StoreNames = ProgressStoreName[];
+
+function createAttemptForRecording(
+	session: ProgressSession,
+	input: RecordEvaluationInput,
+	existing?: QuestionAttempt,
+): QuestionAttempt {
+	try {
+		return createQuestionAttempt(session, input);
+	} catch (cause) {
+		if (existing) {
+			throw new ProgressConflictError(
+				"A different evaluation was already recorded for this question.",
+			);
+		}
+		throw cause;
+	}
+}
 
 export function createProgressRepository(): ProgressRepository & StudyProgressRepository {
 	return new IndexedDbProgressRepository();
@@ -150,9 +168,9 @@ class IndexedDbProgressRepository implements ProgressRepository, StudyProgressRe
 				if (!session) throw new ProgressConflictError("The session no longer exists.");
 				await assertGeneration(transaction, session.certificationId, input.expectedGenerationToken);
 
-				const attempt = createQuestionAttempt(session, input);
 				const attempts = transaction.objectStore("questionAttempts");
 				const existing = await attempts.get([input.sessionId, input.questionId]);
+				const attempt = createAttemptForRecording(session, input, existing);
 				if (existing) {
 					if (evaluationMatches(existing, attempt)) return existing;
 					throw new ProgressConflictError(
@@ -231,8 +249,8 @@ class IndexedDbProgressRepository implements ProgressRepository, StudyProgressRe
 						);
 					}
 					evaluatedIds.add(evaluation.questionId);
-					const attempt = createQuestionAttempt(session, evaluation);
 					const existing = await attemptStore.get([sessionId, evaluation.questionId]);
+					const attempt = createAttemptForRecording(session, evaluation, existing);
 					if (existing) {
 						if (!evaluationMatches(existing, attempt)) {
 							throw new ProgressConflictError(
@@ -839,6 +857,69 @@ class IndexedDbProgressRepository implements ProgressRepository, StudyProgressRe
 		);
 	}
 
+	getActiveSession(certificationId: string): Promise<ProgressSession | undefined> {
+		const range = IDBKeyRange.bound(
+			[certificationId, "in_progress", Number.MIN_SAFE_INTEGER, ""],
+			[certificationId, "in_progress", Number.MAX_SAFE_INTEGER, "\uffff"],
+		);
+		return withTransaction(this.getDatabase, ["sessions"], "readonly", (transaction) =>
+			transaction.objectStore("sessions").index("by-certification-status-started-at-id").get(range),
+		);
+	}
+
+	getRecentSessionSummaries(
+		certificationId: string,
+		limit: number,
+	): Promise<ProgressSessionSummary[]> {
+		if (!Number.isSafeInteger(limit) || limit < 1) return Promise.resolve([]);
+		const boundedLimit = Math.min(100, limit);
+		return withTransaction(this.getDatabase, ["sessions"], "readonly", async (transaction) => {
+			const index = transaction
+				.objectStore("sessions")
+				.index("by-certification-status-started-at-id");
+			const readRecentByStatus = async (status: "completed" | "expired") => {
+				const range = IDBKeyRange.bound(
+					[certificationId, status, Number.MIN_SAFE_INTEGER, ""],
+					[certificationId, status, Number.MAX_SAFE_INTEGER, "\uffff"],
+				);
+				const sessions: ProgressSession[] = [];
+				let cursor = await index.openCursor(range, "prev");
+				while (cursor && sessions.length < boundedLimit) {
+					sessions.push(cursor.value);
+					cursor = await cursor.continue();
+				}
+				return sessions;
+			};
+
+			const [completed, expired] = await Promise.all([
+				readRecentByStatus("completed"),
+				readRecentByStatus("expired"),
+			]);
+			return [...completed, ...expired]
+				.sort((a, b) => b.startedAt - a.startedAt || a.id.localeCompare(b.id))
+				.slice(0, boundedLimit)
+				.map(
+					({
+						id,
+						certificationId: sessionCertificationId,
+						mode,
+						status,
+						revision,
+						startedAt,
+						finishedAt,
+					}) => ({
+						id,
+						certificationId: sessionCertificationId,
+						mode,
+						status,
+						revision,
+						startedAt,
+						...(finishedAt === undefined ? {} : { finishedAt }),
+					}),
+				);
+		});
+	}
+
 	getQuestionProgressForCertification(certificationId: string): Promise<QuestionProgress[]> {
 		return withTransaction(this.getDatabase, ["questionProgress"], "readonly", (transaction) =>
 			transaction.objectStore("questionProgress").index("by-certification").getAll(certificationId),
@@ -955,17 +1036,38 @@ class IndexedDbProgressRepository implements ProgressRepository, StudyProgressRe
 		);
 	}
 
-	saveStudyProgress(record: StudyProgressRecord, expectedGenerationToken: string): Promise<void> {
-		if (!isValidStudyProgressRecord(record)) {
-			return Promise.reject(new ProgressConflictError("The study progress record is invalid."));
+	updateStudyProgress(
+		certificationId: string,
+		noteIds: readonly string[],
+		expectedGenerationToken: string,
+		update: (existing: StudyProgressRecord | undefined) => StudyProgressRecord,
+	): Promise<StudyProgressRecord> {
+		const [noteId] = noteIds;
+		if (!certificationId || !noteId || noteIds.some((id) => !id)) {
+			return Promise.reject(new ProgressConflictError("The study progress key is invalid."));
 		}
 		return withTransaction(
 			this.getDatabase,
 			["studyProgress", "metadata"],
 			"readwrite",
 			async (transaction) => {
-				await assertGeneration(transaction, record.certificationId, expectedGenerationToken);
-				await transaction.objectStore("studyProgress").put(record);
+				await assertGeneration(transaction, certificationId, expectedGenerationToken);
+				const store = transaction.objectStore("studyProgress");
+				let existing: StudyProgressRecord | undefined;
+				for (const id of noteIds) {
+					existing = await store.get([certificationId, id]);
+					if (existing) break;
+				}
+				const record = update(existing);
+				if (
+					record.certificationId !== certificationId ||
+					record.noteId !== noteId ||
+					!isValidStudyProgressRecord(record)
+				) {
+					throw new ProgressConflictError("The study progress record is invalid.");
+				}
+				if (record !== existing) await store.put(record);
+				return record;
 			},
 		);
 	}
