@@ -136,6 +136,23 @@ test("active mock exams enter Focus Mode, retain the deadline, and keep the mobi
 	).toBeVisible();
 });
 
+test("question navigator fits its available width across screen sizes", async ({ page }) => {
+	await page.setViewportSize({ width: 1484, height: 900 });
+	await page.goto(`${CERTIFICATION}?mode=assess#session`);
+	await page.getByRole("button", { name: "Start mock exam" }).click();
+
+	const navigator = page.locator("details.examNavigator");
+	const questionGrid = navigator.locator(".qgrid");
+	await expect(questionGrid).toBeVisible();
+
+	for (const width of [1484, 1024, 861, 390, 320]) {
+		await page.setViewportSize({ width, height: 900 });
+		await expect
+			.poll(() => questionGrid.evaluate((grid) => grid.scrollWidth <= grid.clientWidth))
+			.toBe(true);
+	}
+});
+
 test("mobile question navigator exposes combined states and supports keyboard navigation", async ({
 	page,
 }, testInfo) => {
