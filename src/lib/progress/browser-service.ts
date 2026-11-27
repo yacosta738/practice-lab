@@ -73,7 +73,7 @@ export class BrowserProgressService {
 	private readonly useCases = createProgressUseCases(this.repository);
 	private readonly storageKey: string;
 	private readonly questionsById = new Map<string, Question>();
-	private observedActiveSession?: Pick<ProgressSession, "id" | "revision">;
+	private observedActiveSession?: Pick<ProgressSession, "id" | "revision" | "mode">;
 	private observedRecentSessions: ProgressSessionSummary[] = [];
 	private generationToken = "";
 	private originalLegacyValue: string | null = null;
@@ -156,7 +156,7 @@ export class BrowserProgressService {
 		]);
 		const stats = progressToStats(progress);
 		this.observedActiveSession = currentSession
-			? { id: currentSession.id, revision: currentSession.revision }
+			? { id: currentSession.id, revision: currentSession.revision, mode: currentSession.mode }
 			: undefined;
 		this.observedRecentSessions = recentSessions;
 		return {
@@ -177,9 +177,10 @@ export class BrowserProgressService {
 		this.assertInitialized();
 		const records = [...readKnownLegacyValues(this.options.knownCertificationIds)];
 		const currentLegacy = records.find(({ storageKey }) => storageKey === this.storageKey);
-		if (this.pendingMigrationPlan && currentLegacy?.rawValue !== this.originalLegacyValue) {
+		const legacyValueChanged = currentLegacy?.rawValue !== this.originalLegacyValue;
+		if (this.pendingMigrationPlan && (legacyValueChanged || this.legacyWriteDetected)) {
 			if (currentLegacy?.readError) throw new Error(currentLegacy.readError);
-			if (this.originalLegacyValue !== null) {
+			if (legacyValueChanged && this.originalLegacyValue !== null) {
 				records.push({
 					certificationId: this.options.certificationId,
 					storageKey: this.storageKey,
@@ -296,6 +297,11 @@ export class BrowserProgressService {
 	async migrateLegacyProgress(): Promise<BrowserProgressState> {
 		this.assertInitialized();
 		if (!this.pendingMigrationPlan) return this.readState();
+		if (this.legacyWriteDetected) {
+			throw new ProgressConflictError(
+				"Legacy progress changed in an older tab. Download a new backup before importing.",
+			);
+		}
 		if (!this.backupReady) {
 			throw new ProgressConflictError("Download a data backup before importing legacy progress.");
 		}
@@ -328,7 +334,7 @@ export class BrowserProgressService {
 	}
 
 	async createSession(command: CreateSessionCommand): Promise<ProgressSession> {
-		this.assertWritable();
+		this.assertWritable(command.mode);
 		const session = await this.useCases.createSession({
 			...command,
 			expectedGenerationToken: this.generationToken,
@@ -345,7 +351,7 @@ export class BrowserProgressService {
 		deadlineAt: number | null,
 		previousSession?: { id: string; revision: number },
 	): Promise<ProgressSession> {
-		this.assertWritable();
+		this.assertWritable(mode);
 		const questions = ids.map((id) => {
 			const question = this.questionsById.get(id);
 			if (!question) throw new Error(`Question ${id} is no longer available.`);
@@ -464,7 +470,7 @@ export class BrowserProgressService {
 		previousSessionId: string,
 		previousExpectedRevision: number,
 	): Promise<ProgressSession> {
-		this.assertWritable();
+		this.assertWritable(command.mode);
 		const session = await this.useCases.replaceSession(
 			{ ...command, expectedGenerationToken: this.generationToken },
 			previousSessionId,
@@ -476,7 +482,11 @@ export class BrowserProgressService {
 	}
 
 	async checkpointSession(command: CheckpointSessionCommand): Promise<ProgressSession> {
-		this.assertWritable();
+		this.assertWritable(
+			this.observedActiveSession?.id === command.sessionId
+				? this.observedActiveSession.mode
+				: undefined,
+		);
 		const session = await this.useCases.checkpointSession({
 			...command,
 			expectedGenerationToken: this.generationToken,
@@ -489,7 +499,11 @@ export class BrowserProgressService {
 	async recordEvaluation(
 		command: RecordEvaluationCommand,
 	): Promise<{ attempt: QuestionAttempt; session?: ProgressSession }> {
-		this.assertWritable();
+		this.assertWritable(
+			this.observedActiveSession?.id === command.sessionId
+				? this.observedActiveSession.mode
+				: undefined,
+		);
 		const attempt = await this.useCases.recordEvaluation({
 			...command,
 			expectedGenerationToken: this.generationToken,
@@ -506,7 +520,9 @@ export class BrowserProgressService {
 		status: "completed" | "expired" | "abandoned",
 		evaluations: readonly RecordEvaluationCommand[] = [],
 	): Promise<ProgressSession> {
-		this.assertWritable();
+		this.assertWritable(
+			this.observedActiveSession?.id === sessionId ? this.observedActiveSession.mode : undefined,
+		);
 		const session = await this.useCases.finalizeSession(
 			sessionId,
 			expectedRevision,
@@ -663,7 +679,11 @@ export class BrowserProgressService {
 
 	private observeSession(session: ProgressSession): void {
 		if (session.status === "in_progress") {
-			this.observedActiveSession = { id: session.id, revision: session.revision };
+			this.observedActiveSession = {
+				id: session.id,
+				revision: session.revision,
+				mode: session.mode,
+			};
 			return;
 		}
 
@@ -686,16 +706,16 @@ export class BrowserProgressService {
 			.slice(0, RECENT_SESSION_LIMIT);
 	}
 
-	private assertWritable(): void {
+	private assertWritable(mode?: ProgressSession["mode"]): void {
 		this.assertInitialized();
-		if (this.pendingMigrationPlan) {
-			throw new ProgressConflictError(
-				"Import or preserve the legacy progress before starting a new session.",
-			);
-		}
 		if (this.legacyWriteDetected) {
 			throw new ProgressConflictError(
 				"Legacy progress changed in an older tab. Reload before continuing.",
+			);
+		}
+		if (this.pendingMigrationPlan && mode !== "exam") {
+			throw new ProgressConflictError(
+				"Import or preserve the legacy progress before starting a new session.",
 			);
 		}
 	}
@@ -758,18 +778,20 @@ export class BrowserProgressService {
 
 	private onStorageChange = async (event: StorageEvent): Promise<void> => {
 		if (event.key !== this.storageKey || event.newValue === this.originalLegacyValue) return;
+		this.legacyWriteDetected = true;
+		this.notifyInvalidation("Legacy progress changed in an older tab. Import is paused.");
 		try {
 			const importSuppressed = await this.useCases.getMetadata(
 				suppressedLegacyImportKey(this.options.certificationId),
 			);
-			if (importSuppressed === true) return;
+			if (importSuppressed === true) {
+				this.legacyWriteDetected = false;
+				this.notifyInvalidation("Legacy progress changes are suppressed after a reset.");
+				return;
+			}
 		} catch {
 			// If suppression cannot be verified, preserve the legacy reconciliation safeguard.
 		}
-		this.legacyWriteDetected = true;
-		this.notifyInvalidation(
-			"A legacy tab changed saved progress. Reload and download a new backup to reconcile it.",
-		);
 	};
 }
 
