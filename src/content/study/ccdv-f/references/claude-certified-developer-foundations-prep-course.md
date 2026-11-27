@@ -68,7 +68,15 @@ code, builds agents, runs evals, and decides whether a customer's code makes it 
 
 ### [MSO Foundations](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/mso-foundations)
 
-[![MSO Foundations course thumbnail](https://cc.sj-cdn.net/instructor/4hdejjwplbrm-anthropic/courses/ckwv5dzaeacd/promo-image.1782948062.svg)](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/mso-foundations)
+<a href="https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/mso-foundations" target="_blank" rel="noopener noreferrer">
+  <img
+    src="https://cc.sj-cdn.net/instructor/4hdejjwplbrm-anthropic/courses/ckwv5dzaeacd/promo-image.1782948062.svg"
+    alt="MSO Foundations course thumbnail"
+    width="418"
+    height="374"
+    loading="lazy"
+  >
+</a>
 
 Learn the model fundamentals and technical foundations the rest of the Developer Foundations course
 builds on.
@@ -80,7 +88,15 @@ Developer Platform
 
 ### [Production-Grade Prompting, Agents & Tool Use](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/production-grade-prompting-agents-tool-use)
 
-[![Production-Grade Prompting, Agents & Tool Use course thumbnail](https://cc.sj-cdn.net/instructor/4hdejjwplbrm-anthropic/courses/19h066txkbc8x/promo-image.1782948543.svg)](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/production-grade-prompting-agents-tool-use)
+<a href="https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/production-grade-prompting-agents-tool-use" target="_blank" rel="noopener noreferrer">
+  <img
+    src="https://cc.sj-cdn.net/instructor/4hdejjwplbrm-anthropic/courses/19h066txkbc8x/promo-image.1782948543.svg"
+    alt="Production-Grade Prompting, Agents & Tool Use course thumbnail"
+    width="460"
+    height="460"
+    loading="lazy"
+  >
+</a>
 
 Build your first production integration on Claude, with reliable prompts, tools, context management,
 and agent loops.
@@ -92,7 +108,15 @@ Developer Platform
 
 ### [Claude Code, MCP & Integration](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/claude-code-mcp-integration)
 
-[![Claude Code, MCP & Integration course thumbnail](https://cc.sj-cdn.net/instructor/4hdejjwplbrm-anthropic/courses/kf89s2wzd6x0/promo-image.1782948827.svg)](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/claude-code-mcp-integration)
+<a href="https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/claude-code-mcp-integration" target="_blank" rel="noopener noreferrer">
+  <img
+    src="https://cc.sj-cdn.net/instructor/4hdejjwplbrm-anthropic/courses/kf89s2wzd6x0/promo-image.1782948827.svg"
+    alt="Claude Code, MCP & Integration course thumbnail"
+    width="405"
+    height="422"
+    loading="lazy"
+  >
+</a>
 
 Learn to make a working Claude integration configurable, shareable, and safe to connect to real
 systems.
@@ -104,7 +128,15 @@ Claude Developer Platform
 
 ### [Production Engineering, Evals & Security](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/production-engineering-evals-security)
 
-[![Production Engineering, Evals & Security course thumbnail](https://cc.sj-cdn.net/instructor/4hdejjwplbrm-anthropic/courses/3b4fhvan16k1a/promo-image.1782949175.svg)](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/production-engineering-evals-security)
+<a href="https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/production-engineering-evals-security" target="_blank" rel="noopener noreferrer">
+  <img
+    src="https://cc.sj-cdn.net/instructor/4hdejjwplbrm-anthropic/courses/3b4fhvan16k1a/promo-image.1782949175.svg"
+    alt="Production Engineering, Evals & Security course thumbnail"
+    width="346"
+    height="449"
+    loading="lazy"
+  >
+</a>
 
 Learn to take an agent that works in development and prove it holds up under real production
 traffic.
@@ -116,7 +148,15 @@ Developer Platform
 
 ### [Accelerators & IP Contribution](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/accelerators-ip-contribution)
 
-[![Accelerators & IP Contribution course thumbnail](https://cc.sj-cdn.net/instructor/4hdejjwplbrm-anthropic/courses/10o8rk1co8szh/promo-image.1782949394.svg)](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/accelerators-ip-contribution)
+<a href="https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations/accelerators-ip-contribution" target="_blank" rel="noopener noreferrer">
+  <img
+    src="https://cc.sj-cdn.net/instructor/4hdejjwplbrm-anthropic/courses/10o8rk1co8szh/promo-image.1782949394.svg"
+    alt="Accelerators & IP Contribution course thumbnail"
+    width="410"
+    height="410"
+    loading="lazy"
+  >
+</a>
 
 Package a build that works into one that survives reuse, review, and deployment beyond the
 engagement that created it.

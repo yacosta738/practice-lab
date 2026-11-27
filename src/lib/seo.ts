@@ -1,5 +1,5 @@
 const MAX_SEO_TITLE_LENGTH = 55;
-const MAX_META_DESCRIPTION_LENGTH = 160;
+const MAX_META_DESCRIPTION_LENGTH = 140;
 
 export function limitSeoTitle(title: string): string {
 	const normalizedTitle = title.replace(/\s+/g, " ").trim();

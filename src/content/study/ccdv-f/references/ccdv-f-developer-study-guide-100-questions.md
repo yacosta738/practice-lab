@@ -1,5 +1,5 @@
 ---
-title: "Claude Certified Developer – Foundations: study companion and 100 practice questions"
+title: "Claude Developer Foundations: 100 Practice Questions"
 certification: CCDV-F
 updated: 2026-11-14
 language: en
