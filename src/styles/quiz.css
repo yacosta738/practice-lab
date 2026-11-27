@@ -937,7 +937,7 @@ label.small {
 .qgrid {
 	display: grid;
 	gap: 5px;
-	grid-template-columns: repeat(5, 1fr);
+	grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
 	margin-top: 14px;
 	max-height: 290px;
 	overflow-y: auto;
