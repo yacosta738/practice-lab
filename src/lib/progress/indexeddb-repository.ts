@@ -307,6 +307,15 @@ class IndexedDbProgressRepository implements ProgressRepository, StudyProgressRe
 				if (importSuppression?.value === true) {
 					throw new ProgressConflictError("Legacy progress import is suppressed after a reset.");
 				}
+				const sessions = transaction.objectStore("sessions");
+				const certificationSessions = await sessions
+					.index("by-certification")
+					.getAll(input.certificationId);
+				if (certificationSessions.some((session) => session.status === "in_progress")) {
+					throw new ProgressConflictError(
+						`Certification ${input.certificationId} already has a resumable session.`,
+					);
+				}
 
 				const generationToken = globalThis.crypto.randomUUID();
 				const backup: LegacyProgressBackup = {
@@ -353,17 +362,8 @@ class IndexedDbProgressRepository implements ProgressRepository, StudyProgressRe
 					const { input: sessionInput, status, finishedAt, evaluations = [] } = input.session;
 					const session = createInitialSession(sessionInput);
 					importedSessionId = session.id;
-					const sessions = transaction.objectStore("sessions");
 					if (await sessions.get(session.id)) {
 						throw new ProgressConflictError("A migrated session ID already exists.");
-					}
-					const certificationSessions = await sessions
-						.index("by-certification")
-						.getAll(input.certificationId);
-					if (!status && certificationSessions.some((item) => item.status === "in_progress")) {
-						throw new ProgressConflictError(
-							`Certification ${input.certificationId} already has a resumable session.`,
-						);
 					}
 
 					let imported = session;

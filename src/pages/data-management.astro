@@ -36,6 +36,69 @@ const certificationIds = certifications.map(({ slug }) => slug);
 			</p>
 
 			<div class="dataGrid">
+				<section
+					class="dataCard legacyMigrationCard"
+					id="legacy-progress"
+					aria-labelledby="legacy-progress-heading"
+				>
+					<p class="eyebrow">LEGACY RECORDS</p>
+					<h2 id="legacy-progress-heading">Legacy progress import</h2>
+					<p>
+						Import older certification progress from this browser. Download a versioned backup
+						before importing; the original browser record is not deleted.
+					</p>
+					<div class="legacyMigrationSelector">
+						<label class="dataLabel" for="legacy-migration-certification">
+							Certification to check
+							<select
+								id="legacy-migration-certification"
+								class="dataSelect"
+								aria-describedby="legacy-migration-help"
+							>
+								{certifications.map((certification) => (
+									<option value={certification.slug}>
+										{certification.subtitle} · {certification.title}
+									</option>
+								))}
+							</select>
+						</label>
+						<button id="check-legacy-progress" class="dataButton" type="button">
+							Check for legacy progress
+						</button>
+					</div>
+					<p id="legacy-migration-help" class="dataHint">
+						Select a certification to check for saved progress from an older version of Practice
+						Lab.
+					</p>
+					<p id="legacy-migration-summary" class="dataSummary">
+						Choose a certification to check for older progress.
+					</p>
+					<div id="legacy-migration-controls" class="legacyMigrationControls" hidden>
+						<p id="legacy-migration-instructions" class="dataHint" hidden>
+							Download a versioned backup of all known certification records before importing. The
+							original browser record will remain untouched.
+						</p>
+						<ul id="legacy-migration-warnings" class="legacyMigrationWarnings" hidden></ul>
+						<p id="legacy-active-session-warning" class="dataHint" hidden>
+							Finish or exit the active session before importing.
+						</p>
+						<div class="legacyMigrationActions">
+							<button id="download-legacy-progress-backup" class="dataButton" type="button">
+								Download legacy progress backup
+							</button>
+							<button
+								id="import-legacy-progress"
+								class="dataButton dataPrimary"
+								type="button"
+								aria-describedby="legacy-migration-instructions"
+								disabled
+							>
+								Import saved progress
+							</button>
+						</div>
+					</div>
+				</section>
+
 				<section class="dataCard" aria-labelledby="backup-heading">
 					<p class="eyebrow">PORTABILITY</p>
 					<h2 id="backup-heading">Backup and restore</h2>
@@ -168,9 +231,13 @@ const certificationIds = certifications.map(({ slug }) => slug);
 	margin: 0 0 10px;
 }
 
-.dataHeader > p:last-child,
-.dataCard > p:not(.eyebrow),
 .dataDialog > p {
+	color: var(--data-muted);
+	line-height: 1.6;
+}
+
+.dataHeader > p:last-child,
+.dataCard > p:not(.eyebrow) {
 	color: var(--data-muted);
 	line-height: 1.6;
 }
@@ -210,6 +277,29 @@ const certificationIds = certifications.map(({ slug }) => slug);
 .dataDangerCard {
 	grid-column: 1 / -1;
 	border-color: color-mix(in srgb, #a4262c 24%, var(--data-border));
+}
+
+.legacyMigrationCard {
+	grid-column: 1 / -1;
+}
+
+.legacyMigrationSelector,
+.legacyMigrationActions {
+	display: flex;
+	align-items: end;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.legacyMigrationControls {
+	display: grid;
+	gap: 12px;
+}
+
+.legacyMigrationWarnings {
+	margin: 0;
+	padding-inline-start: 24px;
+	color: var(--data-muted);
 }
 
 .dataSummary {
@@ -258,8 +348,14 @@ const certificationIds = certifications.map(({ slug }) => slug);
 	cursor: pointer;
 }
 
-.dataButton:hover:not(:disabled) {
-	border-color: #687386;
+.legacyMigrationSelector .dataLabel {
+	flex: 1 1 260px;
+}
+
+.legacyMigrationSelector .dataSelect,
+.legacyMigrationSelector .dataButton,
+.legacyMigrationActions .dataButton {
+	min-block-size: 44px;
 }
 
 .dataButton:focus-visible,
@@ -272,6 +368,10 @@ const certificationIds = certifications.map(({ slug }) => slug);
 .dataButton:disabled {
 	cursor: not-allowed;
 	opacity: 0.55;
+}
+
+.dataButton:hover:not(:disabled) {
+	border-color: #687386;
 }
 
 .dataPrimary {
@@ -349,12 +449,35 @@ const certificationIds = certifications.map(({ slug }) => slug);
 	.dataDangerCard {
 		grid-column: auto;
 	}
+
+	.legacyMigrationCard {
+		grid-column: auto;
+	}
+
+	.legacyMigrationSelector,
+	.legacyMigrationActions {
+		align-items: stretch;
+		flex-direction: column;
+	}
 }
 </style>
 
 <script>
+import {
+	type BrowserProgressService,
+	type BrowserProgressState,
+	createBrowserProgressService,
+} from "../lib/progress/browser-service";
 import { DataManagementService } from "../lib/progress/data-management-service";
 import { MAX_LEARNING_BACKUP_SIZE } from "../lib/progress/learning-backup";
+import type { CertificationConfig, Question } from "../lib/quiz-types";
+
+const certificationConfigModules = import.meta.glob<{ config: CertificationConfig }>(
+	"../certifications/*/config.ts",
+);
+const certificationQuestionModules = import.meta.glob<{ questions: Question[] }>(
+	"../certifications/*/questions.ts",
+);
 
 const page = document.querySelector<HTMLElement>(".dataManager");
 const status = document.getElementById("data-status");
@@ -379,10 +502,32 @@ const resetDialogStatus = document.getElementById("reset-dialog-status");
 const resetCertification = document.getElementById(
 	"reset-certification",
 ) as HTMLSelectElement | null;
+const legacyCertification = document.getElementById(
+	"legacy-migration-certification",
+) as HTMLSelectElement | null;
+const checkLegacyProgressButton = document.getElementById(
+	"check-legacy-progress",
+) as HTMLButtonElement | null;
+const legacyMigrationSummary = document.getElementById("legacy-migration-summary");
+const legacyMigrationControls = document.getElementById("legacy-migration-controls");
+const legacyMigrationInstructions = document.getElementById("legacy-migration-instructions");
+const legacyMigrationWarnings = document.getElementById("legacy-migration-warnings");
+const legacyActiveSessionWarning = document.getElementById("legacy-active-session-warning");
+const downloadLegacyProgressBackup = document.getElementById(
+	"download-legacy-progress-backup",
+) as HTMLButtonElement | null;
+const importLegacyProgress = document.getElementById(
+	"import-legacy-progress",
+) as HTMLButtonElement | null;
 const certificationIds = page?.dataset.certificationIds
 	? (JSON.parse(page.dataset.certificationIds) as string[])
 	: [];
 const service = new DataManagementService(certificationIds);
+let legacyProgressService: BrowserProgressService | undefined;
+let legacyCertificationConfig: CertificationConfig | undefined;
+let legacyCertificationId: string | undefined;
+let legacyInvalidationCleanup: (() => void) | undefined;
+let legacyCheckSequence = 0;
 type ReviewedBackup = {
 	backup: Awaited<ReturnType<typeof service.validateBackup>>;
 	fingerprint: string;
@@ -439,6 +584,229 @@ async function refreshSummary() {
 			: "Last backup: no backup has been created in this browser yet.";
 	}
 }
+
+function renderLegacyMigrationState(
+	state: BrowserProgressState,
+	certification: CertificationConfig,
+): void {
+	const pending = state.migrationPending;
+	const hasWarnings = state.migrationWarnings.length > 0;
+	const activeSession = state.currentSession?.status === "in_progress";
+	if (legacyMigrationSummary) {
+		legacyMigrationSummary.textContent = state.legacyWriteDetected
+			? `Legacy progress for ${certification.subtitle} changed in an older tab. Import is paused.`
+			: pending
+				? `Legacy progress is ready to import for ${certification.subtitle}.`
+				: `No legacy progress is waiting to import for ${certification.subtitle}.`;
+	}
+	if (legacyMigrationControls) legacyMigrationControls.hidden = !pending && !hasWarnings;
+	if (legacyMigrationInstructions) legacyMigrationInstructions.hidden = !pending;
+	if (legacyMigrationWarnings) {
+		legacyMigrationWarnings.replaceChildren(
+			...state.migrationWarnings.map((warning) => {
+				const item = document.createElement("li");
+				item.textContent = warning;
+				return item;
+			}),
+		);
+		legacyMigrationWarnings.hidden = !hasWarnings;
+	}
+	if (legacyActiveSessionWarning) {
+		legacyActiveSessionWarning.hidden = !pending || !activeSession;
+	}
+	if (downloadLegacyProgressBackup) downloadLegacyProgressBackup.hidden = !pending;
+	if (importLegacyProgress) {
+		importLegacyProgress.hidden = !pending;
+		importLegacyProgress.disabled =
+			state.legacyWriteDetected || !state.backupReady || activeSession;
+		importLegacyProgress.setAttribute(
+			"aria-describedby",
+			activeSession
+				? "legacy-migration-instructions legacy-active-session-warning"
+				: "legacy-migration-instructions",
+		);
+	}
+	if (state.legacyWriteDetected) {
+		showStatus("Legacy progress changed in an older tab. Import is paused.", true);
+	} else if (pending) {
+		showStatus(
+			activeSession
+				? "Finish or exit the active session before importing."
+				: `Legacy progress is ready to import for ${certification.subtitle}. Download a backup to continue.`,
+		);
+	} else {
+		showStatus(`No legacy progress is waiting to import for ${certification.subtitle}.`);
+	}
+}
+
+async function checkLegacyProgress(certificationId: string): Promise<void> {
+	const sequence = ++legacyCheckSequence;
+	if (!certificationIds.includes(certificationId)) {
+		showStatus("Select an available certification before checking legacy progress.", true);
+		return;
+	}
+	if (
+		legacyProgressService &&
+		legacyCertificationConfig &&
+		legacyCertificationId === certificationId
+	) {
+		const currentService = legacyProgressService;
+		const currentConfig = legacyCertificationConfig;
+		try {
+			const state = await currentService.readState();
+			if (
+				sequence !== legacyCheckSequence ||
+				legacyProgressService !== currentService ||
+				legacyCertificationConfig !== currentConfig ||
+				legacyCertificationId !== certificationId
+			) {
+				return;
+			}
+			renderLegacyMigrationState(state, currentConfig);
+		} catch (error) {
+			if (sequence !== legacyCheckSequence || legacyProgressService !== currentService) return;
+			const message =
+				error instanceof Error ? error.message : "Legacy progress could not be checked.";
+			if (legacyMigrationSummary) legacyMigrationSummary.textContent = message;
+			showStatus(message, true);
+		}
+		return;
+	}
+
+	legacyInvalidationCleanup?.();
+	legacyInvalidationCleanup = undefined;
+	legacyProgressService?.close();
+	legacyProgressService = undefined;
+	legacyCertificationConfig = undefined;
+	legacyCertificationId = undefined;
+	if (legacyMigrationControls) legacyMigrationControls.hidden = true;
+	if (legacyMigrationSummary)
+		legacyMigrationSummary.textContent = "Checking for saved legacy progress…";
+	showStatus("Checking for saved legacy progress…");
+
+	let candidate: BrowserProgressService | undefined;
+	try {
+		const configLoader =
+			certificationConfigModules[`../certifications/${certificationId}/config.ts`];
+		const questionLoader =
+			certificationQuestionModules[`../certifications/${certificationId}/questions.ts`];
+		if (!configLoader || !questionLoader) {
+			throw new Error("The selected certification is not available for legacy import.");
+		}
+		const [configModule, questionModule] = await Promise.all([configLoader(), questionLoader()]);
+		candidate = createBrowserProgressService({
+			certificationId,
+			config: configModule.config,
+			questions: questionModule.questions,
+			knownCertificationIds: certificationIds,
+		});
+		const state = await candidate.initialize();
+		if (sequence !== legacyCheckSequence) {
+			candidate.close();
+			return;
+		}
+		const currentService = candidate;
+		legacyProgressService = currentService;
+		legacyCertificationConfig = configModule.config;
+		legacyCertificationId = certificationId;
+		candidate = undefined;
+		legacyInvalidationCleanup = currentService.onInvalidation(() => {
+			if (
+				legacyProgressService !== currentService ||
+				legacyCertificationConfig !== configModule.config ||
+				legacyCertificationId !== certificationId
+			) {
+				return;
+			}
+			void currentService
+				.readState()
+				.then((currentState) => {
+					if (
+						legacyProgressService !== currentService ||
+						legacyCertificationConfig !== configModule.config ||
+						legacyCertificationId !== certificationId
+					) {
+						return;
+					}
+					renderLegacyMigrationState(currentState, configModule.config);
+				})
+				.catch((error: unknown) => {
+					if (legacyProgressService !== currentService) return;
+					const message =
+						error instanceof Error ? error.message : "Legacy progress could not be checked.";
+					if (legacyMigrationSummary) legacyMigrationSummary.textContent = message;
+					showStatus(message, true);
+				});
+		});
+		renderLegacyMigrationState(state, configModule.config);
+	} catch (error) {
+		candidate?.close();
+		if (sequence !== legacyCheckSequence) return;
+		const message =
+			error instanceof Error ? error.message : "Legacy progress could not be checked.";
+		if (legacyMigrationSummary) legacyMigrationSummary.textContent = message;
+		showStatus(message, true);
+	}
+}
+
+checkLegacyProgressButton?.addEventListener("click", () => {
+	if (legacyCertification) void checkLegacyProgress(legacyCertification.value);
+});
+
+downloadLegacyProgressBackup?.addEventListener("click", async () => {
+	const currentService = legacyProgressService;
+	const currentConfig = legacyCertificationConfig;
+	if (!currentService || !currentConfig) return;
+	const button = downloadLegacyProgressBackup;
+	button.disabled = true;
+	try {
+		await currentService.downloadDataBackup();
+		const state = await currentService.readState();
+		if (legacyProgressService !== currentService || legacyCertificationConfig !== currentConfig) {
+			return;
+		}
+		renderLegacyMigrationState(state, currentConfig);
+		showStatus(`A versioned legacy progress backup was downloaded for ${currentConfig.subtitle}.`);
+	} catch (error) {
+		if (legacyProgressService !== currentService || legacyCertificationConfig !== currentConfig) {
+			return;
+		}
+		const message =
+			error instanceof Error ? error.message : "The legacy progress backup could not be created.";
+		showStatus(message, true);
+	} finally {
+		button.disabled = false;
+	}
+});
+
+importLegacyProgress?.addEventListener("click", async () => {
+	const currentService = legacyProgressService;
+	const currentConfig = legacyCertificationConfig;
+	if (!currentService || !currentConfig) return;
+	importLegacyProgress.disabled = true;
+	try {
+		const state = await currentService.migrateLegacyProgress();
+		await refreshSummary();
+		if (legacyProgressService !== currentService || legacyCertificationConfig !== currentConfig) {
+			return;
+		}
+		renderLegacyMigrationState(state, currentConfig);
+		if (legacyMigrationSummary) {
+			legacyMigrationSummary.textContent = `Legacy progress was imported for ${currentConfig.subtitle}.`;
+		}
+		showStatus(`Legacy progress was imported for ${currentConfig.subtitle}.`);
+	} catch (error) {
+		if (legacyProgressService !== currentService || legacyCertificationConfig !== currentConfig) {
+			return;
+		}
+		const state = await currentService.readState().catch(() => undefined);
+		if (state) renderLegacyMigrationState(state, currentConfig);
+		const message =
+			error instanceof Error ? error.message : "Legacy progress could not be imported.";
+		if (legacyMigrationSummary) legacyMigrationSummary.textContent = message;
+		showStatus(message, true);
+	}
+});
 
 async function updateStorageStatus() {
 	const storage = navigator.storage;
@@ -715,9 +1083,29 @@ persistenceButton?.addEventListener("click", async () => {
 });
 
 void Promise.all([refreshSummary(), updateStorageStatus()]).then(
-	() => showStatus("Browser learning data is ready."),
+	() => {
+		showStatus("Browser learning data is ready.");
+		const requestedMigration = new URLSearchParams(window.location.search).get("migration");
+		if (
+			requestedMigration &&
+			certificationIds.includes(requestedMigration) &&
+			legacyCertification
+		) {
+			legacyCertification.value = requestedMigration;
+			void checkLegacyProgress(requestedMigration);
+		}
+	},
 	(error) =>
 		showStatus(error instanceof Error ? error.message : "Browser data could not be read.", true),
 );
-window.addEventListener("pagehide", () => void service.close(), { once: true });
+window.addEventListener(
+	"pagehide",
+	() => {
+		legacyInvalidationCleanup?.();
+		legacyInvalidationCleanup = undefined;
+		legacyProgressService?.close();
+		void service.close();
+	},
+	{ once: true },
+);
 </script>

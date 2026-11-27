@@ -552,6 +552,113 @@ describe("IndexedDB progress repository", () => {
 		});
 	});
 
+	it("rejects legacy migration while any session is active without writing migration data", async () => {
+		const activeSession = await repository.createSession(
+			sessionInput("00000000-0000-4000-8000-000000000099"),
+		);
+		const migration: LegacyProgressMigrationInput = {
+			certificationId: "ccdv-f",
+			legacyStorageKey: "ccdv-f-practice-lab-v2",
+			rawValue: '{"stats":{"removed-question":{"attempts":2,"correct":1,"lastWrong":true}}}',
+			migratedAt: 300,
+			baselines: [
+				{
+					questionId: "removed-question",
+					baseline: { attempts: 2, correct: 1, lastWrong: true },
+				},
+			],
+			warnings: [],
+		};
+
+		await expect(repository.migrateLegacyData(migration)).rejects.toBeInstanceOf(
+			ProgressConflictError,
+		);
+		expect(await repository.getSession(activeSession.id)).toMatchObject({ status: "in_progress" });
+		expect(await repository.getQuestionProgress("ccdv-f", "removed-question")).toBeUndefined();
+		expect(await repository.getMetadata("legacy-backup:ccdv-f")).toBeUndefined();
+		expect(await repository.getMetadata("migration:legacy-v2:ccdv-f")).toBeUndefined();
+	});
+
+	it("serializes starting a session with legacy import without partially applying either", async () => {
+		const migration: LegacyProgressMigrationInput = {
+			certificationId: "ccdv-f",
+			legacyStorageKey: "ccdv-f-practice-lab-v2",
+			rawValue: '{"stats":{"removed-question":{"attempts":2,"correct":1,"lastWrong":true}}}',
+			migratedAt: 300,
+			baselines: [
+				{
+					questionId: "removed-question",
+					baseline: { attempts: 2, correct: 1, lastWrong: true },
+				},
+			],
+			warnings: [],
+		};
+		await repository.getMetadata("migration:legacy-v2:ccdv-f");
+		const startingSession = repository.createSession(
+			sessionInput("00000000-0000-4000-8000-000000000098", "ccdv-f", 200, "exam"),
+		);
+		const importingLegacy = repository.migrateLegacyData(migration);
+		const [sessionResult, migrationResult] = await Promise.allSettled([
+			startingSession,
+			importingLegacy,
+		]);
+
+		expect(sessionResult.status).toBe("fulfilled");
+		const activeSession = await repository.getActiveSession("ccdv-f");
+		expect(activeSession).toMatchObject({
+			id: "00000000-0000-4000-8000-000000000098",
+			mode: "exam",
+			status: "in_progress",
+		});
+
+		expect(migrationResult.status).toBe("rejected");
+		if (migrationResult.status === "rejected") {
+			expect(migrationResult.reason).toBeInstanceOf(ProgressConflictError);
+		}
+		expect(await repository.getMetadata("migration:legacy-v2:ccdv-f")).toBeUndefined();
+		expect(await repository.getMetadata("legacy-backup:ccdv-f")).toBeUndefined();
+		expect(await repository.getQuestionProgress("ccdv-f", "removed-question")).toBeUndefined();
+	});
+
+	it("serializes legacy import before starting a session without partially applying either", async () => {
+		const migration: LegacyProgressMigrationInput = {
+			certificationId: "ccdv-f",
+			legacyStorageKey: "ccdv-f-practice-lab-v2",
+			rawValue: '{"stats":{"removed-question":{"attempts":2,"correct":1,"lastWrong":true}}}',
+			migratedAt: 300,
+			baselines: [
+				{
+					questionId: "removed-question",
+					baseline: { attempts: 2, correct: 1, lastWrong: true },
+				},
+			],
+			warnings: [],
+		};
+		await repository.getMetadata("migration:legacy-v2:ccdv-f");
+		const importingLegacy = repository.migrateLegacyData(migration);
+		const startingSession = repository.createSession(
+			sessionInput("00000000-0000-4000-8000-000000000097", "ccdv-f", 200, "exam"),
+		);
+		const [migrationResult, sessionResult] = await Promise.allSettled([
+			importingLegacy,
+			startingSession,
+		]);
+
+		expect(migrationResult.status).toBe("fulfilled");
+		expect(sessionResult.status).toBe("fulfilled");
+		expect(await repository.getMetadata("migration:legacy-v2:ccdv-f")).toMatchObject({
+			certificationId: "ccdv-f",
+		});
+		expect(await repository.getQuestionProgress("ccdv-f", "removed-question")).toMatchObject({
+			legacyBaseline: { attempts: 2, correct: 1, lastWrong: true },
+		});
+		expect(await repository.getActiveSession("ccdv-f")).toMatchObject({
+			id: "00000000-0000-4000-8000-000000000097",
+			mode: "exam",
+			status: "in_progress",
+		});
+	});
+
 	it("aborts an invalid legacy import without leaving its marker or backup", async () => {
 		const migration: LegacyProgressMigrationInput = {
 			certificationId: "ccdv-f",

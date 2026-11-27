@@ -184,15 +184,31 @@ test("does not fabricate frozen history from an older submitted local session", 
 		);
 	}, questionId);
 	await page.reload();
-	const migrationPanel = page
-		.getByRole("status")
-		.filter({ hasText: "Legacy progress is ready to import" });
+	await expect(
+		page.getByText("Legacy progress is ready to import", { exact: false }),
+	).toBeVisible();
+	await expect(page.getByRole("button", { name: "Import saved progress" })).toHaveCount(0);
+	await page.getByRole("link", { name: "Back up and import progress" }).click();
+	await expect(page).toHaveURL(/\/data-management\/\?migration=ccdv-f#legacy-progress/);
+	const migrationPanel = page.getByRole("region", { name: "Legacy progress import" });
 	await expect(migrationPanel).toBeVisible();
-	const backupDownload = page.waitForEvent("download");
-	await migrationPanel.getByRole("button", { name: "Download data backup" }).click();
-	await backupDownload;
+	const backupButton = migrationPanel.getByRole("button", {
+		name: "Download legacy progress backup",
+	});
+	await backupButton.evaluate((element) => {
+		element.setAttribute("data-test-clicked", "false");
+		element.addEventListener("click", () => element.setAttribute("data-test-clicked", "true"), {
+			once: true,
+		});
+	});
+	await backupButton.click();
+	await expect(backupButton).toHaveAttribute("data-test-clicked", "true");
+	await expect(migrationPanel.getByRole("button", { name: "Import saved progress" })).toBeEnabled();
+	await expect(page.getByRole("status")).toContainText(
+		"A versioned legacy progress backup was downloaded for CCDV-F.",
+	);
 	await migrationPanel.getByRole("button", { name: "Import saved progress" }).click();
-	await expect(migrationPanel).toHaveCount(0);
+	await expect(migrationPanel).toContainText("Legacy progress was imported for CCDV-F.");
 	await page.goto(`${BASE_PATH}/progress/`);
 	await expect(page.locator("#history-rows .progressEmpty")).toContainText("No saved sessions yet");
 	await expect(

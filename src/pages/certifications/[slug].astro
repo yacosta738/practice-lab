@@ -233,7 +233,7 @@ document.addEventListener("click", (event: MouseEvent) => {
 		}
 		if (progressState.migrationPending) {
 			notices.push(
-				`<section class="panel padded" role="status"><h2>Legacy progress is ready to import</h2><p>Download a versioned backup of all known certification records before importing. The original browser keys will remain untouched; reverting to an older app will not include progress created after migration.</p>${migrationNoticeList(progressState.migrationWarnings)}<div class="actions"><button class="ghost" data-action="download-backup">Download data backup</button><button class="primary" data-action="migrate-progress" ${progressState.backupReady ? "" : "disabled"}>Import saved progress</button></div></section>`,
+				`<p class="small muted">Legacy progress is ready to import. You can take a mock exam before importing. <a href="${base}data-management/?migration=${encodeURIComponent(cfg.slug)}#legacy-progress">Back up and import progress</a>.</p>`,
 			);
 		} else if (progressState.migrationWarnings.length) {
 			notices.push(
@@ -684,7 +684,7 @@ document.addEventListener("click", (event: MouseEvent) => {
 				<h3>Timed mock exam</h3>
 				<p>${cfg.totalQuestions} questions mapped to the ${cfg.blueprintSource === "official" ? "official blueprint" : "available question-bank distribution"}.</p>
 				<p class="small muted">${cfg.examMinutes ?? 120} minutes. The timer continues if you leave; return here to resume your saved exam.</p>
-				<button class="primary" data-action="start-exam" ${progressState.migrationPending || progressState.legacyWriteDetected ? "disabled" : ""}>Start mock exam</button>
+				<button class="primary" data-action="start-exam" ${progressState.legacyWriteDetected ? "disabled" : ""}>Start mock exam</button>
 			</div>`
 			: `<div class="config configTop">
 				<div>
@@ -1224,10 +1224,8 @@ document.addEventListener("click", (event: MouseEvent) => {
 		}
 		if (checking) return;
 		if (persistenceError || (invalidationMessage && !progressState.legacyWriteDetected)) return;
-		if (
-			progressState.migrationPending &&
-			!["download-backup", "migrate-progress"].includes(action)
-		) {
+		const examFlowActive = activeSession?.mode === "exam" || session?.mode === "exam";
+		if (progressState.migrationPending && action !== "start-exam" && !examFlowActive) {
 			return;
 		}
 		if (
@@ -1249,21 +1247,6 @@ document.addEventListener("click", (event: MouseEvent) => {
 				progressState = await progressService.reconcileLegacyWrite();
 				saved.stats = progressState.stats;
 				invalidationMessage = "";
-				persistenceError = null;
-				render();
-				return;
-			}
-			if (action === "migrate-progress") {
-				progressState = await progressService.migrateLegacyProgress();
-				saved.stats = progressState.stats;
-				if (progressState.currentSession) {
-					const currentSession = applyProgressSession(progressState.currentSession);
-					if (currentSession.submitted) {
-						const url = new URL(window.location.href);
-						url.searchParams.set("result", currentSession.progress.id);
-						history.replaceState(null, "", url);
-					}
-				}
 				persistenceError = null;
 				render();
 				return;

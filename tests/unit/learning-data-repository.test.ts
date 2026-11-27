@@ -1,12 +1,13 @@
 import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	type BrowserProgressOptions,
 	BrowserProgressService,
 } from "../../src/lib/progress/browser-service";
 import { openProgressDatabase } from "../../src/lib/progress/database";
 import { createProgressRepository } from "../../src/lib/progress/indexeddb-repository";
+import { buildLegacyMigrationPlan } from "../../src/lib/progress/legacy-migration";
 import {
 	createInitialSession,
 	createQuestionAttempt,
@@ -376,6 +377,138 @@ describe("global learning data repository operations", () => {
 		expect(
 			(unsuppressedService as unknown as { legacyWriteDetected: boolean }).legacyWriteDetected,
 		).toBe(true);
+	});
+
+	it("rejects legacy migration after an old-tab write even when storage returns to the original value", async () => {
+		const rawValue = JSON.stringify({ stats: {}, session: null });
+		const service = new BrowserProgressService({
+			certificationId: "ccdv-f",
+			config: {} as BrowserProgressOptions["config"],
+			questions: [],
+			knownCertificationIds: CERTIFICATION_IDS,
+		});
+		const migrateLegacyData = vi.fn().mockResolvedValue({
+			generationToken: "generation-after-migration",
+			warnings: [],
+		});
+		Object.defineProperty(service, "useCases", {
+			value: {
+				migrateLegacyData,
+				getActiveSession: vi.fn().mockResolvedValue(undefined),
+				getRecentSessionSummaries: vi.fn().mockResolvedValue([]),
+				getQuestionProgressForCertification: vi.fn().mockResolvedValue([]),
+			},
+		});
+		const internal = service as unknown as {
+			initialized: boolean;
+			originalLegacyValue: string | null;
+			pendingMigrationPlan?: ReturnType<typeof buildLegacyMigrationPlan>;
+			backupReady: boolean;
+			legacyWriteDetected: boolean;
+		};
+		internal.initialized = true;
+		internal.originalLegacyValue = rawValue;
+		internal.pendingMigrationPlan = buildLegacyMigrationPlan({
+			certificationId: "ccdv-f",
+			legacyStorageKey: "ccdv-f-practice-lab-v2",
+			rawValue,
+			config: {} as BrowserProgressOptions["config"],
+			questions: [],
+			now: 100,
+		});
+		internal.backupReady = true;
+		internal.legacyWriteDetected = true;
+		vi.stubGlobal("window", {
+			localStorage: {
+				getItem: (key: string) => (key === "ccdv-f-practice-lab-v2" ? rawValue : null),
+			},
+			removeEventListener: vi.fn(),
+		});
+
+		try {
+			await expect(service.migrateLegacyProgress()).rejects.toThrow(
+				/legacy progress changed in an older tab/i,
+			);
+			expect(migrateLegacyData).not.toHaveBeenCalled();
+		} finally {
+			service.close();
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it("blocks import immediately while checking whether an old-tab write is suppressed", async () => {
+		const rawValue = JSON.stringify({ stats: {}, session: null });
+		let resolveSuppression!: (value: unknown) => void;
+		const suppressionCheck = new Promise<unknown>((resolve) => {
+			resolveSuppression = resolve;
+		});
+		const service = new BrowserProgressService({
+			certificationId: "ccdv-f",
+			config: {} as BrowserProgressOptions["config"],
+			questions: [],
+			knownCertificationIds: CERTIFICATION_IDS,
+		});
+		const migrateLegacyData = vi.fn().mockResolvedValue({
+			generationToken: "generation-after-migration",
+			warnings: [],
+		});
+		Object.defineProperty(service, "useCases", {
+			value: {
+				migrateLegacyData,
+				getMetadata: vi.fn().mockReturnValue(suppressionCheck),
+				getActiveSession: vi.fn().mockResolvedValue(undefined),
+				getRecentSessionSummaries: vi.fn().mockResolvedValue([]),
+				getQuestionProgressForCertification: vi.fn().mockResolvedValue([]),
+			},
+		});
+		const internal = service as unknown as {
+			initialized: boolean;
+			originalLegacyValue: string | null;
+			pendingMigrationPlan?: ReturnType<typeof buildLegacyMigrationPlan>;
+			backupReady: boolean;
+			legacyWriteDetected: boolean;
+			onStorageChange: (event: StorageEvent) => Promise<void>;
+		};
+		internal.initialized = true;
+		internal.originalLegacyValue = rawValue;
+		internal.pendingMigrationPlan = buildLegacyMigrationPlan({
+			certificationId: "ccdv-f",
+			legacyStorageKey: "ccdv-f-practice-lab-v2",
+			rawValue,
+			config: {} as BrowserProgressOptions["config"],
+			questions: [],
+			now: 100,
+		});
+		internal.backupReady = true;
+		internal.legacyWriteDetected = false;
+		vi.stubGlobal("window", {
+			localStorage: {
+				getItem: (key: string) => (key === "ccdv-f-practice-lab-v2" ? rawValue : null),
+			},
+			removeEventListener: vi.fn(),
+		});
+
+		const storageChange = internal.onStorageChange({
+			key: "ccdv-f-practice-lab-v2",
+			newValue: "changed-then-reverted",
+		} as StorageEvent);
+		const detectedBeforeMetadata = internal.legacyWriteDetected;
+		const migrationAttempt = service.migrateLegacyProgress();
+		resolveSuppression(undefined);
+		try {
+			const [migrationResult] = await Promise.allSettled([migrationAttempt, storageChange]);
+			expect(migrationResult.status).toBe("rejected");
+			expect(detectedBeforeMetadata).toBe(true);
+			if (migrationResult.status === "rejected") {
+				expect(migrationResult.reason).toMatchObject({
+					message: expect.stringMatching(/legacy progress changed in an older tab/i),
+				});
+			}
+			expect(migrateLegacyData).not.toHaveBeenCalled();
+		} finally {
+			service.close();
+			vi.unstubAllGlobals();
+		}
 	});
 
 	it("rejects a stale restore fingerprint without replacing current records", async () => {
