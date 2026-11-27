@@ -32,7 +32,8 @@ whether the gap improved. A retry alone is not a diagnosis.
 
 ## Scenario
 
-A team member asks Claude to summarize a Project policy file, but the response leaves out the policy's
+A team member asks Claude to summarize a Project policy file, but the response leaves out the
+policy's
 effective date. The member checks whether the date appears in the current file, whether the correct
 file is in the Project, and whether the prompt asks for the date. If the source is current and
 available, the member makes the output requirement explicit and tests the response against the same

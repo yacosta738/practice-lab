@@ -39,7 +39,8 @@ and permitted actions. Use a Skill for a repeatable procedure that benefits from
 ## Keep configuration useful
 
 Assign an owner to important instructions, knowledge files, and connectors. Remove stale or
-contradictory material. Make the source and review date clear for reference files. After a meaningful
+contradictory material. Make the source and review date clear for reference files. After a
+meaningful
 change, test the configuration with a normal task and a case that checks a boundary or exception.
 
 Enhanced Project knowledge with retrieval-augmented generation (RAG) is listed for eligible paid

@@ -13,6 +13,7 @@ course_access: public-syllabi-only; private-lessons-not-accessed
 > These are 100 **original practice questions**, not leaked or reconstructed live exam items. They
 > were written using the
 >
+>
 > public [CCDV-F Exam Guide v1.0](https://drive.google.com/file/d/1aWhE373XnbPEcYbzXV6VjRfjHpUQdM9s/view),
 > public course curricula and primary-source documentation. The authenticated Skilljar videos,
 > transcripts and lessons were not available for extraction.

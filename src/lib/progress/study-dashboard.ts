@@ -129,12 +129,14 @@ export function initializeStudyDashboard(): void {
 		goalStatus.textContent = "";
 		void loadStudyProgress();
 	});
+
 	function subscribeToChanges(): void {
 		service.onChange((kind) => {
 			if (kind === "practice" && goal?.targetQuestionCount == null) return;
 			scheduleStudyRefresh();
 		});
 	}
+
 	subscribeToChanges();
 	window.addEventListener("pagehide", () => {
 		loadSequence++;

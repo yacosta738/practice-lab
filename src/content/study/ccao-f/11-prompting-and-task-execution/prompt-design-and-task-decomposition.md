@@ -35,7 +35,8 @@ Not every task needs every item. Use more detail when the cost of a wrong assump
 
 ## Decompose and iterate
 
-Break work into steps when a request has distinct decisions or outputs. Give each step a clear result
+Break work into steps when a request has distinct decisions or outputs. Give each step a clear
+result
 to review before continuing. For example, an analysis can first list evidence, then compare options,
 then draft a recommendation. Decomposition makes omissions easier to spot; it does not make the
 intermediate result correct by itself.
@@ -46,7 +47,8 @@ adding repeated reminders that point in different directions.
 
 ## Scenario
 
-A project coordinator has meeting notes and needs a follow-up list. The prompt asks Claude to extract
+A project coordinator has meeting notes and needs a follow-up list. The prompt asks Claude to
+extract
 decisions, action owners, and dates; keep each category separate; mark any missing owner or date as
 unknown; and return a concise table for the team. The coordinator checks the table against the notes
 before sending it. If Claude merges a suggestion with an agreed decision, the next prompt clarifies

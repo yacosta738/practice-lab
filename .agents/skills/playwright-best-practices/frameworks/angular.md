@@ -21,6 +21,7 @@
 > Router navigation, lazy-loaded modules, signals, observables, and Zone.js change detection.
 >
 >
+>
 > **Prerequisites**: [core/configuration.md](../core/configuration.md), [core/locators.md](../core/locators.md)
 
 ## Configuration

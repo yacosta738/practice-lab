@@ -37,8 +37,10 @@ location, work history, or other correlated details may still create unfair outc
 
 ## Scenario
 
-A team proposes using customer messages to rank people for a service restriction. Before any rollout,
-the team checks whether the use is allowed by current policy, whether the people and systems involved
+A team proposes using customer messages to rank people for a service restriction. Before any
+rollout,
+the team checks whether the use is allowed by current policy, whether the people and systems
+involved
 are authorized to use the messages, and whether the data handling matches applicable privacy and
 organizational requirements. It also examines whether the ranking could produce unfair results,
 including through proxy information. The team pauses automated restrictions until responsible owners

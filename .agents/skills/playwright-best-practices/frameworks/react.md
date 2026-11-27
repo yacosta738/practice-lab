@@ -14,6 +14,7 @@
 > and context/state verification.
 >
 >
+>
 > **Prerequisites**: [configuration.md](../core/configuration.md), [locators.md](../core/locators.md)
 
 ## Patterns

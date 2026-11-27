@@ -23,7 +23,7 @@ metadata: <https://registry.npmjs.org/idb/8.0.4> (version and license checked 20
 The origin-scoped database name is `practice-lab`. Schema version 1 has these stores:
 
 | Store              | Primary key                     | Indexes                                                | Contract                                                                                                                                |
-| ------------------ | ------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+|--------------------|---------------------------------|--------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
 | `sessions`         | `id` (UUID)                     | `certificationId`, `status`, `startedAt`, `finishedAt` | Revisioned session checkpoint, status/timestamps, frozen scoring and question revision/content-hash provenance.                         |
 | `questionAttempts` | `[sessionId, questionId]`       | `certificationId`, `domainId`, `evaluatedAt`           | One finalized evaluation per session/question, with stable selected-option IDs, outcome, score, evaluation time, and question revision. |
 | `questionProgress` | `[certificationId, questionId]` | `certificationId`                                      | Rebuildable attempt projection plus an independent nullable legacy aggregate baseline.                                                  |
