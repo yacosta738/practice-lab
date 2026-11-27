@@ -25,7 +25,13 @@ const {
 	disableAnalytics = false,
 } = Astro.props;
 
-const seoTitle = activeCertCode ? `${title} | Study ${activeCertCode}` : `${title} | Practice Lab`;
+const baseSeoTitle = activeCertCode
+	? `${title} | Study ${activeCertCode}`
+	: `${title} | Practice Lab`;
+const seoTitle =
+	activeCertCode && baseSeoTitle.length < 30
+		? `${title} | ${activeCertCode} Certification Study`
+		: baseSeoTitle;
 ---
 
 <Layout title={seoTitle} description={description} disableAnalytics={disableAnalytics}>
