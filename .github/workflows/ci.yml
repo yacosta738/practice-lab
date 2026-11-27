@@ -226,16 +226,19 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: .lycheecache
-          key: cache-lychee-${{ github.sha }}
-          restore-keys: cache-lychee-
+          key: cache-lychee-nightly-${{ github.sha }}
+          restore-keys: cache-lychee-nightly-
 
       - name: Check source links
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
           fail: true
+          lycheeVersion: nightly
           args: >
             --cache
             --max-cache-age 1d
+            --max-retries 3
+            --retry-wait-time 1
             --verbose
             --no-progress
             'src/certifications/**/*.ts'
