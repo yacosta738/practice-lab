@@ -72,7 +72,45 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 	domains={sidebarDomains}
 	theme={certConfig.theme}
 >
-	<!-- Quiz data passed inline -->
+	<div class="hero">
+		<span class="eyebrow">{certConfig.subtitle} · {certConfig.title}</span>
+		<h1>Know the platform.<br>Ship with confidence.</h1>
+		<p class="lead">
+			{questions.length} source-linked practice questions across the{" "}
+			{Object.keys(certConfig.domains).length} domains for the
+			<strong>{certConfig.title}</strong>{" "}
+			certification. Learn by doing, then test your readiness.
+		</p>
+		{certConfig.examGuideNote && (
+			<p class="examGuideNote" data-exam-guide-note>
+				{certConfig.examGuideNote}
+			</p>
+		)}
+		<div class="readinessBar">
+			<div class="readinessMeta">
+				<span>Last attempt correct · 0 of {questions.length} questions</span>
+				<strong class="mono">0%</strong>
+			</div>
+			<progress
+				class="progress"
+				value="0"
+				max={questions.length}
+				aria-label="Questions with last attempt correct"
+			></progress>
+		</div>
+		<div class="ctaRow">
+			<a class="primary" href="#session">Choose practice settings</a>
+			{studyHref && (
+				<a class="ghost ghostOnDark" href={studyHref} data-action="go-to-site-home">
+					Open study notes
+				</a>
+			)}
+			<a class="ghost ghostOnDark" href="#coverage">See your progress</a>
+		</div>
+	</div>
+	<noscript>
+		<p class="muted">Enable JavaScript to start the interactive practice session.</p>
+	</noscript>
 </QuizLayout>
 
 <div

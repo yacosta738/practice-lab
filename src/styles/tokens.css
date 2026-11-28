@@ -78,7 +78,7 @@
 	/* Typography */
 	--shadow-lg: none;
 	--shadow-md: none;
-	--font-mono: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+	--font-mono: var(--font-ibm-plex-mono), "SF Mono", ui-monospace, monospace;
 	--pill-negative-bg: var(--error-soft);
 	--pill-negative-ink: var(--error-ink);
 	--pill-neutral-bg: var(--raised);
@@ -88,7 +88,8 @@
 	/* Layout & spacing */
 	--pill-positive-bg: var(--success-soft);
 	--pill-positive-ink: var(--success-ink);
-	--font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+	--font-sans:
+		var(--font-ibm-plex-sans), -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
 	--ink-secondary: light-dark(#444c59, #b0b7c3);
 	--fs-section: 17px;
 	--radius-sm: 6px;

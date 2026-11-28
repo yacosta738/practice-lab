@@ -122,20 +122,23 @@ test("certification exam notes are separate from practice summaries", async ({ p
 	}
 });
 
-test("shared document head loads the font stylesheet and preconnects", async ({ page }) => {
+test("shared document head serves self-hosted fonts without external Google Fonts requests", async ({
+	page,
+}) => {
 	await page.goto(`${BASE_PATH}/`);
 
 	await expect(
-		page.locator(
-			'head link[rel="stylesheet"][href*="fonts.googleapis.com/css2?family=IBM+Plex+Sans"]',
-		),
-	).toHaveCount(1);
+		page.locator('head link[rel="stylesheet"][href*="fonts.googleapis.com"]'),
+	).toHaveCount(0);
 	await expect(
-		page.locator('head link[rel="preconnect"][href="https://fonts.googleapis.com"]'),
-	).toHaveCount(1);
-	await expect(
-		page.locator('head link[rel="preconnect"][href="https://fonts.gstatic.com"]'),
-	).toHaveAttribute("crossorigin", "");
+		page.locator('head link[rel="preconnect"][href*="fonts.googleapis.com"]'),
+	).toHaveCount(0);
+	await expect(page.locator('head link[rel="preconnect"][href*="fonts.gstatic.com"]')).toHaveCount(
+		0,
+	);
+
+	const preloadedFonts = page.locator('head link[rel="preload"][as="font"][type="font/woff2"]');
+	expect(await preloadedFonts.count()).toBeGreaterThanOrEqual(1);
 });
 
 test("CCAO-F practice mode starts and renders questions", async ({ page }) => {

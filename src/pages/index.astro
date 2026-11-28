@@ -6,8 +6,8 @@ import Layout from "../layouts/Layout.astro";
 import { base } from "../lib/base";
 import { groupNotes, toNoteMeta } from "../lib/study-groups";
 import { studyCerts } from "../study/registry";
-import "../styles/tokens.css";
-import "../styles/quiz.css";
+import "../styles/base.css";
+import "../styles/home.css";
 
 const studyEntries = await getCollection("study");
 const studyNotes = studyEntries.length;

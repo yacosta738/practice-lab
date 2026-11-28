@@ -3,11 +3,14 @@ import { AHREFS_KEY } from "astro:env/client";
 ---
 
 {AHREFS_KEY && (
-	<script
-		is:inline
-		type="text/partytown"
-		src="https://analytics.ahrefs.com/analytics.js"
-		data-key={AHREFS_KEY}
-		async
-	/>
+	<script is:inline define:vars={{ ahrefsKey: AHREFS_KEY }}>
+		(() => { const loadAhrefs = () => { if
+		(document.querySelector('script[src="https://analytics.ahrefs.com/analytics.js"]')) return;
+		const script = document.createElement("script"); script.src =
+		"https://analytics.ahrefs.com/analytics.js"; script.async = true; script.dataset.key =
+		ahrefsKey; document.head.appendChild(script); }; const schedule = () => { if
+		("requestIdleCallback" in window) { window.requestIdleCallback(loadAhrefs, { timeout: 3000 }); }
+		else { window.setTimeout(loadAhrefs, 1500); } }; if (document.readyState === "complete") {
+		schedule(); } else { window.addEventListener("load", schedule, { once: true }); } })();
+	</script>
 )}

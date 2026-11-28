@@ -363,10 +363,12 @@ const resourcesHref = `${base}study/ccdv-f/learning-resources/`;
 <FeedbackDialog />
 
 <script>
-import { base } from "../lib/base";
-import { rankSearchItems, type SearchItem } from "../lib/study-search";
+import type { SearchItem } from "../lib/study-search";
 
 (function () {
+	const base = import.meta.env.BASE_URL.endsWith("/")
+		? import.meta.env.BASE_URL
+		: `${import.meta.env.BASE_URL}/`;
 	const searchDialog = document.getElementById("pl-search-dialog") as HTMLDialogElement | null;
 	const searchInput = document.getElementById("pl-search-input") as HTMLInputElement | null;
 	const searchResults = document.getElementById("pl-search-results");
@@ -374,6 +376,7 @@ import { rankSearchItems, type SearchItem } from "../lib/study-search";
 	const drawer = document.getElementById("pl-mobile-drawer") as HTMLDialogElement | null;
 	let searchItems: SearchItem[] = [];
 	let searchIndexPromise: Promise<SearchItem[]> | undefined;
+	let rankSearchItemsFn: typeof import("../lib/study-search").rankSearchItems | undefined;
 	let searchStatusTimeout: number | undefined;
 	let searchOpener: HTMLElement | null = null;
 
@@ -405,15 +408,18 @@ import { rankSearchItems, type SearchItem } from "../lib/study-search";
 	}
 
 	function loadSearchIndex() {
-		if (searchItems.length) return Promise.resolve(searchItems);
+		if (searchItems.length && rankSearchItemsFn) return Promise.resolve(searchItems);
 		if (!searchIndexPromise) {
-			searchIndexPromise = fetch(`${base}search-index.json`)
-				.then((response) => {
+			searchIndexPromise = Promise.all([
+				fetch(`${base}search-index.json`).then((response) => {
 					if (!response.ok) throw new Error("Search index request failed");
 					return response.json() as Promise<SearchItem[]>;
-				})
-				.then((items) => {
+				}),
+				import("../lib/study-search"),
+			])
+				.then(([items, searchModule]) => {
 					searchItems = items;
+					rankSearchItemsFn = searchModule.rankSearchItems;
 					return items;
 				})
 				.catch((error) => {
@@ -427,11 +433,12 @@ import { rankSearchItems, type SearchItem } from "../lib/study-search";
 	function renderResults(query: string) {
 		if (!searchResults) return;
 		const q = query.trim();
-		const filtered = q
-			? rankSearchItems(q, searchItems)
-			: searchItems
-					.slice(0, 12)
-					.map((item) => ({ ...item, excerpt: item.text?.slice(0, 160) ?? "", score: 0 }));
+		const filtered =
+			q && rankSearchItemsFn
+				? rankSearchItemsFn(q, searchItems)
+				: searchItems
+						.slice(0, 12)
+						.map((item) => ({ ...item, excerpt: item.text?.slice(0, 160) ?? "", score: 0 }));
 
 		searchResults.replaceChildren();
 		if (!filtered.length) {

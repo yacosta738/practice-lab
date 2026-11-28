@@ -19,6 +19,7 @@ playwright-report/
 test-results/
 coverage/
 /.playwright-mcp/
+.lighthouseci/
 
 # environment variables
 .env
