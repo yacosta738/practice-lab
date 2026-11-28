@@ -33,9 +33,11 @@ const breadcrumb = activeNav === "assess" ? "Assess · Mock exam" : "Practice ·
 		footerText="Independent study material · Progress stays in your browser"
 	>
 		<div id="app" aria-live="polite">
-			<h1>{title} practice questions</h1>
-			{description && <p>{description}</p>}
-			<p class="muted">Enable JavaScript to start the interactive practice session.</p>
+			<slot>
+				<h1>{title} practice questions</h1>
+				{description && <p>{description}</p>}
+				<p class="muted">Enable JavaScript to start the interactive practice session.</p>
+			</slot>
 		</div>
 	</AppShell>
 

@@ -28,6 +28,9 @@ export default defineConfig({
 	base: isVercel ? "/" : "/practice-lab",
 	output: isVercel ? "server" : "static",
 	adapter,
+	build: {
+		inlineStylesheets: "always",
+	},
 	markdown: {
 		processor: satteri({
 			hastPlugins: [createExternalLinksPlugin(site)],

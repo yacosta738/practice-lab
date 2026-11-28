@@ -1,6 +1,10 @@
 /* Quiz Practice Lab — Direction A: Quiz, Exam & Certification Components */
 @import "./base.css";
 
+#app {
+	min-height: 100vh;
+}
+
 .ghost[data-action="flag"] {
 	gap: 8px;
 }
