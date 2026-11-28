@@ -74,6 +74,28 @@ function validateHttpUrl(raw: string, field: string): string {
 	return parsed.toString();
 }
 
+export function validateFeedbackDescription(value: string): string {
+	const description = value.trim();
+	if (description.length < MIN_DESCRIPTION_LENGTH) {
+		throw new FeedbackValidationError(
+			"description",
+			`Please describe the issue in at least ${MIN_DESCRIPTION_LENGTH} characters.`,
+		);
+	}
+	if (description.length > MAX_DESCRIPTION_LENGTH) {
+		throw new FeedbackValidationError(
+			"description",
+			`Description must be ${MAX_DESCRIPTION_LENGTH} characters or fewer.`,
+		);
+	}
+	return description;
+}
+
+export function validateFeedbackReferenceUrl(value?: string): string | undefined {
+	const trimmed = value?.trim();
+	return trimmed ? validateHttpUrl(trimmed, "referenceUrl") : undefined;
+}
+
 export function createFeedback(input: CreateFeedbackInput): Feedback {
 	if (!input.target || !isFeedbackTargetType(input.target.type)) {
 		throw new FeedbackValidationError("target", "A valid feedback target type is required.");
@@ -93,19 +115,7 @@ export function createFeedback(input: CreateFeedbackInput): Feedback {
 		throw new FeedbackValidationError("category", "Please select a valid feedback category.");
 	}
 
-	const description = input.description.trim();
-	if (description.length < MIN_DESCRIPTION_LENGTH) {
-		throw new FeedbackValidationError(
-			"description",
-			`Please describe the issue in at least ${MIN_DESCRIPTION_LENGTH} characters.`,
-		);
-	}
-	if (description.length > MAX_DESCRIPTION_LENGTH) {
-		throw new FeedbackValidationError(
-			"description",
-			`Description must be ${MAX_DESCRIPTION_LENGTH} characters or fewer.`,
-		);
-	}
+	const description = validateFeedbackDescription(input.description);
 
 	const suggestedCorrection = input.suggestedCorrection?.trim() || undefined;
 	if (suggestedCorrection && suggestedCorrection.length > MAX_SUGGESTED_CORRECTION_LENGTH) {
@@ -115,10 +125,7 @@ export function createFeedback(input: CreateFeedbackInput): Feedback {
 		);
 	}
 
-	const rawReferenceUrl = input.referenceUrl?.trim();
-	const referenceUrl = rawReferenceUrl
-		? validateHttpUrl(rawReferenceUrl, "referenceUrl")
-		: undefined;
+	const referenceUrl = validateFeedbackReferenceUrl(input.referenceUrl);
 
 	const locale = input.locale?.trim() || "en";
 	const appVersion = input.appVersion.trim() || "0.0.0";

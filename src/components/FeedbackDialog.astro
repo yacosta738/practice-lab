@@ -28,7 +28,12 @@ const hasTally = tallyUrl.trim().length > 0;
 	</div>
 
 	<div class="pl-dialog-body pl-feedback-body">
-		<form id="pl-feedback-form" class="pl-feedback-form" novalidate>
+		<p id="pl-feedback-error" class="pl-feedback-error" role="alert" hidden></p>
+		<button type="button" id="pl-feedback-retry" class="ghost" hidden>
+			Retry loading feedback form
+		</button>
+
+		<form id="pl-feedback-form" class="pl-feedback-form" novalidate hidden>
 			<div class="pl-feedback-field">
 				<label for="pl-feedback-category">Category</label>
 				<select
@@ -82,8 +87,6 @@ const hasTally = tallyUrl.trim().length > 0;
 					placeholder="https://docs.anthropic.com/..."
 				>
 			</div>
-
-			<p id="pl-feedback-error" class="pl-feedback-error" role="alert" hidden></p>
 
 			<p class="pl-feedback-notice">
 				No account or personal data is required. Please do not share confidential official exam
@@ -153,6 +156,10 @@ import type {
 	const dialogEl = dialog;
 
 	let controllerPromise: Promise<FeedbackDialogController> | undefined;
+	const formEl = document.getElementById("pl-feedback-form") as HTMLFormElement | null;
+	const retryButton = document.getElementById("pl-feedback-retry") as HTMLButtonElement | null;
+	let retryControllerAction: (() => Promise<void>) | undefined;
+	let controllerActionGeneration = 0;
 
 	function loadController() {
 		if (!controllerPromise) {
@@ -166,33 +173,59 @@ import type {
 		return controllerPromise;
 	}
 
-	function showLoadError() {
+	function showLoadError(generation: number) {
+		if (generation !== controllerActionGeneration) return;
 		const errorEl = document.getElementById("pl-feedback-error");
+		if (formEl) formEl.hidden = true;
 		if (errorEl) {
 			errorEl.textContent = "Unable to load the feedback form right now. Please try again.";
 			errorEl.hidden = false;
 		}
+		if (retryButton) retryButton.hidden = false;
 		if (!dialogEl.open && typeof dialogEl.showModal === "function") {
 			dialogEl.showModal();
 		}
 	}
+
+	function runControllerAction(action: (controller: FeedbackDialogController) => void) {
+		const generation = ++controllerActionGeneration;
+		const attempt = async (retrying = false) => {
+			try {
+				const controller = await loadController();
+				// The dialog closes synchronously, before the queued close event.
+				if (generation !== controllerActionGeneration || (retrying && !dialogEl.open)) return;
+				action(controller);
+				if (retryButton) retryButton.hidden = true;
+				retryControllerAction = undefined;
+			} catch {
+				if (!retrying || dialogEl.open) showLoadError(generation);
+			}
+		};
+		retryControllerAction = () => attempt(true);
+		void attempt();
+	}
+
+	dialogEl.addEventListener("close", () => {
+		controllerActionGeneration += 1;
+		retryControllerAction = undefined;
+	});
+
+	retryButton?.addEventListener("click", () => {
+		if (retryControllerAction) void retryControllerAction();
+	});
 
 	document.addEventListener("click", (event) => {
 		const target = event.target instanceof Element ? event.target : null;
 		const trigger = target?.closest<HTMLElement>("[data-pl-open-feedback]");
 		if (!trigger) return;
 		event.preventDefault();
-		void loadController()
-			.then((controller) => controller.openFromTrigger(trigger))
-			.catch(showLoadError);
+		runControllerAction((controller) => controller.openFromTrigger(trigger));
 	});
 
 	window.addEventListener("practice-lab:open-feedback", (event) => {
 		const custom = event as CustomEvent<OpenFeedbackDetail>;
 		if (custom.detail?.target) {
-			void loadController()
-				.then((controller) => controller.open(custom.detail))
-				.catch(showLoadError);
+			runControllerAction((controller) => controller.open(custom.detail));
 		}
 	});
 })();
