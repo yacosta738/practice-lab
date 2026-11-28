@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/yacosta738/practice-lab/compare/v0.8.1...v0.8.2) (2026-11-28)
+
+
+### Bug Fixes
+
+* address feedback and certification review findings ([#114](https://github.com/yacosta738/practice-lab/issues/114)) ([b336b17](https://github.com/yacosta738/practice-lab/commit/b336b17be0767592ff1243bb6237dd031e622b39))
+
 ## [0.8.1](https://github.com/yacosta738/practice-lab/compare/v0.8.0...v0.8.1) (2026-11-28)
 
 
