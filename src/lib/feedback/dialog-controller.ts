@@ -1,3 +1,4 @@
+import { validateFeedbackDescription, validateFeedbackReferenceUrl } from "./domain/feedback";
 import {
 	createFeedbackUseCases,
 	createGitHubIssueAdapter,
@@ -99,6 +100,20 @@ export function createFeedbackDialogController(
 	function clearFieldError(field: HTMLElement | null) {
 		field?.removeAttribute("aria-invalid");
 		associateError(field, false);
+	}
+
+	function clearFieldErrorWhenValid(
+		field: HTMLInputElement | HTMLTextAreaElement,
+		validate: (value: string) => string | undefined,
+	) {
+		if (field.getAttribute("aria-invalid") !== "true") return;
+		try {
+			validate(field.value);
+		} catch (error) {
+			if (error instanceof FeedbackValidationError) return;
+			throw error;
+		}
+		clearFieldError(field);
 	}
 
 	function markFieldInvalid(field: HTMLElement | null) {
@@ -287,12 +302,12 @@ export function createFeedbackDialogController(
 		persistDraft();
 	});
 	descriptionEl?.addEventListener("input", () => {
-		clearFieldError(descriptionEl);
+		clearFieldErrorWhenValid(descriptionEl, validateFeedbackDescription);
 		persistDraft();
 	});
 	correctionEl?.addEventListener("input", persistDraft);
 	referenceEl?.addEventListener("input", () => {
-		clearFieldError(referenceEl);
+		clearFieldErrorWhenValid(referenceEl, validateFeedbackReferenceUrl);
 		persistDraft();
 	});
 

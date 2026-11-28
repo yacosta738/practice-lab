@@ -134,6 +134,47 @@ test.describe("community feedback flow", () => {
 		await expect(page.locator("#pl-feedback-form")).toBeHidden();
 	});
 
+	test("keeps the dialog closed when the controller finishes before the close event", async ({
+		page,
+	}) => {
+		await page.addInitScript(() => {
+			const originalGetElementById = Document.prototype.getElementById;
+			let initializationAttempts = 0;
+			Document.prototype.getElementById = function (id) {
+				if (id === "pl-feedback-title") {
+					initializationAttempts += 1;
+					if (initializationAttempts === 1) {
+						throw new Error("Simulated feedback controller initialization failure");
+					}
+					if (initializationAttempts === 2) {
+						const dialog = originalGetElementById.call(
+							this,
+							"pl-feedback-dialog",
+						) as HTMLDialogElement;
+						dialog.addEventListener(
+							"close",
+							() => {
+								dialog.dataset.closeDispatched = "true";
+							},
+							{ once: true },
+						);
+						dialog.close();
+					}
+				}
+				return originalGetElementById.call(this, id);
+			};
+		});
+
+		await page.goto("/practice-lab/");
+		await page.getByRole("button", { name: "Send feedback" }).click();
+		await page.getByRole("button", { name: /retry loading feedback form/i }).click();
+
+		const dialog = page.locator("#pl-feedback-dialog");
+		await expect(dialog).toHaveAttribute("data-close-dispatched", "true");
+		await expect(dialog).toBeHidden();
+		await expect(page.locator("#pl-feedback-form")).toBeHidden();
+	});
+
 	test("associates validation errors with their fields and removes associations when corrected", async ({
 		page,
 	}) => {
@@ -168,6 +209,9 @@ test.describe("community feedback flow", () => {
 		await expect(description).toHaveAttribute("aria-invalid", "true");
 		await expect(description).toHaveAttribute("aria-describedby", errorReference);
 		await expect(description).toBeFocused();
+		await description.fill("  Brief  ");
+		await expect(description).toHaveAttribute("aria-invalid", "true");
+		await expect(description).toHaveAttribute("aria-describedby", errorReference);
 		await description.fill("The feedback description is long enough to submit.");
 		await expect(description).not.toHaveAttribute("aria-invalid");
 		await expect(description).not.toHaveAttribute("aria-describedby");
@@ -178,6 +222,9 @@ test.describe("community feedback flow", () => {
 		await expect(referenceUrl).toHaveAttribute("aria-invalid", "true");
 		await expect(referenceUrl).toHaveAttribute("aria-describedby", errorReference);
 		await expect(referenceUrl).toBeFocused();
+		await referenceUrl.fill("sftp://example.com");
+		await expect(referenceUrl).toHaveAttribute("aria-invalid", "true");
+		await expect(referenceUrl).toHaveAttribute("aria-describedby", errorReference);
 		await referenceUrl.fill("https://example.com");
 		await expect(referenceUrl).not.toHaveAttribute("aria-invalid");
 		await expect(referenceUrl).not.toHaveAttribute("aria-describedby");

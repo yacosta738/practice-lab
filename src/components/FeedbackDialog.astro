@@ -189,18 +189,19 @@ import type {
 
 	function runControllerAction(action: (controller: FeedbackDialogController) => void) {
 		const generation = ++controllerActionGeneration;
-		const attempt = async () => {
+		const attempt = async (retrying = false) => {
 			try {
 				const controller = await loadController();
-				if (generation !== controllerActionGeneration) return;
+				// The dialog closes synchronously, before the queued close event.
+				if (generation !== controllerActionGeneration || (retrying && !dialogEl.open)) return;
 				action(controller);
 				if (retryButton) retryButton.hidden = true;
 				retryControllerAction = undefined;
 			} catch {
-				showLoadError(generation);
+				if (!retrying || dialogEl.open) showLoadError(generation);
 			}
 		};
-		retryControllerAction = attempt;
+		retryControllerAction = () => attempt(true);
 		void attempt();
 	}
 
