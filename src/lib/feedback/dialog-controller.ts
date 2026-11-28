@@ -80,9 +80,13 @@ export function createFeedbackDialogController(
 	}
 
 	function clearError() {
-		if (!errorEl) return;
-		errorEl.textContent = "";
-		errorEl.hidden = true;
+		if (errorEl) {
+			errorEl.textContent = "";
+			errorEl.hidden = true;
+		}
+		categoryEl?.removeAttribute("aria-invalid");
+		descriptionEl?.removeAttribute("aria-invalid");
+		referenceEl?.removeAttribute("aria-invalid");
 	}
 
 	function updateCategoryHint() {
@@ -214,9 +218,16 @@ export function createFeedbackDialogController(
 		} catch (error) {
 			if (error instanceof FeedbackValidationError) {
 				showError(error.message);
-				if (error.field === "description") descriptionEl?.focus();
-				else if (error.field === "referenceUrl") referenceEl?.focus();
-				else if (error.field === "category") categoryEl?.focus();
+				if (error.field === "description") {
+					descriptionEl?.setAttribute("aria-invalid", "true");
+					descriptionEl?.focus();
+				} else if (error.field === "referenceUrl") {
+					referenceEl?.setAttribute("aria-invalid", "true");
+					referenceEl?.focus();
+				} else if (error.field === "category") {
+					categoryEl?.setAttribute("aria-invalid", "true");
+					categoryEl?.focus();
+				}
 			} else {
 				showError("Unable to prepare your feedback right now. Please try again.");
 			}
@@ -244,12 +255,19 @@ export function createFeedbackDialogController(
 	}
 
 	categoryEl?.addEventListener("change", () => {
+		categoryEl.removeAttribute("aria-invalid");
 		updateCategoryHint();
 		persistDraft();
 	});
-	descriptionEl?.addEventListener("input", persistDraft);
+	descriptionEl?.addEventListener("input", () => {
+		descriptionEl.removeAttribute("aria-invalid");
+		persistDraft();
+	});
 	correctionEl?.addEventListener("input", persistDraft);
-	referenceEl?.addEventListener("input", persistDraft);
+	referenceEl?.addEventListener("input", () => {
+		referenceEl.removeAttribute("aria-invalid");
+		persistDraft();
+	});
 
 	clearDraftBtn?.addEventListener("click", () => {
 		useCases.clearDraft(currentTarget);
