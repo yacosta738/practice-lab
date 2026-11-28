@@ -1,0 +1,389 @@
+/* Practice Lab — Shared Base Styles (tokens, typography, buttons, layout primitives) */
+@import "./tokens.css";
+
+/* Browser surfaces */
+
+::selection {
+	background: var(--brand-strong);
+	color: var(--on-brand);
+}
+
+::-moz-selection {
+	background: var(--brand-strong);
+	color: var(--on-brand);
+}
+
+/* Scrollbars — standard scrollbar-color with WebKit fallback */
+
+@supports not (scrollbar-color: auto) {
+	::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+
+	::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	::-webkit-scrollbar-thumb {
+		background: var(--border);
+		border-radius: 4px;
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		background: var(--border-hover);
+	}
+}
+
+:root {
+	scrollbar-color: var(--border) transparent;
+}
+
+*:focus-visible {
+	outline: 2px solid var(--brand);
+	outline-offset: 2px;
+}
+
+:focus,
+:target {
+	scroll-margin-top: 72px;
+}
+
+.sr-only {
+	border: 0;
+	clip-path: inset(50%);
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute;
+	white-space: nowrap;
+	width: 1px;
+}
+
+.skip-link {
+	background: var(--brand-strong);
+	border-radius: var(--radius-sm);
+	color: var(--on-brand);
+	font-size: var(--fs-small);
+	font-weight: 600;
+	left: 16px;
+	padding: 10px 16px;
+	position: absolute;
+	text-decoration: none;
+	top: -100px;
+	z-index: 1000;
+}
+
+.skip-link:focus-visible {
+	top: 12px;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	/* Keep iOS from inflating the text: the sizes below are the design. */
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+
+body {
+	background: var(--ground);
+	color: var(--ink);
+	font-family: var(--font-sans);
+	font-size: var(--fs-body);
+	-webkit-font-smoothing: antialiased;
+	line-height: 1.6;
+	margin: 0;
+	-moz-osx-font-smoothing: grayscale;
+	overflow-wrap: break-word;
+}
+
+/* Controls rendered by JavaScript must use the product font.
+   The user-agent stylesheet sets "400 13.33px Arial" on form controls. */
+button,
+input,
+select,
+textarea,
+summary {
+	font-family: inherit;
+	font-size: inherit;
+}
+
+/* Layout container (legacy fallback for pages outside AppShell) */
+main:not(.pl-content) {
+	margin: 0 auto;
+	max-width: 1120px;
+	padding: 32px 48px 80px;
+}
+
+/* Legacy header (pages outside AppShell) */
+
+header:not(.pl-topbar) {
+	align-items: center;
+	border-bottom: 1px solid var(--border);
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 32px;
+	padding: 20px 0;
+}
+
+.brand {
+	align-items: center;
+	color: var(--ink);
+	display: flex;
+	gap: 12px;
+	text-decoration: none;
+}
+
+.brand .mark {
+	align-items: center;
+	background: var(--brand-strong);
+	border-radius: var(--radius-sm);
+	color: var(--on-brand);
+	display: flex;
+	font-size: 14px;
+	font-weight: 600;
+	height: 32px;
+	justify-content: center;
+	width: 32px;
+}
+
+.brand strong {
+	display: block;
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.brand small {
+	color: var(--ink-secondary);
+	display: block;
+	font-size: var(--fs-small);
+	font-weight: 400;
+	line-height: 1.3;
+}
+
+/* Buttons — app-screens rules: near-black primary, outlined ghost */
+
+.ghost {
+	align-items: center;
+	background: transparent;
+	border: 1px solid var(--border-hover);
+	border-radius: var(--radius-sm);
+	color: var(--ink-secondary);
+	cursor: pointer;
+	display: inline-flex;
+	font-family: inherit;
+	font-size: var(--fs-body);
+	font-weight: 500;
+	justify-content: center;
+	line-height: 1.4;
+	min-height: var(--control-height);
+	overflow-wrap: break-word;
+	padding: 4px 16px;
+	text-align: center;
+	text-decoration: none;
+	transition: all 0.12s ease;
+	white-space: normal;
+}
+
+.ghost:hover {
+	background: var(--raised);
+	border-color: var(--border-hover);
+	color: var(--ink);
+}
+
+.ghost:active {
+	transform: scale(0.97);
+}
+
+.primary {
+	align-items: center;
+	background: var(--brand-strong);
+	border: none;
+	border-radius: var(--radius-sm);
+	color: var(--on-brand);
+	cursor: pointer;
+	display: inline-flex;
+	font-family: inherit;
+	font-size: var(--fs-body);
+	font-weight: 600;
+	justify-content: center;
+	line-height: 1.4;
+	min-height: var(--control-height);
+	overflow-wrap: break-word;
+	padding: 5px 20px;
+	text-align: center;
+	text-decoration: none;
+	transition: all 0.12s ease;
+	white-space: normal;
+}
+
+.primary:hover {
+	background: var(--brand-strong-hover);
+}
+
+.primary:active {
+	transform: scale(0.97);
+}
+
+.primary:disabled {
+	cursor: not-allowed;
+	opacity: 0.35;
+}
+
+/* Typography — app-screens: title 26px, no display type */
+
+h1 {
+	font-size: var(--fs-title);
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	line-height: 1.2;
+	margin: 0 0 12px;
+}
+
+h2 {
+	font-size: var(--fs-section);
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	line-height: 1.3;
+	margin: 0 0 12px;
+}
+
+h3 {
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.35;
+	margin: 28px 0 14px;
+}
+
+.lead {
+	color: var(--ink-secondary);
+	font-size: 17px;
+	line-height: 1.6;
+	max-width: 58ch;
+}
+
+.eyebrow {
+	color: var(--brand-text);
+	font-size: var(--fs-small);
+	font-weight: 500;
+	margin-bottom: 8px;
+}
+
+.mono {
+	font-family: var(--font-mono);
+	font-variant-numeric: tabular-nums;
+}
+
+.wsCode {
+	color: var(--brand-text);
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+}
+
+.wsTextLink {
+	color: var(--brand-text);
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.wsTextLink:hover {
+	text-decoration: underline;
+}
+
+/* Sections */
+
+.section {
+	margin-top: 56px;
+}
+
+.sectionHead {
+	align-items: baseline;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	justify-content: space-between;
+	margin-bottom: 24px;
+}
+
+.sectionHead h2 {
+	margin-bottom: 0;
+}
+
+.muted {
+	color: var(--ink-secondary);
+}
+
+label.small {
+	color: var(--ink-secondary);
+}
+
+.small {
+	color: var(--ink-secondary);
+	font-size: var(--fs-small);
+}
+
+/* Footer */
+
+footer {
+	border-top: 1px solid var(--border);
+	color: var(--ink-secondary);
+	font-size: var(--fs-small);
+	margin-top: 56px;
+	padding: 32px 0;
+	text-align: center;
+}
+
+@media (max-width: 860px) {
+	main {
+		padding: 24px 20px 56px;
+	}
+
+	h1 {
+		font-size: 24px;
+	}
+
+	.section {
+		margin-top: 44px;
+	}
+}
+
+@media (max-width: 520px) {
+	:root {
+		--fs-kpi: 28px;
+		--fs-section: 17px;
+		--fs-title: 22px;
+	}
+
+	main {
+		padding: 16px;
+	}
+
+	h1 {
+		font-size: 22px;
+	}
+
+	.lead {
+		font-size: 16px;
+	}
+
+	.brand small {
+		max-width: 140px;
+	}
+
+	.section {
+		margin-top: 36px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		transition: none !important;
+	}
+}
