@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.8.1](https://github.com/yacosta738/practice-lab/compare/v0.8.0...v0.8.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* **progress:** allow mock exams during legacy migration ([#109](https://github.com/yacosta738/practice-lab/issues/109)) ([518a54c](https://github.com/yacosta738/practice-lab/commit/518a54c5e8a502c6043ae1cf5ed1387f2f4c1653))
+* **progress:** refine legacy migration guards ([af6632d](https://github.com/yacosta738/practice-lab/commit/af6632d51143e617128f2f7c2a2439426a243060))
+* **ui:** add spacing between flag icon and label ([#112](https://github.com/yacosta738/practice-lab/issues/112)) ([cf4d869](https://github.com/yacosta738/practice-lab/commit/cf4d869fa05cd803698d5dec7fcf6704aacb2149))
+* **ui:** fit mock exam question navigator to width ([#111](https://github.com/yacosta738/practice-lab/issues/111)) ([fe80ccd](https://github.com/yacosta738/practice-lab/commit/fe80ccdf164d568ec210483f325761f2ec3cb6d7))
+
+
+### Performance Improvements
+
+* optimize mobile critical rendering path and add Lighthouse CI ([#113](https://github.com/yacosta738/practice-lab/issues/113)) ([08b437b](https://github.com/yacosta738/practice-lab/commit/08b437bc49cde5717f104953c0034097432767c7))
+
 ## [0.8.0](https://github.com/yacosta738/practice-lab/compare/v0.7.0...v0.8.0) (2026-11-27)
 
 
