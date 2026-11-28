@@ -190,6 +190,10 @@ header:not(.pl-topbar) {
 	white-space: normal;
 }
 
+.ghost[data-action="flag"] {
+	gap: 8px;
+}
+
 /* Ghost control on the navy hero panel */
 .ghostOnDark {
 	border-color: rgba(247, 244, 238, 0.42);
