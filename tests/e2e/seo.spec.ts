@@ -55,7 +55,8 @@ test("certification quiz includes a useful heading before JavaScript runs", asyn
 	const html = await response.text();
 
 	expect(response.ok()).toBe(true);
-	expect(html).toContain("<h1>Claude Developer Foundations practice questions</h1>");
+	expect(html).toContain("<h1>Know the platform.<br>Ship with confidence.</h1>");
+	expect(html).toContain("Claude Developer Foundations");
 	expect(html).toContain("Enable JavaScript to start the interactive practice session.");
 });
 
