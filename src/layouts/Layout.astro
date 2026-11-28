@@ -1,4 +1,5 @@
 ---
+import { Font } from "astro:assets";
 import Analytics from "@vercel/analytics/astro";
 import AhrefsAnalytics from "../components/Analytics.astro";
 import { base } from "../lib/base";
@@ -66,12 +67,14 @@ const isDefaultImage = !ogImage;
 		</script>
 
 		<meta name="generator" content={Astro.generator}>
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link
-			rel="stylesheet"
-			href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
-		>
+		<Font
+			cssVariable="--font-ibm-plex-sans"
+			preload={[
+				{ weight: 400, style: "normal", subset: "latin" },
+				{ weight: 600, style: "normal", subset: "latin" },
+			]}
+		/>
+		<Font cssVariable="--font-ibm-plex-mono" />
 		<title>{seoTitle}</title>
 
 		<!-- Open Graph -->

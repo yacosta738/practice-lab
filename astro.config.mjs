@@ -1,9 +1,8 @@
 // @ts-check
 
 import { satteri } from "@astrojs/markdown-satteri";
-import partytown from "@astrojs/partytown";
 import sitemap from "@astrojs/sitemap";
-import { defineConfig, envField } from "astro/config";
+import { defineConfig, envField, fontProviders } from "astro/config";
 import { createExternalLinksPlugin } from "./src/hast/external-links.mjs";
 
 // https://astro.build/config
@@ -55,7 +54,29 @@ export default defineConfig({
 			}),
 		},
 	},
-	integrations: [partytown(), sitemap()],
+	fonts: [
+		{
+			provider: fontProviders.google(),
+			name: "IBM Plex Sans",
+			cssVariable: "--font-ibm-plex-sans",
+			weights: [400, 500, 600, 700],
+			styles: ["normal"],
+			subsets: ["latin"],
+			display: "swap",
+			fallbacks: ["-apple-system", "BlinkMacSystemFont", "Inter", "system-ui", "sans-serif"],
+		},
+		{
+			provider: fontProviders.google(),
+			name: "IBM Plex Mono",
+			cssVariable: "--font-ibm-plex-mono",
+			weights: [400, 500, 600],
+			styles: ["normal"],
+			subsets: ["latin"],
+			display: "swap",
+			fallbacks: ["SF Mono", "ui-monospace", "monospace"],
+		},
+	],
+	integrations: [sitemap()],
 	vite: {
 		// LightningCSS cannot parse @container anchored() yet (lightningcss#1176).
 		// Use esbuild for CSS minification to support anchored container queries.
