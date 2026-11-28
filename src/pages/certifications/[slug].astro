@@ -88,24 +88,17 @@ const sidebarDomains = Object.entries(certConfig.domains).map(([id, d]) => ({
 		)}
 		<div class="readinessBar">
 			<div class="readinessMeta">
-				<span>Last attempt correct · 0 of {questions.length} questions</span>
-				<strong class="mono">0%</strong>
+				<span class="muted">Saved progress is unavailable until browser storage is read.</span>
 			</div>
-			<progress
-				class="progress"
-				value="0"
-				max={questions.length}
-				aria-label="Questions with last attempt correct"
-			></progress>
 		</div>
 		<div class="ctaRow">
-			<a class="primary" href="#session">Choose practice settings</a>
+			<a href="#session" data-focus-target="settings" hidden>Choose practice settings</a>
 			{studyHref && (
 				<a class="ghost ghostOnDark" href={studyHref} data-action="go-to-site-home">
 					Open study notes
 				</a>
 			)}
-			<a class="ghost ghostOnDark" href="#coverage">See your progress</a>
+			<a href="#coverage" hidden>See your progress</a>
 		</div>
 	</div>
 	<noscript>
@@ -772,7 +765,8 @@ document.addEventListener("click", (event: MouseEvent) => {
 			? `<p class="examGuideNote" data-exam-guide-note>${esc(cfg.examGuideNote)}</p>`
 			: "";
 
-		setAppHTML(`
+		setAppHTML(
+			`
 			<div class="hero">
 				<span class="eyebrow">${esc(cfg.subtitle)} · ${esc(cfg.title)}</span>
 				<h1>Know the platform.<br>Ship with confidence.</h1>
@@ -786,7 +780,7 @@ document.addEventListener("click", (event: MouseEvent) => {
 					${
 						activeSession
 							? `<button class="primary" data-action="resume">Resume ${sessionModeLabel(activeSession.mode)} · ${activeSession.currentIndex + 1}/${activeSession.ids.length}</button>`
-							: `<a class="primary" href="#session">${assessSetup ? "Review mock exam setup" : "Choose practice settings"}</a>`
+							: `<a class="primary" href="#session" data-focus-target="settings">${assessSetup ? "Review mock exam setup" : "Choose practice settings"}</a>`
 					}
 					${studyHref ? `<a class="ghost ghostOnDark" href="${esc(studyHref)}" data-action="go-to-site-home">Open study notes</a>` : ""}
 					<a class="ghost ghostOnDark" href="#coverage">See your progress</a>
@@ -811,7 +805,11 @@ document.addEventListener("click", (event: MouseEvent) => {
 			</section>
 			<p class="alert section">Independent study material. Practice scores are not equivalent to official exam scores.</p>
 			<p class="small muted section">Practice questions may have different sources; consult the source link shown with each question. They are not official exam content.</p>
-		`);
+			`,
+			document.activeElement === app?.querySelector('[data-focus-target="settings"]')
+				? "settings"
+				: undefined,
+		);
 	}
 
 	// --- Question view ---

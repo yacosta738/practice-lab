@@ -34,6 +34,129 @@ for (const { slug, heading } of CERTIFICATIONS) {
 	});
 }
 
+test("server-rendered certification settings and progress links are hidden without JavaScript", async ({
+	browser,
+}) => {
+	const context = await browser.newContext({ javaScriptEnabled: false });
+	const page = await context.newPage();
+
+	try {
+		await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
+
+		const settingsLink = page.locator('#app .ctaRow a[href="#session"]');
+		const progressLink = page.locator('#app .ctaRow a[href="#coverage"]');
+		await expect(settingsLink).toBeHidden();
+		await expect(progressLink).toBeHidden();
+		await expect(settingsLink).toHaveAttribute("data-focus-target", "settings");
+		await expect(progressLink).toHaveAttribute("href", "#coverage");
+	} finally {
+		await context.close();
+	}
+});
+
+test("server-rendered certification readiness is unavailable without JavaScript", async ({
+	browser,
+}) => {
+	const context = await browser.newContext({ javaScriptEnabled: false });
+	const page = await context.newPage();
+
+	try {
+		await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
+
+		const readiness = page.locator("#app .readinessBar");
+		await expect(readiness).toHaveText(
+			"Saved progress is unavailable until browser storage is read.",
+		);
+		await expect(readiness.locator("progress")).toHaveCount(0);
+	} finally {
+		await context.close();
+	}
+});
+
+test("client-rendered certification readiness keeps its values after progress loads", async ({
+	page,
+}) => {
+	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
+	await page.waitForLoadState("networkidle");
+
+	const readiness = page.locator("#app .readinessBar");
+	await expect(readiness).toContainText(/Last attempt correct · 0 of \d+ questions/);
+	await expect(readiness.locator("strong.mono")).toHaveText("0%");
+	await expect(readiness.locator("progress")).toHaveAttribute("value", "0");
+});
+
+test("client-rendered certification links keep their destinations and do not auto-focus settings", async ({
+	page,
+}) => {
+	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
+	await page.waitForLoadState("networkidle");
+
+	const settingsLink = page.locator('#app .ctaRow a[href="#session"]');
+	const progressLink = page.locator('#app .ctaRow a[href="#coverage"]');
+	await expect(settingsLink).toBeVisible();
+	await expect(settingsLink).toHaveAttribute("data-focus-target", "settings");
+	await expect(progressLink).toBeVisible();
+	await expect(progressLink).toHaveAttribute("href", "#coverage");
+	await expect(settingsLink).not.toBeFocused();
+});
+
+test("certification home restores settings focus only when it had focus before invalidation", async ({
+	page,
+	context,
+}) => {
+	await page.goto(`${BASE_PATH}/certifications/ccdv-f/`);
+	await page.waitForLoadState("networkidle");
+
+	const settingsLink = page.locator('#app .ctaRow a[href="#session"]');
+	const secondTab = await context.newPage();
+	await secondTab.goto(`${BASE_PATH}/certifications/ccdv-f/`);
+	await secondTab.waitForLoadState("networkidle");
+
+	const resetProgressFromSecondTab = () =>
+		secondTab.evaluate(async () => {
+			const service = window.practiceLabProgressService;
+			if (!service) throw new Error("The browser progress service is unavailable.");
+			await service.resetProgress();
+		});
+	const waitForSettingsLinkReplacement = () =>
+		page.evaluate(() => {
+			const app = document.getElementById("app");
+			const currentLink = app?.querySelector('[data-focus-target="settings"]');
+			if (!app || !currentLink) throw new Error("The settings link is unavailable.");
+
+			return new Promise<void>((resolve) => {
+				const observer = new MutationObserver(() => {
+					const nextLink = app.querySelector('[data-focus-target="settings"]');
+					if (nextLink && nextLink !== currentLink) {
+						observer.disconnect();
+						resolve();
+					}
+				});
+				observer.observe(app, { childList: true, subtree: true });
+			});
+		});
+
+	await expect(settingsLink).toBeVisible();
+	await expect(settingsLink).not.toBeFocused();
+	let rerendered = waitForSettingsLinkReplacement();
+	await resetProgressFromSecondTab();
+	await rerendered;
+	await expect(
+		page.getByRole("alert").filter({ hasText: "Progress changed elsewhere." }),
+	).toBeVisible();
+	await expect(settingsLink).not.toBeFocused();
+
+	await settingsLink.focus();
+	await expect(settingsLink).toBeFocused();
+	rerendered = waitForSettingsLinkReplacement();
+	await resetProgressFromSecondTab();
+	await rerendered;
+	await expect(
+		page.getByRole("alert").filter({ hasText: "Progress changed elsewhere." }),
+	).toBeVisible();
+	await expect(settingsLink).toBeFocused();
+});
+
 test("exam guide note renders as text with native and fallback HTML renderers", async ({
 	browser,
 }) => {

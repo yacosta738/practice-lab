@@ -79,14 +79,41 @@ export function createFeedbackDialogController(
 		errorEl.hidden = false;
 	}
 
+	function associateError(field: HTMLElement | null, associate: boolean) {
+		if (!field) return;
+		const describedBy = new Set(
+			(field.getAttribute("aria-describedby") ?? "").split(/\s+/).filter(Boolean),
+		);
+		if (associate) {
+			describedBy.add("pl-feedback-error");
+		} else {
+			describedBy.delete("pl-feedback-error");
+		}
+		if (describedBy.size > 0) {
+			field.setAttribute("aria-describedby", [...describedBy].join(" "));
+		} else {
+			field.removeAttribute("aria-describedby");
+		}
+	}
+
+	function clearFieldError(field: HTMLElement | null) {
+		field?.removeAttribute("aria-invalid");
+		associateError(field, false);
+	}
+
+	function markFieldInvalid(field: HTMLElement | null) {
+		field?.setAttribute("aria-invalid", "true");
+		associateError(field, true);
+	}
+
 	function clearError() {
 		if (errorEl) {
 			errorEl.textContent = "";
 			errorEl.hidden = true;
 		}
-		categoryEl?.removeAttribute("aria-invalid");
-		descriptionEl?.removeAttribute("aria-invalid");
-		referenceEl?.removeAttribute("aria-invalid");
+		clearFieldError(categoryEl);
+		clearFieldError(descriptionEl);
+		clearFieldError(referenceEl);
 	}
 
 	function updateCategoryHint() {
@@ -219,13 +246,13 @@ export function createFeedbackDialogController(
 			if (error instanceof FeedbackValidationError) {
 				showError(error.message);
 				if (error.field === "description") {
-					descriptionEl?.setAttribute("aria-invalid", "true");
+					markFieldInvalid(descriptionEl);
 					descriptionEl?.focus();
 				} else if (error.field === "referenceUrl") {
-					referenceEl?.setAttribute("aria-invalid", "true");
+					markFieldInvalid(referenceEl);
 					referenceEl?.focus();
 				} else if (error.field === "category") {
-					categoryEl?.setAttribute("aria-invalid", "true");
+					markFieldInvalid(categoryEl);
 					categoryEl?.focus();
 				}
 			} else {
@@ -255,17 +282,17 @@ export function createFeedbackDialogController(
 	}
 
 	categoryEl?.addEventListener("change", () => {
-		categoryEl.removeAttribute("aria-invalid");
+		clearFieldError(categoryEl);
 		updateCategoryHint();
 		persistDraft();
 	});
 	descriptionEl?.addEventListener("input", () => {
-		descriptionEl.removeAttribute("aria-invalid");
+		clearFieldError(descriptionEl);
 		persistDraft();
 	});
 	correctionEl?.addEventListener("input", persistDraft);
 	referenceEl?.addEventListener("input", () => {
-		referenceEl.removeAttribute("aria-invalid");
+		clearFieldError(referenceEl);
 		persistDraft();
 	});
 
